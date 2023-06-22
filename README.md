@@ -1,2 +1,2 @@
-# weave
+# Weave
 Concurrency for C++
