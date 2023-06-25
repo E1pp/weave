@@ -4,6 +4,8 @@
 
 #include <weave/support/word.hpp>
 
+#include <weave/threads/lockfree/ref_count.hpp>
+
 #include <twist/ed/stdlike/atomic.hpp>
 
 namespace weave::cancel::sources {
@@ -11,8 +13,10 @@ namespace weave::cancel::sources {
 // Source to pass signal through
 // 1P1C heap allocated rendezvous point
 class StrandSource : public SignalSender,
-                     public SignalReceiver {
+                     public SignalReceiver,
+                     public threads::lockfree::RefCounter<StrandSource, true> {
   using State = support::Word;
+  using Base = threads::lockfree::RefCounter<StrandSource, true>;
 
   static constexpr uint32_t kInit = 0;
   static constexpr uint32_t kCancelled = 1;
@@ -44,10 +48,7 @@ class StrandSource : public SignalSender,
 
   void Forward(Signal) override;
 
- protected:
-  void AddRef();
-
-  void ReleaseRef();
+  void ClearReceiver();
 
  private:
   // Helps with interpetation
@@ -61,11 +62,8 @@ class StrandSource : public SignalSender,
 
   void SetReceiver(SignalReceiver*);
 
-  void ClearReceiver();
-
  private:
   twist::ed::stdlike::atomic<State> state_;
-  twist::ed::stdlike::atomic<size_t> ref_count_{0};
 };
 
 }  // namespace weave::cancel::sources

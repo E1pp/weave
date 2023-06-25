@@ -1,7 +1,7 @@
 #include <weave/satellite/satellite.hpp>
 #include <weave/satellite/meta_data.hpp>
 
-#include <twist/ed/local/var.hpp>
+#include <twist/ed/local/val.hpp>
 
 namespace weave::satellite {
 

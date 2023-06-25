@@ -19,6 +19,7 @@
 #include <weave/futures/combine/seq/anyway.hpp>
 #include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
+#include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/map.hpp>
 #include <weave/futures/combine/seq/on_cancel.hpp>
 #include <weave/futures/combine/seq/on_success.hpp>
@@ -49,381 +50,16 @@
 
 using namespace weave; // NOLINT
 
-using namespace std::chrono_literals;
-
-inline std::error_code TimeoutError() {
+std::error_code TimeoutError() {
   return std::make_error_code(std::errc::timed_out);
 }
 
-inline std::error_code IoError() {
+std::error_code IoError() {
   return std::make_error_code(std::errc::io_error);
 }
 
-struct MoveOnly {
-  MoveOnly() = default;
-  MoveOnly(const MoveOnly&) = delete;
-  MoveOnly(MoveOnly&&) {};
-};
-
-struct NonDefaultConstructible {
-  NonDefaultConstructible(int) {}; // NOLINT
-};
-
-TEST_SUITE(Sequential){
-  SIMPLE_TEST(MakeDiscard){
-    futures::Just() | futures::Discard();
-    futures::Value(42) | futures::Discard();
-    futures::Failure<int>(IoError()) | futures::Discard();
-  }
-
-  SIMPLE_TEST(TransformDiscard){
-    futures::Just() | futures::Map([](Unit){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Discard();
-
-    futures::Just() | futures::AndThen([](Unit){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Discard();
-
-    futures::Just() | futures::OrElse([](Error){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Discard();
-  }
-
-  SIMPLE_TEST(FlattenCancel){
-    executors::ManualExecutor manual;
-    futures::Value(futures::Submit(manual, []{
-      WHEELS_PANIC("Test failed!");
-    })) | futures::Flatten() | futures::Discard();
-
-    ASSERT_EQ(manual.Drain(), 0);
-  }
-
-  SIMPLE_TEST(CancelFuture){
-    { 
-      auto [f, p] = futures::Contract<int>();
-      std::move(f).RequestCancel();
-
-      std::move(p).SetValue(5);
-    }
-
-    { 
-      auto [f, p] = futures::Contract<int>();
-      std::move(p).SetValue(5);
-
-      std::move(f).RequestCancel();
-    }
-  }
-
-  SIMPLE_TEST(CancelChain) {
-    auto [f, p] = futures::Contract<int>();
-
-    std::move(f) | futures::AndThen([](int v){
-      return v + 1;
-    }) | futures::Discard();
-
-    std::move(p).SetValue(42);
-  }
-
-  SIMPLE_TEST(CancelStart){
-    executors::ManualExecutor manual;
-
-    auto f = futures::Submit(manual, [&]{
-    }) | futures::Map([&](Unit){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start();
-
-    std::move(f).RequestCancel();
-
-    ASSERT_EQ(manual.Drain(), 1);
-  }
-
-  SIMPLE_TEST(PassSignal1){
-    executors::ManualExecutor manual;
-
-    auto f = futures::Submit(manual, []{
-
-    }) | futures::AndThen([](Unit){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start();
-
-    std::move(f).RequestCancel();
-
-    ASSERT_EQ(manual.Drain(), 1);
-  }
-
-  SIMPLE_TEST(PassSignal2){
-    executors::ManualExecutor manual;
-
-    auto f = futures::Submit(manual, []{
-
-    }) | futures::AndThen([](Unit){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start() | futures::AndThen([](Unit){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start();
-
-    std::move(f).RequestCancel();
-
-    ASSERT_EQ(manual.Drain(), 1);
-  }
-
-  SIMPLE_TEST(CancelBoxedLazy){
-    futures::BoxedFuture<Unit> f = futures::Just() | futures::AndThen([](Unit){
-      WHEELS_PANIC("Test failed!");
-    });
-
-    std::move(f) | futures::AndThen([](Unit){
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Discard();
-  }
-
-  SIMPLE_TEST(CancelBoxedEager){
-    auto [f, p] = futures::Contract<Unit>();
-
-    futures::BoxedFuture<Unit> boxed = std::move(f);
-
-    std::move(boxed) | futures::AndThen([](Unit){
-      WHEELS_PANIC("boxed : Test failed!");
-    }) | futures::Discard();
-
-    std::move(p).Set(result::Ok());
-  }
-
-  SIMPLE_TEST(OnCancelJust){
-    bool flag = false;
-
-    futures::Just() | futures::OnCancel([&flag]{
-      flag = true;
-    }) | futures::Discard();
-
-    ASSERT_TRUE(flag);
-
-    futures::Just() | futures::OnCancel([&flag]{
-      flag = false;
-    }) | futures::Detach();
-
-    ASSERT_TRUE(flag);
-  }
-
-  SIMPLE_TEST(OnCancelFailure){
-    bool flag = false;
-
-    futures::Failure<Unit>(TimeoutError()) | futures::OnCancel([&flag]{
-      flag = true;
-    }) | futures::Discard();
-
-    ASSERT_TRUE(flag);
-
-    futures::Failure<Unit>(TimeoutError()) | futures::OnCancel([&flag]{
-      flag = false;
-    }) | futures::Detach();
-
-    ASSERT_TRUE(flag);
-  }
-
-  SIMPLE_TEST(OnCancelVia) {
-    executors::ManualExecutor manual;
-    bool flag = false;
-
-    futures::Just() | futures::Via(manual) | futures::OnCancel([&flag]{
-      flag = true;
-    }) | futures::Discard();
-
-    ASSERT_FALSE(flag);
-
-    ASSERT_EQ(manual.Drain(), 1);
-
-    ASSERT_TRUE(flag);
-
-    futures::Just() | futures::Via(manual) | futures::OnCancel([&flag]{
-      flag = false;
-    }) | futures::Detach();
-
-    ASSERT_TRUE(flag);
-
-    ASSERT_EQ(manual.Drain(), 0);
-  }
-
-  SIMPLE_TEST(OnSuccessJust){
-    bool flag = true;
-
-    futures::Just() | futures::OnSuccess([&flag]{
-      flag = false;
-    }) | futures::Discard();
-
-    ASSERT_TRUE(flag);
-
-    futures::Just() | futures::OnSuccess([&flag]{
-      flag = false;
-    }) | futures::Detach();
-
-    ASSERT_FALSE(flag);
-  }
-
-  SIMPLE_TEST(OnSuccessFailure){
-    bool flag = true;
-
-    futures::Failure<Unit>(TimeoutError()) | futures::OnSuccess([&flag]{
-      flag = false;
-    }) | futures::Discard();
-
-    ASSERT_TRUE(flag);
-
-    futures::Failure<Unit>(TimeoutError()) | futures::OnSuccess([&flag]{
-      flag = false;
-    }) | futures::Detach();
-
-    ASSERT_FALSE(flag);
-  }
-
-  SIMPLE_TEST(AnywayJust){
-    bool flag = true;
-
-    futures::Just() | futures::Anyway([&flag]{
-      flag = false;
-    }) | futures::Detach();
-
-    ASSERT_FALSE(flag);
-
-    futures::Just() | futures::Anyway([&flag]{
-      flag = true;
-    }) | futures::Discard();
-
-    ASSERT_TRUE(flag);
-  }
-
-  SIMPLE_TEST(AnywayFailure){
-    bool flag = true;
-
-    futures::Failure<Unit>(TimeoutError()) | futures::Anyway([&flag]{
-      flag = false;
-    }) | futures::Detach();
-
-    ASSERT_FALSE(flag);
-
-    futures::Failure<Unit>(TimeoutError()) | futures::Anyway([&flag]{
-      flag = true;
-    }) | futures::Discard();
-
-    ASSERT_TRUE(flag);
-  }
-}
-
-TEST_SUITE(Parallel){
-  SIMPLE_TEST(FirstShortCircuit){
-    auto [f, p] = futures::Contract<int>();
-  
-    auto deadly_signal = std::move(f) | futures::Map([](int){
-      WHEELS_PANIC("deadly_signal : Test failed!");
-      return 47;
-    });
-
-    futures::no_alloc::First(std::move(deadly_signal), futures::Value(42)) | futures::Detach();
-
-    std::move(p).SetValue(13);
-  }
-
-  SIMPLE_TEST(CancelFirst){
-    auto f1 = futures::Just() | futures::Map([](Unit){
-      WHEELS_PANIC("f1 : Test failed!");
-    });
-
-    auto f2 = futures::Just() | futures::Map([](Unit){
-      WHEELS_PANIC("f2 : Test failed!");
-    });
-
-    futures::no_alloc::First(std::move(f1), std::move(f2)) | futures::AndThen([](Unit){
-      WHEELS_PANIC("AndThen : Test failed!");
-    }) | futures::Discard();
-  }
-
-  SIMPLE_TEST(FirstAndFirst){
-    executors::ManualExecutor manual;
-
-    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-      WHEELS_PANIC("f1 : Test failed!");
-    });
-
-    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-      WHEELS_PANIC("f2 : Test failed!");
-    });
-
-    futures::no_alloc::First(futures::no_alloc::First(std::move(f1), std::move(f2)),  futures::Just()) | futures::Detach();
-
-    ASSERT_EQ(manual.Drain(), 2);
-  }
-
-  SIMPLE_TEST(BothShortCircuit){
-    auto [f, p] = futures::Contract<int>();
-
-    auto deadly_signal = std::move(f) | futures::Map([](int){
-      WHEELS_PANIC("deadly_signal : Test failed!");
-    });
-
-    futures::no_alloc::All(std::move(deadly_signal), futures::Failure<int>(TimeoutError())) | futures::Detach();
-
-    std::move(p).SetValue(42);
-  }
-
-  SIMPLE_TEST(CancelBoth){
-    auto f1 = futures::Just() | futures::Map([](Unit){
-      WHEELS_PANIC("f1 : Test failed!");
-    });
-
-    auto f2 = futures::Just() | futures::Map([](Unit){
-      WHEELS_PANIC("f2 : Test failed!");
-    });
-
-    futures::no_alloc::All(std::move(f1), std::move(f2)) | futures::AndThen([](std::tuple<Unit, Unit>){
-      WHEELS_PANIC("Both : Test failed!");
-    }) | futures::Discard();
-  }
-
-  SIMPLE_TEST(BothAndBoth){
-    executors::ManualExecutor manual;
-
-    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-      WHEELS_PANIC("f1 : Test failed!");
-    });
-
-    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-      WHEELS_PANIC("f2 : Test failed!");
-    });
-
-    futures::no_alloc::All(futures::no_alloc::All(std::move(f1), std::move(f2)),  futures::Failure<int>(IoError())) | futures::Detach();
-
-    ASSERT_EQ(manual.Drain(), 2);
-  }
-
-  SIMPLE_TEST(QuorumShortCiruit){
-    auto f1 = futures::Just();
-
-    auto f2 = futures::Just() | futures::AndThen([](Unit) -> Unit {
-      WHEELS_PANIC("f2 : Test failed!");
-      return {};
-    });
-
-    futures::no_alloc::Quorum(1, std::move(f1), std::move(f2)) | futures::Detach();   
-  }
-
-  SIMPLE_TEST(CancelQuorum){
-    executors::ManualExecutor manual;
-
-    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-      WHEELS_PANIC("f1 : Test failed!");
-    });
-
-    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-      WHEELS_PANIC("f2 : Test failed!");
-    }); 
-
-    futures::no_alloc::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
-  }
-}
-
-TEST_SUITE(NoAlloc) {
-    SIMPLE_TEST(FirstOk1) {
+TEST_SUITE(Futures) {
+  SIMPLE_TEST(FirstOk1) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();
 
@@ -972,249 +608,115 @@ TEST_SUITE(NoAlloc) {
   }
 }
 
-TEST_SUITE(Fibers){
-  SIMPLE_TEST(CancelYield1){
-    executors::fibers::ManualExecutor manual;
+TEST_SUITE(Cancel){
+  SIMPLE_TEST(FirstShortCircuit){
+    auto [f, p] = futures::Contract<int>();
+  
+    auto deadly_signal = std::move(f) | futures::Map([](int){
+      WHEELS_PANIC("deadly_signal : Test failed!");
+      return 47;
+    });
 
-    futures::Submit(manual, []{
-      fibers::Yield();
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start() | futures::Discard();
+    futures::no_alloc::First(std::move(deadly_signal), futures::Value(42)) | futures::Detach();
 
-    ASSERT_EQ(manual.Drain(), 1);
-
-    manual.Stop();
+    std::move(p).SetValue(13);
   }
 
-  SIMPLE_TEST(CancelYield2){
-    executors::fibers::ManualExecutor manual;
-
-    auto f1 = futures::Submit(manual, []{
-      fibers::Yield();
+  SIMPLE_TEST(CancelFirst){
+    auto f1 = futures::Just() | futures::Map([](Unit){
       WHEELS_PANIC("f1 : Test failed!");
     });
 
-    auto f2 = futures::Submit(manual, []{
-      fibers::Yield();
+    auto f2 = futures::Just() | futures::Map([](Unit){
       WHEELS_PANIC("f2 : Test failed!");
     });
 
-    auto f = futures::no_alloc::First(std::move(f1), std::move(f2)) | futures::Start();
+    futures::no_alloc::First(std::move(f1), std::move(f2)) | futures::AndThen([](Unit){
+      WHEELS_PANIC("AndThen : Test failed!");
+    }) | futures::Discard();
+  }
 
-    std::move(f) | futures::Discard();
+  SIMPLE_TEST(FirstAndFirst){
+    executors::ManualExecutor manual;
+
+    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f1 : Test failed!");
+    });
+
+    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f2 : Test failed!");
+    });
+
+    futures::no_alloc::First(futures::no_alloc::First(std::move(f1), std::move(f2)),  futures::Just()) | futures::Detach();
 
     ASSERT_EQ(manual.Drain(), 2);
-
-    manual.Stop();
   }
 
-  SIMPLE_TEST(Interference){
-    executors::fibers::ManualExecutor manual;
-    bool flag{false};
+  SIMPLE_TEST(BothShortCircuit){
+    auto [f, p] = futures::Contract<int>();
 
-    auto f = futures::Submit(manual, [&]{
+    auto deadly_signal = std::move(f) | futures::Map([](int){
+      WHEELS_PANIC("deadly_signal : Test failed!");
+    });
 
-      futures::Submit(manual, []{}) | futures::Await();
+    futures::no_alloc::All(std::move(deadly_signal), futures::Failure<int>(TimeoutError())) | futures::Detach();
 
-      flag = true;
-      fibers::Yield();
-
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start();
-
-    manual.RunAtMost(3);
-    ASSERT_TRUE(flag);
-
-    std::move(f).RequestCancel();
-
-    ASSERT_EQ(manual.Drain(), 1);
-
-    manual.Stop();
+    std::move(p).SetValue(42);
   }
 
-  SIMPLE_TEST(CancelSleep) {
-    executors::fibers::ManualExecutor manual;
-    bool flag{false};
+  SIMPLE_TEST(CancelBoth){
+    auto f1 = futures::Just() | futures::Map([](Unit){
+      WHEELS_PANIC("f1 : Test failed!");
+    });
 
-    auto f = futures::Submit(manual, [&]{
-      ASSERT_THROW(fibers::Yield(), cancel::CancelledException);
+    auto f2 = futures::Just() | futures::Map([](Unit){
+      WHEELS_PANIC("f2 : Test failed!");
+    });
 
-      flag = true;
-
-      fibers::SleepFor(1ms);
-
-      WHEELS_PANIC("Test failed!");
-
-    }) | futures::Start();
-
-    manual.RunAtMost(1);
-
-    std::move(f).RequestCancel();
-
-    ASSERT_EQ(manual.Drain(), 1);
-
-    ASSERT_TRUE(flag);
-
-    manual.Stop();    
-  }
-
-  // SIMPLE_TEST(CancelMutex){
-  //   executors::fibers::ManualExecutor manual;
-
-  //   fibers::Mutex mutex{};
-
-  //   auto f = futures::Submit(manual, [&]{
-  //     {
-  //       threads::lockfull::stdlike::LockGuard guard(mutex);
-
-  //       fibers::Yield();
-  //     }
-  //   }) | futures::Start();
-
-  //   auto g = futures::Submit(manual, [&]{
-  //     {
-  //       threads::lockfull::stdlike::LockGuard guard(mutex);
-  //     }
-  //   }) | futures::Start();
-
-  //   manual.RunAtMost(2);
-
-  //   std::move(f).RequestCancel();
-
-  //   // Symm transfer - 3
-  //   // "Just sched next" - 2
-  //   ASSERT_GE(manual.Drain(), 2);
-
-  //   std::move(g) | futures::Get();
-
-  //   manual.Stop();
-  // }
-
-  SIMPLE_TEST(Propagate1){
-    executors::fibers::ManualExecutor manual;
-
-    auto f = futures::Submit(manual, [&]{
-
-      futures::Submit(manual, []{}) | futures::Await();
-
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start();
-
-    std::move(f).RequestCancel();
-
-    manual.Drain();
-
-    manual.Stop();
-  }
-
-  SIMPLE_TEST(Propagate2){
-    executors::fibers::ManualExecutor manual;
-    bool flag = false;
-
-    auto f = futures::Submit(manual, [&]{
-
-      futures::Submit(manual, []{}) | futures::OnCancel([&]{
-        flag = true;
-      }) | futures::Await();
-
-      WHEELS_PANIC("Test failed!");
-    }) | futures::Start();
-
-    std::move(f).RequestCancel();
-
-    manual.Drain();
-
-    ASSERT_TRUE(flag);
-
-    manual.Stop();
-  }
-
-  SIMPLE_TEST(DontPropagate1) {
-    executors::fibers::ManualExecutor manual;
-    bool flag = false;
-
-    futures::Just() | futures::Via(manual) | futures::OnCancel([&]{
-
-      futures::Submit(manual, [&]{
-        flag = true;
-      }) | futures::Await();
-
-      ASSERT_TRUE(flag);
-
+    futures::no_alloc::All(std::move(f1), std::move(f2)) | futures::AndThen([](std::tuple<Unit, Unit>){
+      WHEELS_PANIC("Both : Test failed!");
     }) | futures::Discard();
-
-    ASSERT_FALSE(flag);
-
-    ASSERT_EQ(manual.Drain(), 3);
-
-    manual.Stop();
   }
 
-  SIMPLE_TEST(DontPropagate2) {
-    executors::fibers::ManualExecutor manual;
-    bool flag = false;
+  SIMPLE_TEST(BothAndBoth){
+    executors::ManualExecutor manual;
 
-    futures::Just() | futures::Via(manual) | futures::Anyway([&]{
+    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f1 : Test failed!");
+    });
 
-      futures::Submit(manual, [&]{
-        flag = true;
-      }) | futures::Await();
+    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f2 : Test failed!");
+    });
 
-      ASSERT_TRUE(flag);
+    futures::no_alloc::All(futures::no_alloc::All(std::move(f1), std::move(f2)),  futures::Failure<int>(IoError())) | futures::Detach();
 
-    }) | futures::Discard();
-
-    ASSERT_FALSE(flag);
-
-    ASSERT_EQ(manual.Drain(), 3);
-
-    manual.Stop();
+    ASSERT_EQ(manual.Drain(), 2);
   }
 
-  SIMPLE_TEST(DontPropagate3) {
-    executors::fibers::ManualExecutor manual;
-    bool flag = false;
+  SIMPLE_TEST(QuorumShortCiruit){
+    auto f1 = futures::Just();
 
-    auto f = futures::Submit(manual, []{}) | futures::Anyway([&]{
+    auto f2 = futures::Just() | futures::AndThen([](Unit) -> Unit {
+      WHEELS_PANIC("f2 : Test failed!");
+      return {};
+    });
 
-      futures::Submit(manual, [&]{
-        flag = true;
-      }) | futures::Await();
-
-      ASSERT_TRUE(flag);
-
-    }) | futures::Start();
-
-    ASSERT_FALSE(flag);
-
-    std::move(f).RequestCancel();
-
-    ASSERT_EQ(manual.Drain(), 4);
-
-    manual.Stop();
+    futures::no_alloc::Quorum(1, std::move(f1), std::move(f2)) | futures::Detach();   
   }
 
-  SIMPLE_TEST(DontPropagate4) {
-    executors::fibers::ManualExecutor manual;
-    bool flag = false;
+  SIMPLE_TEST(CancelQuorum){
+    executors::ManualExecutor manual;
 
-    auto f = futures::Submit(manual, []{}) | futures::OnSuccess([&]{
+    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f1 : Test failed!");
+    });
 
-      futures::Submit(manual, [&]{
-        flag = true;
-      }) | futures::Await();
+    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f2 : Test failed!");
+    }); 
 
-      ASSERT_TRUE(flag);
-
-    }) | futures::Start();
-
-    ASSERT_FALSE(flag);
-
-    std::move(f).RequestCancel();
-
-    ASSERT_EQ(manual.Drain(), 4);
-
-    manual.Stop();
+    futures::no_alloc::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
   }
 }
 

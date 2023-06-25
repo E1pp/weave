@@ -40,8 +40,9 @@ add_test_target(weave_strand_mo_tests executors/strand/mo.cpp)
 add_test_target(weave_strand_lifetime_tests executors/strand/lifetime.cpp)
 
 # Futures
-add_test_target(weave_futures_unit_tests futures/unit.cpp)
-add_test_target(weave_futures_stress_tests futures/stress.cpp)
+add_test_target(weave_futures_unit_tests futures/just_works/unit.cpp)
+add_test_target(weave_futures_stress_tests futures/just_works/stress.cpp)
+add_test_target(weave_futures_alloc_tests futures/alloc/unit.cpp)
 
 # Coro 
 add_test_target(weave_coro_unit_tests coro/unit.cpp)
@@ -93,8 +94,9 @@ add_test_target(weave_fibers_tp_stress_tests executors/fibers/thread_pool/stress
 
 # Cancellation
 
-add_test_target(weave_cancel_unit_tests cancel/unit.cpp)
-add_test_target(weave_cancel_stress_tests cancel/stress.cpp)
+add_test_target(weave_cancel_unit_tests cancel/just_works/unit.cpp)
+add_test_target(weave_cancel_stress_tests cancel/just_works/stress.cpp)
+add_test_target(weave_cancel_alloc_tests cancel/alloc/unit.cpp)
 
 # Timers 
 
@@ -117,6 +119,7 @@ add_custom_target(weave_unit_tests ALL
                   weave_manual_unit_tests
                   weave_strand_unit_tests
                   weave_futures_unit_tests
+                  weave_futures_alloc_tests
                   weave_coro_unit_tests
                   weave_fibers_sched_unit_tests
                   weave_fibers_event_unit_tests
@@ -128,6 +131,7 @@ add_custom_target(weave_unit_tests ALL
                   weave_fibers_manual_unit_tests
                   weave_fibers_tp_unit_tests
                   weave_cancel_unit_tests
+                  weave_cancel_alloc_tests
                   weave_timers_standalone_unit_tests
                   )
 

@@ -24,8 +24,8 @@ class SharedState : public cancel::sources::StrandSource {
 
  public:
   SharedState() {
-    AddRef();  // Add producer ref
-    AddRef();  // Add consumer ref
+    // Add ref for producer and consumer
+    AddRef(2);
   }
 
   void Produce(Result<T> result, Context context = Context{}) {
@@ -62,7 +62,7 @@ class SharedState : public cancel::sources::StrandSource {
     consumer_ = consumer;
 
     // add cancel source ref
-    AddRef();
+    AddRef(1);
     consumer->CancelToken().Attach(this);
 
     // consumer->Cancel() may throw
@@ -80,7 +80,7 @@ class SharedState : public cancel::sources::StrandSource {
 
  private:
   void Rendezvous() {
-    if (CancelRequested()) {
+    if (consumer_->CancelToken().CancelRequested()) {
       consumer_->Cancel(std::move(res_->context));
     } else {
       consumer_->CancelToken().Detach(this);

@@ -8,6 +8,7 @@
 #include <weave/threads/lockfree/tagged_buffer.hpp>
 
 namespace weave::cancel::sources {
+
 template <bool OnHeap>
 class JoinSource
     : public SignalSender,

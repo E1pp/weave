@@ -22,20 +22,6 @@ void StrandSource::ClearReceiver() {
 
 //////////////////////////////////////////////////////////////
 
-// Memory Management
-
-void StrandSource::AddRef() {
-  ref_count_.fetch_add(1, std::memory_order::relaxed);
-}
-
-void StrandSource::ReleaseRef() {
-  if (ref_count_.fetch_sub(1, std::memory_order::acq_rel) == 1) {
-    delete this;
-  }
-}
-
-//////////////////////////////////////////////////////////////
-
 bool StrandSource::CancelRequested() {
   return IsCancelled(state_.load(std::memory_order::acquire));
 }
@@ -59,7 +45,7 @@ void StrandSource::Forward(Signal signal) {
   }
 
   // Memory Management
-  ReleaseRef();
+  Base::ReleaseRef();
 }
 
 //////////////////////////////////////////////////////////////

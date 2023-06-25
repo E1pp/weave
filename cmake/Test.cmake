@@ -1,3 +1,9 @@
+include(CTest)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+
+##################################################################
+
 function(add_test_target test_name file)
     add_executable(${test_name} ${file})
     target_link_libraries(${test_name} weave)

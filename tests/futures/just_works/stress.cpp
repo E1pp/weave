@@ -18,6 +18,7 @@
 
 #include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
+#include <weave/futures/combine/par/quorum.hpp>
 
 #include <weave/futures/run/get.hpp>
 #include <weave/futures/run/detach.hpp>
@@ -36,7 +37,7 @@ using namespace std::chrono_literals;
 
 //////////////////////////////////////////////////////////////////////
 
-inline std::error_code TimeoutError() {
+std::error_code TimeoutError() {
   return std::make_error_code(std::errc::timed_out);
 }
 
@@ -211,6 +212,98 @@ void StressTestAll() {
 
 //////////////////////////////////////////////////////////////////////
 
+void StressTestQuorumFirst() {
+  executors::tp::fast::ThreadPool pool{4};
+  pool.Start();
+
+  twist::test::Repeat repeat;
+
+  while (repeat()) {
+    size_t i = repeat.Iter();
+
+    auto f = futures::Submit(pool, [&, i]() -> Result<int> {
+      if (i % 3 == 0) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(1);
+      }
+    });
+
+    auto g = futures::Submit(pool, [&, i]() -> Result<int> {
+      if (i % 4 == 0) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(2);
+      }
+    });
+
+    auto first = futures::no_alloc::Quorum(1, std::move(f), std::move(g));
+
+    auto r = std::move(first) | futures::Get();
+
+    if (i % 12 != 0) {
+      ASSERT_TRUE(r);
+      ASSERT_TRUE(((*r)[0] == 1) || ((*r)[0] == 2)); // NOLINT
+    } else {
+      ASSERT_FALSE(r);
+    }
+
+    pool.WaitIdle();
+  }
+
+  fmt::println("Iterations: {}", repeat.IterCount());
+
+  pool.Stop();
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void StressTestQuorumAll() {
+  executors::ThreadPool pool{4};
+  pool.Start();
+
+  twist::test::Repeat repeat;
+
+  while (repeat()) {
+    size_t i = repeat.Iter();
+
+    auto f = futures::Submit(pool, [i]() -> Result<int> {
+      if (i % 7 == 5) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(1);
+      }
+    });
+
+    auto g = futures::Submit(pool, [i]() -> Result<int> {
+      if (i % 7 == 6) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(2);
+      }
+    });
+
+    auto both = futures::no_alloc::Quorum(2, std::move(f), std::move(g));
+
+    auto r = std::move(both) | futures::Get();
+
+    if (i % 7 < 5) {
+      int x = (*r)[0];
+      int y = (*r)[1];
+
+      ASSERT_TRUE((x == 1 && y == 2) || (x == 2 && y == 1)); // NOLINT
+    } else {
+      ASSERT_FALSE(r);
+    }
+  }
+
+  fmt::println("Iterations: {}", repeat.IterCount());
+
+  pool.Stop();
+}
+
+//////////////////////////////////////////////////////////////////////
+
 TEST_SUITE(Futures) {
   TWIST_TEST(StressContract, 5s) {
     StressTestContract();
@@ -227,7 +320,14 @@ TEST_SUITE(Futures) {
   TWIST_TEST(StressBoth, 5s) {
     StressTestAll();
   }
-  
+
+  TWIST_TEST(StressQuorumFirst, 5s){
+    StressTestQuorumFirst();
+  }
+
+  TWIST_TEST(StressQuorumAll, 5s){
+    StressTestQuorumAll();
+  }
 }
 
 RUN_ALL_TESTS()

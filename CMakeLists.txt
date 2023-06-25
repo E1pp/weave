@@ -17,7 +17,6 @@ option(MI_OVERRIDE "Use mimalloc memory allocator" OFF)
 
 add_subdirectory(third_party)
 
-include(CTest)
 include(cmake/Test.cmake)
 
 add_subdirectory(weave)

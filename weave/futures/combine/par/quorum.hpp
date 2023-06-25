@@ -36,7 +36,7 @@ Quorum(size_t threshold, First f1, Suffix... fs) {
       (std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
 
   WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
-  WHEELS_VERIFY(threshold <= sizeof...(Suffix), "Treshold is too big!");
+  WHEELS_VERIFY(threshold <= sizeof...(Suffix) + 1, "Treshold is too big!");
 
   auto* block = new thunks::QuorumControlBlock<true, thunks::detail::Tuple,
                                                First, Suffix...>(
@@ -84,7 +84,7 @@ Quorum(size_t threshold, First f1, Suffix... fs) {
       (std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
 
   WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
-  WHEELS_VERIFY(threshold <= sizeof...(Suffix), "Treshold is too big!");
+  WHEELS_VERIFY(threshold <= sizeof...(Suffix) + 1, "Treshold is too big!");
 
   auto block = thunks::QuorumControlBlock<false, thunks::detail::Tuple, First,
                                           Suffix...>(

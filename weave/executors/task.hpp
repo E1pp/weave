@@ -6,8 +6,6 @@
 
 namespace weave::executors {
 
-//using Routine = fu2::unique_function<void()>;
-
 struct Task : wheels::IntrusiveListNode<Task> {
   virtual ~Task() = default;
 

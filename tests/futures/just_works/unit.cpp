@@ -12,6 +12,7 @@
 #include <weave/futures/combine/seq/or_else.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
 #include <weave/futures/combine/seq/flat_map.hpp>
+#include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/via.hpp>
 #include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/start.hpp>
@@ -31,16 +32,17 @@
 #include <thread>
 #include <tuple>
 #include <chrono>
+#include "weave/futures/combine/seq/on_success.hpp"
 
 using namespace weave; // NOLINT
 
 using namespace std::chrono_literals;
 
-inline std::error_code TimeoutError() {
+std::error_code TimeoutError() {
   return std::make_error_code(std::errc::timed_out);
 }
 
-inline std::error_code IoError() {
+std::error_code IoError() {
   return std::make_error_code(std::errc::io_error);
 }
 
@@ -1578,6 +1580,281 @@ TEST_SUITE(Futures) {
     ASSERT_TRUE(!ans);
 
     ASSERT_EQ(ans.error(), IoError());
+  }
+
+  SIMPLE_TEST(ForkOk){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+
+    auto r1 = std::move(f1) | futures::Get();
+    auto r2 = std::move(f2) | futures::Get();
+
+    ASSERT_TRUE(r1);
+    ASSERT_TRUE(r2);
+
+    ASSERT_EQ(*r1, 42);
+    ASSERT_EQ(*r2, 42);
+  }
+
+  SIMPLE_TEST(ForkFailure){
+    auto [f1, f2] = futures::Failure<int>(TimeoutError()) | futures::Fork<2>();
+
+    auto r1 = std::move(f1) | futures::Get();
+    auto r2 = std::move(f2) | futures::Get();
+
+    ASSERT_FALSE(r1);
+    ASSERT_FALSE(r2);
+
+    ASSERT_EQ(r1.error(), TimeoutError());
+    ASSERT_EQ(r2.error(), TimeoutError());   
+  }
+
+  SIMPLE_TEST(ForkFirst){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+    auto res = futures::First(std::move(f1), std::move(f2)) | futures::Get();
+
+    ASSERT_TRUE(res);
+    ASSERT_EQ(*res, 42);
+  }
+
+  SIMPLE_TEST(ForkAll){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+
+    auto res = futures::All(std::move(f1), std::move(f2)) | futures::Get();
+
+    ASSERT_TRUE(res);
+
+    auto [x, y] = *res;
+
+    ASSERT_EQ(x, 42);
+    ASSERT_EQ(y, 42);
+  }
+
+  SIMPLE_TEST(ForkFork){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+    auto [f11, f12] = std::move(f1) | futures::Fork<2>();
+
+    auto all = futures::All(std::move(f11) | futures::Map([](int v){
+      return 2 * v;
+    }), std::move(f12) | futures::Map([](int v){
+      return 3 * v;
+    }), std::move(f2));
+
+    std::move(all) | futures::Map([](auto tuple){
+      auto [x, y, z] = std::move(tuple);
+
+      ASSERT_EQ(x, 84);
+      ASSERT_EQ(y, 126);
+      ASSERT_EQ(z, 42);
+    }) | futures::Detach();
+  }
+
+  SIMPLE_TEST(DontCopySideEffects){
+    int i = 0;
+    auto [f1, f2] = futures::Value(42) | futures::OnSuccess([&]{
+      i++;
+    }) | futures::Fork<2>();
+
+    futures::Both(std::move(f1), std::move(f2)) | futures::AndThen([&](auto tuple){
+      auto [x, y] = std::move(tuple);
+
+      ASSERT_EQ(x, 42);
+      ASSERT_EQ(y, 42);
+      ASSERT_EQ(i, 1);
+    }) | futures::Detach();
+  }
+}
+
+TEST_SUITE(LazyFutures) {
+  SIMPLE_TEST(JustMap) {
+    bool run = false;
+
+    auto f = futures::Just() | futures::Map([&](Unit) {
+      run = true;
+      return Unit{};
+    });
+
+    ASSERT_FALSE(run);
+
+    auto r = std::move(f) | futures::Get();
+    ASSERT_TRUE(r);
+  }
+
+  SIMPLE_TEST(ContractMap) {
+    auto [f, p] = futures::Contract<Unit>();
+
+    bool run = false;
+
+    auto g = std::move(f)
+             | futures::Map([&](Unit) {
+                 run = true;
+                 return Unit{};
+               });
+
+    std::move(p).SetValue(Unit{});
+
+    ASSERT_FALSE(run);
+
+    std::move(g) | futures::Detach();
+
+    ASSERT_TRUE(run);
+  }
+
+  SIMPLE_TEST(Submit) {
+    executors::ManualExecutor manual;
+
+    auto f = futures::Submit(manual, [] {
+               return result::Ok(7);
+             });
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(f) | futures::Detach();
+
+    ASSERT_EQ(manual.Drain(), 1);
+  }
+
+  SIMPLE_TEST(Monad) {
+    executors::ManualExecutor manual;
+
+    auto f = futures::Just()
+             | futures::Via(manual)
+             | futures::AndThen([](Unit) {
+                 return result::Ok(1);
+               })
+             | futures::Map([](int v) {
+                 return v + 1;
+               })
+             | futures::OrElse([](Error) {
+                 return result::Ok(13);
+               });
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(f) | futures::Detach();
+
+    // ASSERT_EQ
+    ASSERT_GE(manual.Drain(), 2);
+  }
+
+  SIMPLE_TEST(Flatten) {
+    executors::ManualExecutor manual;
+
+    auto f = futures::Value(1)
+              | futures::Map([&manual](int v) {
+                  return futures::Submit(manual, [v] {
+                    return result::Ok(v + 1);
+                  });
+                })
+              | futures::Flatten();
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(f) | futures::Detach();
+
+    ASSERT_TRUE(manual.Drain() > 0);
+  }
+
+  SIMPLE_TEST(FlatMap) {
+    executors::ManualExecutor manual;
+
+    auto f = futures::Just()
+             | futures::FlatMap([&manual](Unit) {
+                 return futures::Submit(manual, [] {
+                   return result::Ok(11);
+                 });
+               });
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(f) | futures::Detach();
+
+    ASSERT_TRUE(manual.Drain() > 0);
+  }
+
+  SIMPLE_TEST(Box) {
+    executors::ManualExecutor manual;
+
+    futures::BoxedFuture<int> f = futures::Just()
+                                  | futures::Via(manual)
+                                  | futures::Map([](Unit) {
+                                      return 7;
+                                    })
+                                  | futures::Box();
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(f) | futures::Detach();
+
+    ASSERT_TRUE(manual.Drain() > 0);
+  }
+
+  SIMPLE_TEST(First) {
+    executors::ManualExecutor manual;
+
+    auto f = futures::Just()
+             | futures::Via(manual)
+             | futures::Map([](Unit) {
+                 return 1;
+               });
+
+    auto g = futures::Just()
+             | futures::Via(manual)
+             | futures::Map([](Unit) {
+                 return 2;
+               });
+
+    auto first = futures::First(std::move(f), std::move(g));
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(first) | futures::Detach();
+
+    ASSERT_EQ(manual.Drain(), 2);
+  }
+
+  SIMPLE_TEST(Start) {
+    executors::ManualExecutor manual;
+
+    auto f = futures::Just()
+             | futures::Via(manual)
+             | futures::Map([&](Unit) {
+                 return 7;
+               })
+             | futures::Start();
+
+    ASSERT_TRUE(manual.NonEmpty());
+    manual.Drain();
+
+    auto r = std::move(f) | futures::Get();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 7);
+  }
+
+  SIMPLE_TEST(StartMap) {
+    executors::ManualExecutor manual;
+
+    auto f = futures::Just()
+             | futures::Via(manual)
+             | futures::Map([&](Unit) {
+                 return 7;
+               })
+             | futures::Start()
+             | futures::Map([](int v) {
+                 return v + 1;
+               });
+
+    {
+      size_t tasks = manual.Drain();
+      ASSERT_EQ(tasks, 1);
+    }
+
+    std::move(f) | futures::Detach();
+
+    {
+      size_t tasks = manual.Drain();
+      ASSERT_EQ(tasks, 1);
+    }
   }
 }
 
