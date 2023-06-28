@@ -461,8 +461,6 @@ void ManualExample(){
   manual.Stop();
 }
 
-
-
 int main() {
   YieldExample();
 

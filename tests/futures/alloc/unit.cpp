@@ -46,6 +46,7 @@ void WarmUp(ThreadPool& pool, size_t threads){
 }
 
 TEST_SUITE(AllocFreeFutures) {
+#if !(__has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__))
   SIMPLE_TEST(AllocationCount) {
     {
       size_t before = AllocationCount();
@@ -60,6 +61,7 @@ TEST_SUITE(AllocFreeFutures) {
       delete ptr;
     }
   }
+#endif
 
   SIMPLE_TEST(Value) {
     {

@@ -18,23 +18,27 @@ using weave::threads::lockfull::WaitGroup;
 namespace tests {
 
 template <typename F>
-struct Tester : public timers::ITimer {
-  explicit Tester(timers::Millis ms, F&& f) : delay_(ms), fun_(std::move(f)) {
-  }
+  struct Tester : public timers::ITimer {
+    explicit Tester(timers::Millis ms, F&& f) : delay_(ms), fun_(std::move(f)) {
+    }
 
-  timers::Millis GetDelay() override {
-    return delay_;
-  }
+    timers::Millis GetDelay() override {
+      return delay_;
+    }
 
-  void Callback() override {
-    std::move(fun_)();
-  }
+    void Run() noexcept override {
+      std::move(fun_)();
+    }
 
-  ~Tester() override = default;
+    bool WasCancelled() override {
+      return false;
+    }
 
-  timers::Millis delay_;
-  F fun_;
-};
+    ~Tester() override = default;
+
+    timers::Millis delay_;
+    F fun_;
+  };
 
 void OneTimerTest() {
   timers::StandaloneProcessor proc{};
@@ -53,27 +57,69 @@ void OneTimerTest() {
   }
 }
 
+void ManyTimersTest() {
+  timers::StandaloneProcessor proc{};
+
+  for (twist::test::Repeat repeat; repeat(); ) {
+    WaitGroup wg;
+
+    int timers = twist::test::Random(1, 10);
+
+    wg.Add(timers);
+
+    Tester test{1ms, [&]{
+      wg.Done();
+    }};
+
+    std::vector<decltype(test)> vec{};
+
+    for(int i = 0; i < timers; i++){
+      vec.push_back(test);
+    }
+
+    for(auto& i : vec){
+      proc.AddTimer(&i);
+    }
+
+    wg.Wait();
+  }
+}
+
 void SpawnerTest() {
   timers::StandaloneProcessor proc{};
 
   for (twist::test::Repeat repeat; repeat(); ) {
     WaitGroup wg;
-    wg.Add(1);
-    bool flag = false;
 
-    Tester child{1ms, [&]{
-      ASSERT_TRUE(flag);
+    wg.Add(2);
+    int done = 0;
+
+    Tester child1{1ms, [&]{
+
       wg.Done();
     }};
 
-    Tester parent{1ms, [&]{
-      proc.AddTimer(&child);
-      flag = true;
+    Tester child2{1ms, [&]{
+
+      wg.Done();
     }};
 
-    proc.AddTimer(&parent);
+    Tester parent1{1ms, [&]{
+      proc.AddTimer(&child1);
+      done++;
+    }};
+
+    Tester parent2{1ms, [&]{
+      proc.AddTimer(&child2);
+      done++;
+    }};
+
+    proc.AddTimer(&parent1);
+    proc.AddTimer(&parent2);
 
     wg.Wait();
+
+    ASSERT_EQ(done, 2);
   }    
 }
 
@@ -84,12 +130,13 @@ TEST_SUITE(Standalone) {
     tests::OneTimerTest();
   }
 
+  TWIST_TEST_REPEAT(ManyTimers, 5s) {
+    tests::ManyTimersTest();
+  }
+
   TWIST_TEST_REPEAT(Spawner, 5s) {
     tests::SpawnerTest();
   }
 }
 
 RUN_ALL_TESTS()
-
-
-

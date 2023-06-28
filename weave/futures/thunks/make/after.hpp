@@ -8,9 +8,12 @@
 #include <weave/timers/processor.hpp>
 #include <weave/timers/timer.hpp>
 
+#include <fmt/core.h>
+
 namespace weave::futures::thunks {
 
-class [[nodiscard]] After final : public timers::ITimer {
+class [[nodiscard]] After final : public timers::ITimer,
+                                  public cancel::SignalReceiver {
  public:
   using ValueType = Unit;
 
@@ -33,6 +36,8 @@ class [[nodiscard]] After final : public timers::ITimer {
 
   void Start(IConsumer<Unit>* consumer) {
     consumer_ = consumer;
+    consumer->CancelToken().Attach(this);
+
     delay_.processor_->AddTimer(this);
   }
 
@@ -45,11 +50,21 @@ class [[nodiscard]] After final : public timers::ITimer {
     return delay_.time_;
   }
 
-  void Callback() override final {
-    if (consumer_->CancelToken().CancelRequested()) {
+  void Run() noexcept override final {
+    if(consumer_->CancelToken().CancelRequested()){
       consumer_->Cancel(Context{});
     } else {
       consumer_->Complete(result::Ok());
+    }
+  }
+
+  bool WasCancelled() override final {
+    return consumer_->CancelToken().CancelRequested();
+  }
+
+  void Forward(cancel::Signal signal) override final {
+    if(signal.CancelRequested()){
+      delay_.processor_->CancelTimer(this);
     }
   }
 

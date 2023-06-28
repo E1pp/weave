@@ -115,7 +115,7 @@ class Token {
       : owner_{source} {
   }
 
- private:
+ public:
   SignalSender* owner_;
 };
 

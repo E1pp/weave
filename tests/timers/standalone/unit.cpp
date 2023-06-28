@@ -23,8 +23,12 @@ TEST_SUITE(Standalone){
       return delay_;
     }
 
-    void Callback() override {
+    void Run() noexcept override {
       std::move(fun_)();
+    }
+
+    bool WasCancelled() override {
+      return false;
     }
 
     ~Tester() override = default;

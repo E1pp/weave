@@ -70,7 +70,6 @@ struct Map {
 }  // namespace pipe
 
 // Future<T> -> (T -> U) -> Future<U>
-// Future<T> -> (T -> void) -> Future<Unit>
 
 template <typename F>
 auto Map(F fun) {

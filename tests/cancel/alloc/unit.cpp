@@ -50,11 +50,11 @@
 
 using namespace weave; // NOLINT
 
-std::error_code TimeoutError() {
+inline std::error_code TimeoutError() {
   return std::make_error_code(std::errc::timed_out);
 }
 
-std::error_code IoError() {
+inline std::error_code IoError() {
   return std::make_error_code(std::errc::io_error);
 }
 

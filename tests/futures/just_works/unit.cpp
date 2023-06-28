@@ -9,6 +9,7 @@
 
 #include <weave/futures/combine/seq/map.hpp>
 #include <weave/futures/combine/seq/and_then.hpp>
+#include <weave/futures/combine/seq/on_success.hpp>
 #include <weave/futures/combine/seq/or_else.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
 #include <weave/futures/combine/seq/flat_map.hpp>
@@ -32,13 +33,13 @@
 #include <thread>
 #include <tuple>
 #include <chrono>
-#include "weave/futures/combine/seq/on_success.hpp"
+
 
 using namespace weave; // NOLINT
 
 using namespace std::chrono_literals;
 
-std::error_code TimeoutError() {
+inline std::error_code TimeoutError() {
   return std::make_error_code(std::errc::timed_out);
 }
 

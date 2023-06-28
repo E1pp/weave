@@ -7,7 +7,20 @@ namespace weave::cancel::sources {
 // Helper methods
 
 void StrandSource::SetReceiver(SignalReceiver* receiver) {
-  state_.store(State::Pointer(receiver), std::memory_order::release);
+  State curr = State::Value(kInit);
+
+  if(state_.compare_exchange_strong(curr, State::Pointer(receiver), 
+                                          std::memory_order::release,
+                                          std::memory_order::relaxed)){
+  return; // Attached
+  }
+
+  WHEELS_VERIFY(!curr.IsPointer(), "Broken state with > 1 receivers");
+
+  WHEELS_VERIFY(curr.AsValue() == kCancelled, "Wrong state!");
+
+  // Cancel receiver
+  receiver->Forward(Signal::Cancel());
 }
 
 void StrandSource::ClearReceiver() {

@@ -9,6 +9,8 @@ namespace weave::satellite {
 
 twist::ed::ThreadLocal<MetaData> data{};
 
+twist::ed::stdlike::atomic<timers::IProcessor*> global_proc{nullptr};
+
 ///////////////////////////////////////////////////////////
 
 MetaData SetContext(executors::IExecutor* exe, cancel::Token token) {
@@ -38,11 +40,11 @@ executors::IExecutor* GetExecutor() {
 // Timers
 
 void MakeVisible(timers::IProcessor* proc) {
-  data->proc_ = proc;
+  global_proc.store(proc, std::memory_order::release);
 }
 
 timers::IProcessor* GetProcessor() {
-  return data->proc_;
+  return global_proc.load(std::memory_order::acquire);
 }
 
 }  // namespace weave::satellite

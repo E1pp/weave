@@ -2,8 +2,7 @@
 
 #include <weave/timers/processor.hpp>
 
-#include <weave/threads/lockfull/spinlock.hpp>
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
+#include <weave/timers/processors/thread_pool_queue.hpp>
 
 #include <twist/ed/stdlike/thread.hpp>
 
@@ -17,31 +16,7 @@ using namespace std::chrono_literals;
 
 // Takes up one thread to process timers
 
-// Currently uses spinlock + priority queue
-
 class StandaloneProcessor : public IProcessor {
-  using Guard = weave::threads::lockfull::stdlike::LockGuard<
-      weave::threads::lockfull::SpinLock>;
-  using SteadyClock = std::chrono::steady_clock;
-  using TimePoint = SteadyClock::time_point;
-
-  // Highest priority <-> closest deadline
-  struct PriorityQueueNode {
-   public:
-    explicit PriorityQueueNode(TimePoint dl, ITimer* t)
-        : deadline_(dl),
-          timer_(t) {
-    }
-
-    bool operator<(const PriorityQueueNode& that) const {
-      return deadline_ > that.deadline_;
-    }
-
-   public:
-    TimePoint deadline_;
-    ITimer* timer_;
-  };
-
  public:
   StandaloneProcessor()
       : worker_([this] {
@@ -51,13 +26,14 @@ class StandaloneProcessor : public IProcessor {
 
   // IProcessor
   void AddTimer(ITimer* timer) override {
-    Push(timer);
+    queue_.Push(timer);
 
     TryWakeWorker();
   }
 
-  Delay DelayFromThis(Millis ms) override {
-    return Delay{ms, *this};
+  void CancelTimer(ITimer* timer) override {
+    queue_.Cancel(timer);
+    TryWakeWorker();
   }
 
   ~StandaloneProcessor() override {
@@ -94,9 +70,19 @@ class StandaloneProcessor : public IProcessor {
     ClearQueue();
   }
 
-  void Push(ITimer* timer) {
-    Guard locker(spinlock_);
-    queue_.push(PriorityQueueNode(GetDeadline(timer->GetDelay()), timer));
+  // nullopt if queue was depleted
+  std::optional<Millis> PollQueue() {
+    auto [timer_list, ms_until_inactive] = queue_.GrabReadyTimers();
+
+    while (timer_list != nullptr) {
+      auto* next = static_cast<executors::Task*>(timer_list->next_);
+
+      timer_list->Run();
+
+      timer_list = next;
+    }
+
+    return ms_until_inactive;
   }
 
   void TryWakeWorker() {
@@ -114,11 +100,16 @@ class StandaloneProcessor : public IProcessor {
   // Only called during the destructor call
   // thus every push is in hb with us without spinlock
   void ClearQueue() {
-    while (!queue_.empty()) {
-      auto top = queue_.top();
-      queue_.pop();
+    auto* head = queue_.TakeAll();
 
-      top.timer_->Callback();
+    while(head != nullptr){
+      auto* next = static_cast<executors::Task*>(head->next_);
+
+      static_cast<ITimer*>(head)->WasCancelled();
+
+      head->Run();
+
+      head = next;
     }
   }
 
@@ -129,57 +120,12 @@ class StandaloneProcessor : public IProcessor {
     worker_.join();
   }
 
-  static TimePoint GetDeadline(Millis delay) {
-    return SteadyClock::now() + delay;
-  }
-
-  // nullopt if queue was depleted
-  std::optional<Millis> PollQueue() {
-    auto [timer_list, ms_until_inactive] = GrabReadyTimers();
-
-    while (timer_list != nullptr) {
-      ITimer* next = static_cast<ITimer*>(timer_list->next_);
-
-      timer_list->Callback();
-
-      timer_list = next;
-    }
-
-    return ms_until_inactive;
-  }
-
-  std::pair<ITimer*, std::optional<Millis>> GrabReadyTimers() {
-    auto now = SteadyClock::now();
-
-    Guard locker(spinlock_);
-
-    ITimer* head = nullptr;
-    std::optional<Millis> until_next = std::nullopt;
-
-    while (!queue_.empty()) {
-      auto& next = queue_.top();
-
-      if (next.deadline_ > now) {
-        until_next.emplace(ToMillis(next.deadline_ - now));
-        break;
-      }
-
-      next.timer_->next_ = head;
-      head = next.timer_;
-
-      queue_.pop();
-    }
-
-    return std::make_pair(head, until_next);
-  }
-
  private:
   twist::ed::stdlike::atomic<bool> stop_requested_{false};
   twist::ed::stdlike::atomic<uint32_t> wakeups_{0};
   twist::ed::stdlike::atomic<bool> idle_{false};
 
-  weave::threads::lockfull::SpinLock spinlock_{};
-  std::priority_queue<PriorityQueueNode> queue_{};
+  weave::timers::TimersQueue queue_{};
 
   // NB : Worker created last to have every
   // other constructor in hb with it

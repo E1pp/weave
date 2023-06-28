@@ -31,7 +31,7 @@ using Scheduler = executors::fibers::ThreadPool;
 
 constexpr size_t kThreads = 4;
 
-std::error_code TimeoutError() {
+inline std::error_code TimeoutError() {
   return std::make_error_code(std::errc::timed_out);
 }
 

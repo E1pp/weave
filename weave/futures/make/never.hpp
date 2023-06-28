@@ -6,6 +6,7 @@
 
 namespace weave::futures {
 
+// Future which never completes
 inline Future<Unit> auto Never() {
   return thunks::Never{};
 }

@@ -48,7 +48,6 @@ struct MetaData {
  public:
   executors::IExecutor* executor_{nullptr};
   cancel::Token token_{cancel::Never()};
-  timers::IProcessor* proc_{nullptr};
 };
 
 }  // namespace weave::satellite

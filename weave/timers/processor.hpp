@@ -12,8 +12,13 @@ struct IProcessor {
 
   virtual void AddTimer(ITimer*) = 0;
 
-  virtual Delay DelayFromThis(Millis) = 0;
+  virtual void CancelTimer(ITimer*) = 0;
 
+  Delay DelayFromThis(Millis ms){
+    return Delay{ms, *this};
+  }
+
+  // Allow Timers to deduce processor automatically
   void MakeGlobal() {
     satellite::MakeVisible(this);
   }

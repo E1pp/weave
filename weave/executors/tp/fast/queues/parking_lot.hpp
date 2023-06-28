@@ -17,7 +17,7 @@ template <typename T>
 class ParkingLotLockfreeImpl;
 
 template <typename T>
-using ParkingLot = ParkingLotLockfreeImpl<T>;
+using ParkingLot = ParkingLotBlockingImpl<T>;
 
 template <typename T>
 class ParkingLotBlockingImpl {
@@ -49,7 +49,6 @@ class ParkingLotBlockingImpl {
 
  private:
   threads::lockfull::SpinLock spinlock_;  // guards the container
-  // twist::ed::stdlike::mutex spinlock_;
   wheels::IntrusiveList<T> lot_;
 };
 
@@ -71,6 +70,10 @@ class ParkingLotLockfreeImpl {
     moodycamel::ConsumerToken token{lot_};
 
     return lot_.try_dequeue_bulk(token, &ptr, 1) ? ptr : nullptr;
+  }
+
+  void RemoveFromQueue(T*){
+    // No-op since you cant remove from concurrentqueue
   }
 
  private:

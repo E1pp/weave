@@ -110,9 +110,8 @@ uint32_t Coordinator::AnnouncePark() {
   uint32_t ret_val = caller->wakeups_.load(std::memory_order::relaxed);
 
   caller->idle_.store(true, std::memory_order::relaxed);
-  AddIdle(state_);
-
   sleepers_.Enqueue(caller);
+  AddIdle(state_);
 
   return ret_val;
 }
@@ -123,6 +122,7 @@ void Coordinator::CancelPark() {
 
   RemoveIdle(state_);
   caller->idle_.store(false);
+  sleepers_.RemoveFromQueue(caller);
 }
 
 bool Coordinator::ShouldWake() {

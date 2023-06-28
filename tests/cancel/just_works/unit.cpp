@@ -14,6 +14,7 @@
 #include <weave/futures/make/value.hpp>
 #include <weave/futures/make/submit.hpp>
 #include <weave/futures/make/just.hpp>
+#include <weave/futures/make/never.hpp>
 
 #include <weave/futures/combine/seq/and_then.hpp>
 #include <weave/futures/combine/seq/anyway.hpp>
@@ -52,11 +53,11 @@ using namespace weave; // NOLINT
 
 using namespace std::chrono_literals;
 
-std::error_code TimeoutError() {
+inline std::error_code TimeoutError() {
   return std::make_error_code(std::errc::timed_out);
 }
 
-std::error_code IoError() {
+inline std::error_code IoError() {
   return std::make_error_code(std::errc::io_error);
 }
 
@@ -671,6 +672,98 @@ TEST_SUITE(Fibers){
     }) | futures::Start();
 
     std::move(f).RequestCancel();
+
+    manual.Drain();
+
+    ASSERT_TRUE(flag);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(Propagate3){
+    executors::fibers::ManualExecutor manual;
+
+    bool flag = false;
+
+    auto f = futures::Submit(manual, [&]{
+      wheels::Defer log([&]{
+        flag = true;
+      });
+
+      try {
+        fibers::Yield();
+      } catch(...){
+        // do nothing
+      }
+
+      futures::Never() | futures::Await();
+      
+      WHEELS_PANIC("Unreachable!");
+    }) | futures::Start();
+
+    std::move(f).RequestCancel();
+
+    manual.Drain();
+
+    ASSERT_TRUE(flag);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(Propagate4){
+    executors::fibers::ManualExecutor manual;
+
+    bool flag = false;
+
+    auto f = futures::Submit(manual, [&]{
+      wheels::Defer log([&]{
+        flag = true;
+      });
+
+      try {
+        fibers::Yield();
+      } catch(...){
+        // do nothing
+      }
+
+      futures::Never() | futures::Await();
+      
+      WHEELS_PANIC("Unreachable!");
+    });
+
+    futures::First(std::move(f), futures::Just()) | futures::Await();
+
+    manual.Drain();
+
+    ASSERT_TRUE(flag);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(Propagate5){
+    executors::fibers::ManualExecutor manual;
+
+    bool flag = false;
+
+    auto f = futures::Submit(manual, [&]{
+      wheels::Defer log([&]{
+        flag = true;
+      });
+
+      try {
+        fibers::Yield();
+      } catch(...){
+        // do nothing
+      }
+
+      futures::Never() | futures::Await();
+      
+      WHEELS_PANIC("Unreachable!");
+    });
+
+    auto g = futures::Just() | futures::Start();
+
+    futures::First(std::move(f), std::move(g)) | futures::Await();
 
     manual.Drain();
 

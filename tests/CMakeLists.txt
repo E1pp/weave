@@ -105,6 +105,10 @@ add_test_target(weave_cancel_alloc_tests cancel/alloc/unit.cpp)
 add_test_target(weave_timers_standalone_unit_tests timers/standalone/unit.cpp)
 add_test_target(weave_timers_standalone_stress_tests timers/standalone/stress.cpp)
 
+# Futures
+
+add_test_target(weave_timers_futures_unit_tests timers/futures/unit.cpp)
+
 #####################################################################################
 
 # Unit tests
@@ -133,6 +137,7 @@ add_custom_target(weave_unit_tests ALL
                   weave_cancel_unit_tests
                   weave_cancel_alloc_tests
                   weave_timers_standalone_unit_tests
+                  weave_timers_futures_unit_tests
                   )
 
 add_custom_target(weave_stress_tests ALL
