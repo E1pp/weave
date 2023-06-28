@@ -79,7 +79,7 @@ Concurrency for C++
 - [Cancellation](examples/cancel/main.cpp)
 - [Timers](examples/timers/main.cpp)
 
-Unit [tests](weave/tests) contain most of the common-sense uses of this library and push semantics of its components to the limits. You should consider reading them in order to fully understand how to use the weave library.
+Unit [tests](tests) contain most of the common-sense uses of this library and push semantics of its components to the limits. You should consider reading them in order to fully understand how to use the weave library.
 
 ## References
 
