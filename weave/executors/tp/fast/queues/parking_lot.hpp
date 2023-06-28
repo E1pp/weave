@@ -2,7 +2,6 @@
 
 #include <weave/threads/lockfull/stdlike/mutex.hpp>
 #include <weave/threads/lockfull/spinlock.hpp>
-#include <twist/ed/stdlike/mutex.hpp>
 
 #include <wheels/intrusive/list.hpp>
 

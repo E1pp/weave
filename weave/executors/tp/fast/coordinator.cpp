@@ -121,8 +121,8 @@ void Coordinator::CancelPark() {
   WHEELS_ASSERT(caller != nullptr, "CancelPark: you can't be a non-worker!");
 
   RemoveIdle(state_);
-  caller->idle_.store(false);
   sleepers_.RemoveFromQueue(caller);
+  caller->idle_.store(false);
 }
 
 bool Coordinator::ShouldWake() {

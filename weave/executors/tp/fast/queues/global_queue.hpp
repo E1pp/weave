@@ -100,6 +100,8 @@ class GlobalQueueBlockingImpl {
   moodycamel::ConcurrentQueue<std::monostate> queue_{0};
 };
 
+// Concurrent queue is not sequentially consistent 
+// and we must enforce this consistency via thread_fence
 class GlobalQueueLockfreeImpl {
  public:
   moodycamel::ConsumerToken GetConsumerToken() {
@@ -111,23 +113,28 @@ class GlobalQueueLockfreeImpl {
   }
 
   void Push(Task* task) {
-    queue_.enqueue_bulk(GetProducerToken(), &task, 1);
+    queue_.enqueue(task);
+    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
   }
 
   // Called only by workers with tokens
 
   void Push(Task* task, moodycamel::ProducerToken& token) {
-    queue_.enqueue_bulk(token, &task, 1);
+    queue_.enqueue(token, task);
+    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
   }
 
   void Append(std::span<Task*> tasks, moodycamel::ProducerToken& token) {
     queue_.enqueue_bulk(token, tasks.begin(), tasks.size());
+    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
   }
 
   // Returns nullptr if queue is empty
   Task* TryPop(moodycamel::ConsumerToken& token) {
     Task* buffer = nullptr;
-    queue_.try_dequeue_bulk(token, &buffer, 1);
+
+    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
+    queue_.try_dequeue(token, buffer);
 
     return buffer;
   }
@@ -141,6 +148,7 @@ class GlobalQueueLockfreeImpl {
       size = 1;
     }
 
+    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
     return queue_.try_dequeue_bulk(token, out_buffer.begin(), size);
   }
 

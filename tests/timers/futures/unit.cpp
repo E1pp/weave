@@ -27,6 +27,8 @@
 
 #include <chrono>
 
+#include <fmt/core.h>
+
 using namespace weave; // NOLINT
 
 TEST_SUITE(Futures){

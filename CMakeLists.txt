@@ -9,15 +9,20 @@ include(cmake/Logging.cmake)
 include(cmake/Sanitize.cmake)
 include(cmake/Platform.cmake)
 
-option(WEAVE_TESTS "Build Weave tests" ON)
-option(WEAVE_EXAMPLES "Build Weave examples" ON)
-option(WEAVE_WORKLOADS "Build Weave workloads" ON)
+option(WEAVE_TESTS "Build Weave tests" OFF)
+option(WEAVE_EXAMPLES "Build Weave examples" OFF)
+option(WEAVE_WORKLOADS "Build Weave workloads" OFF)
 option(WEAVE_DEVELOPER "Weave development mode" OFF)
 option(MI_OVERRIDE "Use mimalloc memory allocator" OFF)
 
 add_subdirectory(third_party)
 
 include(cmake/Test.cmake)
+
+if(WEAVE_DEVELOPER)
+    project_log("Turn warnings into errors")
+    add_compile_options(-Werror)
+endif()
 
 add_subdirectory(weave)
 

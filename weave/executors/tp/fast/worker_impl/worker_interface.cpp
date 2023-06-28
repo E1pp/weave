@@ -9,8 +9,6 @@
 #include <chrono>
 #include <thread>
 
-#include <fmt/core.h>
-
 namespace weave::executors::tp::fast {
 
 ///////////////////////////////////////////////////////////////////

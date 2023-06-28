@@ -36,6 +36,7 @@ void ThreadPool::Submit(Task* task, SchedulerHint hint) {
 
     work_count_.StealthAdd(1);
     global_tasks_.Push(task);
+
     TryWakeWorkers();
 
     return;

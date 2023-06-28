@@ -18,8 +18,6 @@
 #include <memory>
 #include <optional>
 
-#include <fmt/core.h>
-
 namespace weave::fibers {
 
 //////////////////////////////////////////////////////////////////////

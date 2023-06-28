@@ -145,11 +145,75 @@ void TestSpawners() {
   pool.Stop();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+void SubmitFromAnotherThreadTest(){
+  executors::ThreadPool pool{4};
+  threads::lockfull::WaitGroup wg;
+
+  pool.Start();
+
+  twist::test::Repeat repeat;
+
+  while(repeat()){
+    std::deque<std::thread> threads{};
+
+    size_t external = twist::test::Random(1, 5);
+
+    std::atomic<size_t> increments{0};
+
+    size_t local = twist::test::Random(1, 10);
+
+    wg.Add(local + external + 1);
+
+    for(size_t i = 0; i < external; i++){
+      threads.emplace_back([&]{
+        executors::Submit(pool, [&]{
+          increments++;
+          wg.Done();
+        });
+      });
+    }
+
+    executors::Submit(pool, [&]{
+      for(size_t i = 0; i < local; i++){
+        executors::Submit(pool, [&]{
+          increments++;
+          wg.Done();
+        });
+      }
+
+      for(auto& thread : threads){
+        thread.join();
+      }
+
+      threads.clear();
+      wg.Done();
+    });
+
+    wg.Wait();
+
+    ASSERT_EQ(increments.load(), local + external);
+  }
+
+  fmt::println("Iterations: {}", repeat.Iter());
+
+  pool.Stop();
+}
+
 }  // namespace tests
 
 ////////////////////////////////////////////////////////////////////////////////
 
 TEST_SUITE(ThreadPool) {
+  // TWIST_TEST(OneTaskLong, 30s) {
+  //   tests::TestOneTask();
+  // }
+
+  // TWIST_TEST(OneTaskLong1, 30s) {
+  //   tests::TestOneTask();
+  // }
+
   TWIST_TEST(OneTask, 5s) {
     tests::TestOneTask();
   }
@@ -164,6 +228,10 @@ TEST_SUITE(ThreadPool) {
 
   TWIST_TEST(Spawn, 10s) {
     tests::TestSpawners();
+  }
+
+  TWIST_TEST(FromAnotherThread, 5s){
+    tests::SubmitFromAnotherThreadTest();
   }
 }
 

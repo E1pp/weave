@@ -8,8 +8,6 @@
 #include <weave/timers/processor.hpp>
 #include <weave/timers/timer.hpp>
 
-#include <fmt/core.h>
-
 namespace weave::futures::thunks {
 
 class [[nodiscard]] After final : public timers::ITimer,

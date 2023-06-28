@@ -36,7 +36,7 @@ class Worker : public wheels::IntrusiveListNode<Worker>,
   static const size_t kLocalQueueCapacity = 17;
 #endif
 
-  static const size_t kMaxLifoStreak =
+  static const size_t kMaxLifoStreak = 
       std::min(kVyukovGQueue, kLocalQueueCapacity) / 2;
 
  public:

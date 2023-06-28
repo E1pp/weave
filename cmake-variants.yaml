@@ -1,65 +1,105 @@
+# buildType:
+#   default: debug
+#   choices:
+#     debug:
+#       short: Debug
+#       long: Emit debug information
+
+#     release:
+#       short: Release
+#       long: Optimize generated code
+#       buildType: Release
+
 buildType:
-  default: debug
+  default: just_debug
   choices:
-    debug:
+    just_debug:
       short: Debug
-      long: Emit debug information
+      long: Plain Debug
       buildType: Debug
+      settings:
+        ASAN: ""
+        TSAN: ""
+        TWIST_FIBERS: ""
+        TWIST_FAST_FIBER_QUEUES: ""
+        TWIST_PRINT_STACKS: ""
+        TWIST_FAULTY: ""
+    debug_asan:
+      short: DebugASan
+      long: Debug with Address Sanitizer
+      buildType: Debug
+      settings:     
+        ASAN: ON
+        TSAN: ""
+        TWIST_FIBERS: ""
+        TWIST_FAST_FIBER_QUEUES: ""
+        TWIST_PRINT_STACKS: ""
+        TWIST_FAULTY: ""
+    faulty_fibers:
+      short: FaultyFibers
+      long: Fibers with Fault Injections
+      buildType: Debug
+      settings:
+        ASAN: ""
+        TSAN: ""
+        TWIST_FIBERS: ON
+        TWIST_FAST_FIBER_QUEUES: ON
+        TWIST_PRINT_STACKS: ON
+        TWIST_FAULTY: ON
+    faulty_fibers_asan:
+      short: FaultyFibersASan
+      long: Fibers with Fault Injections and AddressSanitizer
+      settings:
+        ASAN: ON
+        TSAN: ""
+        TWIST_FIBERS: ON
+        TWIST_FAST_FIBER_QUEUES: ON
+        TWIST_PRINT_STACKS: ON
+        TWIST_FAULTY: ON
+    faulty_threads_asan:
+      short: FaultyThreadsASan
+      long: Threads with Fault Injection and Address Sanitizer
+      buildType: Debug
+      settings:
+        ASAN: ON
+        TSAN: ""
+        TWIST_FIBERS: ""
+        TWIST_FAST_FIBER_QUEUES: ""
+        TWIST_PRINT_STACKS: ""
+        TWIST_FAULTY: ON
+    faulty_threads_tsan:
+      short: FaultyThreadsTSan
+      long: Threads with Fault Injection and Thread Sanitizer
+      buildType: Debug
+      settings:
+        ASAN: ""
+        TSAN: ON
+        TWIST_FIBERS: ""
+        TWIST_FAST_FIBER_QUEUES: ""
+        TWIST_PRINT_STACKS: ""
+        TWIST_FAULTY: ON
     release:
       short: Release
       long: Optimize generated code
       buildType: Release
-
-sanitizers:
-  default: off
-  choices:
-    off:
-      short: SanitizersOff
-      long: Instrumentation disabled
       settings:
         ASAN: ""
         TSAN: ""
-    asan:
-      short: ASan
-      long: Instrument with Address Sanitizer
-      settings:
-        ASAN: ON
-        TSAN: ""
-    tsan:
-      short: TSan
-      long: Instrument with Thread Sanitizer
-      settings:
-        TSAN: ON
-        ASAN: ""
-
-execution:
-  default: threads
-  choices:
-    threads:
-      short: Threads
-      long: Multi-threaded execution
-      settings:
         TWIST_FIBERS: ""
         TWIST_FAST_FIBER_QUEUES: ""
         TWIST_PRINT_STACKS: ""
-    fibers:
-      short: Fibers
-      long: Deterministic simulation with fibers
-      settings:
-        TWIST_FIBERS: ON
-        TWIST_FAST_FIBER_QUEUES: ON
-        TWIST_PRINT_STACKS: ON
+        TWIST_FAULTY: ""
 
-faultInjection:
+dev_mode:
   default: off
   choices:
     off:
-      short: FaultInjectionOff
-      long: Fault injection disabled
+      short: DevModeOff
+      long: Developer mode disabled
       settings:
-        TWIST_FAULTY: ""
+        WEAVE_DEVELOPER: ""
     on:
-      short: FaultInjectionOn
-      long: Fault injection enabled
+      short: DevModeOn
+      long: Developer mode disabled
       settings:
-        TWIST_FAULTY: ON
+        WEAVE_DEVELOPER: ON

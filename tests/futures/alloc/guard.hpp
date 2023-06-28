@@ -8,7 +8,7 @@
 
 static std::atomic<size_t> alloc_count{0};
 
-#if !(__has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__))
+#if !(__has_feature(address_sanitizer) || __has_feature(thread_sanitizer) || defined(__SANITIZE_ADDRESS__))
 
 void* operator new(size_t size) {
   alloc_count.fetch_add(1, std::memory_order::relaxed);
