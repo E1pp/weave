@@ -206,14 +206,6 @@ void SubmitFromAnotherThreadTest(){
 ////////////////////////////////////////////////////////////////////////////////
 
 TEST_SUITE(ThreadPool) {
-  // TWIST_TEST(OneTaskLong, 30s) {
-  //   tests::TestOneTask();
-  // }
-
-  // TWIST_TEST(OneTaskLong1, 30s) {
-  //   tests::TestOneTask();
-  // }
-
   TWIST_TEST(OneTask, 5s) {
     tests::TestOneTask();
   }

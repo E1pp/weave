@@ -42,7 +42,7 @@ Concurrency for C++
       - `Via` – sets executor and/or hint for following mappers
       - `Box` – erases concrete `Future` (`Thunk`) type
       - `Start` (or `Force`) – converts to `EagerFuture`, starts operation
-      - `Frok<N>` – splits future value into N copies
+      - `Fork<N>` – splits future value into N copies
       - `OnComplete` / `OnCancel` / `Anyway` – add side effect based on what happened to the underlying future
       - `WithTimeout` – attaches timeout
     - Parallel composition (`par`)

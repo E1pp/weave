@@ -1,15 +1,3 @@
-# buildType:
-#   default: debug
-#   choices:
-#     debug:
-#       short: Debug
-#       long: Emit debug information
-
-#     release:
-#       short: Release
-#       long: Optimize generated code
-#       buildType: Release
-
 buildType:
   default: just_debug
   choices:

@@ -25,7 +25,7 @@ Executor is an object which executes tasks.
 
 Public API allows these tasks to be lambdas exclusively.
 
-There are two ways if submitting tasks: 
+There are two ways of submitting tasks: 
 
 executors::Submit and futures::Submit.
 
