@@ -1,8 +1,8 @@
 #pragma once
 
-#include <weave/futures/thunks/combine/seq/fork.hpp>
-
 #include <weave/futures/syntax/pipe.hpp>
+
+#include <weave/futures/thunks/combine/seq/fork.hpp>
 
 #include <weave/futures/traits/value_of.hpp>
 

@@ -12,6 +12,7 @@ buildType:
         TWIST_FAST_FIBER_QUEUES: ""
         TWIST_PRINT_STACKS: ""
         TWIST_FAULTY: ""
+        WEAVE_MIMALLOC: ""
     debug_asan:
       short: DebugASan
       long: Debug with Address Sanitizer
@@ -23,6 +24,7 @@ buildType:
         TWIST_FAST_FIBER_QUEUES: ""
         TWIST_PRINT_STACKS: ""
         TWIST_FAULTY: ""
+        WEAVE_MIMALLOC: ""
     faulty_fibers:
       short: FaultyFibers
       long: Fibers with Fault Injections
@@ -34,6 +36,7 @@ buildType:
         TWIST_FAST_FIBER_QUEUES: ON
         TWIST_PRINT_STACKS: ON
         TWIST_FAULTY: ON
+        WEAVE_MIMALLOC: ""
     faulty_fibers_asan:
       short: FaultyFibersASan
       long: Fibers with Fault Injections and AddressSanitizer
@@ -44,6 +47,7 @@ buildType:
         TWIST_FAST_FIBER_QUEUES: ON
         TWIST_PRINT_STACKS: ON
         TWIST_FAULTY: ON
+        WEAVE_MIMALLOC: ""
     faulty_threads_asan:
       short: FaultyThreadsASan
       long: Threads with Fault Injection and Address Sanitizer
@@ -55,6 +59,7 @@ buildType:
         TWIST_FAST_FIBER_QUEUES: ""
         TWIST_PRINT_STACKS: ""
         TWIST_FAULTY: ON
+        WEAVE_MIMALLOC: ""
     faulty_threads_tsan:
       short: FaultyThreadsTSan
       long: Threads with Fault Injection and Thread Sanitizer
@@ -66,6 +71,7 @@ buildType:
         TWIST_FAST_FIBER_QUEUES: ""
         TWIST_PRINT_STACKS: ""
         TWIST_FAULTY: ON
+        WEAVE_MIMALLOC: ""
     release:
       short: Release
       long: Optimize generated code
@@ -77,6 +83,7 @@ buildType:
         TWIST_FAST_FIBER_QUEUES: ""
         TWIST_PRINT_STACKS: ""
         TWIST_FAULTY: ""
+        WEAVE_MIMALLOC: ON
 
 dev_mode:
   default: off

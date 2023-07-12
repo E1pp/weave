@@ -13,7 +13,7 @@ option(WEAVE_TESTS "Build Weave tests" OFF)
 option(WEAVE_EXAMPLES "Build Weave examples" OFF)
 option(WEAVE_WORKLOADS "Build Weave workloads" OFF)
 option(WEAVE_DEVELOPER "Weave development mode" OFF)
-option(MI_OVERRIDE "Use mimalloc memory allocator" OFF)
+option(WEAVE_MIMALLOC "Use mimalloc memory allocator" OFF)
 
 add_subdirectory(third_party)
 

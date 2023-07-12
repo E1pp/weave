@@ -1,8 +1,8 @@
 #pragma once
 
-#include <weave/futures/thunks/combine/seq/anyway.hpp>
-
 #include <weave/futures/syntax/pipe.hpp>
+
+#include <weave/futures/thunks/combine/seq/anyway.hpp>
 
 #include <optional>
 

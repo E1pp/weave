@@ -1,8 +1,8 @@
 #pragma once
 
-#include <weave/futures/thunks/combine/seq/apply.hpp>
-
 #include <weave/futures/syntax/pipe.hpp>
+
+#include <weave/futures/thunks/combine/seq/apply.hpp>
 
 #include <weave/result/complete/complete.hpp>
 #include <weave/result/make/err.hpp>
@@ -51,17 +51,20 @@ struct AndThen {
       : fun(std::move(f)) {
   }
 
+  template<typename Input>
+  using Wrapped = result::Wrap<Input, F>;
+
   template <typename T>
-  using U = result::traits::ValueOf<std::invoke_result_t<result::Wrap<F>, T>>;
+  using U = result::traits::ValueOf<std::invoke_result_t<Wrapped<T>, T>>;
 
   template <SomeFuture InputFuture>
   Future<U<traits::ValueOf<InputFuture>>> auto Pipe(InputFuture f) {
     using InputType = typename InputFuture::ValueType;
 
-    auto completed = result::Wrap(std::move(fun));
+    auto completed = Wrapped<InputType>(std::move(fun));
 
     auto mapper =
-        detail::AndThenMapper<InputType, result::Wrap<F>>(std::move(completed));
+        detail::AndThenMapper<InputType, Wrapped<InputType>>(std::move(completed));
 
     return futures::thunks::Apply{std::move(f), std::move(mapper)};
   }

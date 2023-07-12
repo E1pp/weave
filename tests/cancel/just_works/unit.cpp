@@ -609,38 +609,6 @@ TEST_SUITE(Fibers){
     manual.Stop();    
   }
 
-  // SIMPLE_TEST(CancelMutex){
-  //   executors::fibers::ManualExecutor manual;
-
-  //   fibers::Mutex mutex{};
-
-  //   auto f = futures::Submit(manual, [&]{
-  //     {
-  //       threads::lockfull::stdlike::LockGuard guard(mutex);
-
-  //       fibers::Yield();
-  //     }
-  //   }) | futures::Start();
-
-  //   auto g = futures::Submit(manual, [&]{
-  //     {
-  //       threads::lockfull::stdlike::LockGuard guard(mutex);
-  //     }
-  //   }) | futures::Start();
-
-  //   manual.RunAtMost(2);
-
-  //   std::move(f).RequestCancel();
-
-  //   // Symm transfer - 3
-  //   // "Just sched next" - 2
-  //   ASSERT_GE(manual.Drain(), 2);
-
-  //   std::move(g) | futures::Get();
-
-  //   manual.Stop();
-  // }
-
   SIMPLE_TEST(Propagate1){
     executors::fibers::ManualExecutor manual;
 
@@ -858,6 +826,64 @@ TEST_SUITE(Fibers){
     ASSERT_EQ(manual.Drain(), 4);
 
     manual.Stop();
+  }
+
+  SIMPLE_TEST(TwoLevelDeep){
+    executors::ThreadPool pool{4};
+    threads::lockfull::WaitGroup wg{};
+
+    std::atomic<int> cancelled{0};
+
+    pool.Start();
+
+    wg.Add(1);
+
+    auto grandparent = futures::Submit(pool, [&]{
+      wheels::Defer([&]{
+        cancelled++;
+      });
+
+      auto parent = futures::Submit(pool, [&]{
+        wheels::Defer([&]{
+          cancelled++;
+        });
+        
+        auto child = futures::Submit(pool, [&]{
+          wheels::Defer([&]{
+            cancelled++;
+          });  
+
+          while(true){
+            fibers::Yield();
+          }
+
+          ASSERT_TRUE(false);
+
+        }) | futures::Start();
+
+        std::move(child) | futures::Await();
+
+        ASSERT_TRUE(false);
+
+      }) | futures::Start();
+
+      wg.Done();
+
+      std::move(parent) | futures::Await();
+
+      ASSERT_TRUE(false);
+
+    }) | futures::Start();
+
+    wg.Wait();
+
+    std::move(grandparent).RequestCancel();
+
+    pool.WaitIdle();
+
+    ASSERT_EQ(cancelled.load(), 3);
+
+    pool.Stop();
   }
 }
 

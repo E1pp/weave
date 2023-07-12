@@ -28,12 +28,10 @@ set(LIB_DEPENDENCIES
         fmt
         expected)
 
-if(MI_OVERRIDE)
+if(WEAVE_MIMALLOC)
     list(APPEND LIB_DEPENDENCIES mimalloc)
 endif()
 
 ProjectLog("Dependencies: ${LIB_DEPENDENCIES}")
 
 target_link_libraries(${LIB_TARGET} PUBLIC ${LIB_DEPENDENCIES})
-
-# --------------------------------------------------------------------

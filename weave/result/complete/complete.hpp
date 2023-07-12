@@ -1,74 +1,43 @@
 #pragma once
 
-#include <weave/result/make/ok.hpp>
-
-#include <weave/result/traits/value_of.hpp>
-
-#include <weave/result/types/unit.hpp>
-
-#include <type_traits>
+#include <weave/result/complete/input.hpp>
+#include <weave/result/complete/output.hpp>
+#include <weave/result/complete/wrap.hpp>
 
 namespace weave::result {
 
-// (InvokeArgs -> non-void T) -> (InvokeArgs -> T)
-// (InvokeArgs -> void) -> (InvokeArgs -> Unit)
-template <typename Invokable>
-struct Complete {
-  explicit Complete(Invokable invokable)
-      : invokable_(std::move(invokable)) {
+template<typename InputType, typename Invokable>
+class Complete {
+ private:
+  using ImplType = CompleteOutput<CompleteInput<InputType, Invokable>>;
+
+ public:
+  explicit Complete(Invokable f) : impl_(CompleteInput<InputType, Invokable>(std::move(f))){
   }
 
-  template <typename... InvokeArgs>
-  decltype(auto) operator()(InvokeArgs... args) {
-    using InitialInvokeType = std::invoke_result_t<Invokable, InvokeArgs...>;
-
-    if constexpr (std::is_same_v<InitialInvokeType, void>) {
-      invokable_(std::move(args)...);
-      return Unit{};
-
-    } else {
-      return invokable_(std::move(args)...);
-    }
+  decltype(auto) operator()(InputType input){
+    return impl_(std::move(input));
   }
 
  private:
-  Invokable invokable_;
+  ImplType impl_;
 };
 
-template <typename T>
-concept SomeResult =
-    std::is_same_v<Result<typename result::traits::ValueOf<T>>, T>;
+template<typename InputType, typename Invokable>
+class Wrap {
+ private:
+  using ImplType = WrapOutput<CompleteInput<InputType, Invokable>>;
 
-// (InvokeArgs -> Result<T>) -> (InvokeArgs -> Result<T>)
-// (InvokeArgs -> non-void T) -> (InvokeArgs -> Result<T>)
-// (InvokeArgs -> void) -> (InvokeArgs -> Result<Unit>)
-template <typename Invokable>
-struct Wrap {
-  explicit Wrap(Invokable invokable)
-      : invokable_(std::move(invokable)) {
+ public:
+  explicit Wrap(Invokable f) : impl_(CompleteInput<InputType, Invokable>(std::move(f))){
   }
 
-  template <typename... InvokeArgs>
-  decltype(auto) operator()(InvokeArgs... args) {
-    using InitialInvokeType = std::invoke_result_t<Invokable, InvokeArgs...>;
-
-    if constexpr (SomeResult<InitialInvokeType>) {
-      // invokable_ returns Result<T>
-      return invokable_(std::move(args)...);
-    } else {
-      // invokable_ returns unwrapped value
-      if constexpr (std::is_same_v<InitialInvokeType, void>) {
-        invokable_(std::move(args)...);
-        return result::Ok();
-
-      } else {
-        return result::Ok(std::move(invokable_(std::move(args)...)));
-      }
-    }
+  decltype(auto) operator()(InputType input){
+    return impl_(std::move(input));
   }
 
  private:
-  Invokable invokable_;
+  ImplType impl_;
 };
 
 }  // namespace weave::result

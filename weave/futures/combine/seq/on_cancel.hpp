@@ -22,14 +22,9 @@ struct OnCancel {
       : fun(std::move(f)) {
   }
 
-  template <typename T>
-  using U = std::invoke_result_t<result::Complete<F>>;
-
   template <SomeFuture InputFuture>
   Future<traits::ValueOf<InputFuture>> auto Pipe(InputFuture f) {
-    auto completed = result::Complete(std::move(fun));
-
-    return thunks::OnCancel(std::move(f), std::move(completed));
+    return thunks::OnCancel(std::move(f), std::move(fun));
   }
 };
 

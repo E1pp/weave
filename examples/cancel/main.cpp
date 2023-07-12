@@ -376,7 +376,7 @@ void SleepForExample(){
 
   auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(finish - start);
 
-  fmt::print("Elapsed : {} second(s)", elapsed.count());
+  fmt::println("Elapsed : {} second(s)", elapsed.count());
 
   pool.Stop();
 }

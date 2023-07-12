@@ -16,18 +16,15 @@ namespace weave::futures {
 namespace traits {
 
 template <typename F>
-using SubmitT = result::traits::ValueOf<std::invoke_result_t<result::Wrap<F>>>;
+using SubmitT = result::traits::ValueOf<std::invoke_result_t<result::Wrap<Unit, F>, Unit>>;
 
 }  // namespace traits
 
 template <typename F>
 Future<traits::SubmitT<F>> auto Submit(executors::IExecutor& exe, F fun) {
-  auto wrapped = [f = std::move(fun)](Unit) mutable {
-    return f();
-  };
 
   return futures::Just() | futures::Via(exe) |
-         futures::AndThen(std::move(wrapped));
+         futures::AndThen(std::move(fun));
 }
 
 }  // namespace weave::futures
