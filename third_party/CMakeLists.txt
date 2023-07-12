@@ -98,14 +98,3 @@ if((CMAKE_BUILD_TYPE MATCHES Release) AND NOT TWIST_FAULTY)
     FetchContent_MakeAvailable(mimalloc)
 
 endif()
-
-# --------------------------------------------------------------------
-
-project_log("FetchContent: moodycamel")
-
-FetchContent_Declare(
-        moodycamel
-        GIT_REPOSITORY https://github.com/cameron314/concurrentqueue
-        GIT_TAG master
-)
-FetchContent_MakeAvailable(moodycamel)

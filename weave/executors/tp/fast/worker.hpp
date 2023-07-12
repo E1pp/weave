@@ -127,9 +127,6 @@ class Worker : public wheels::IntrusiveListNode<Worker>,
   twist::ed::stdlike::atomic<uint32_t> wakeups_{0};
   twist::ed::stdlike::atomic<bool> idle_{false};
 
-  moodycamel::ConsumerToken cons_token_;
-  moodycamel::ProducerToken prod_token_;
-
   Logger::LoggerShard* logger_shard_{nullptr};
 };
 

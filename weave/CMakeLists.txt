@@ -23,7 +23,6 @@ set(LIB_DEPENDENCIES
         wheels
         twist
         sure
-        concurrentqueue
         function2
         fmt
         expected)

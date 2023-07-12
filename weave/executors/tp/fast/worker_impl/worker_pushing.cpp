@@ -18,7 +18,7 @@ void Worker::Push(Task* task, SchedulerHint hint) {
 
     case SchedulerHint::Last:
       // Yielded task
-      host_.global_tasks_.Push(task, prod_token_);
+      host_.global_tasks_.Push(task);
       break;
 
     default:
@@ -77,8 +77,7 @@ void Worker::PushToLocalQueue(Task* task) {
 
 void Worker::OffloadTasksToGlobalQueue(std::span<Task*> overflow,
                                        size_t valid_num) {
-  host_.global_tasks_.Append({overflow.begin(), overflow.begin() + valid_num},
-                             prod_token_);
+  host_.global_tasks_.Append({overflow.begin(), overflow.begin() + valid_num});
 }
 
 }  // namespace weave::executors::tp::fast

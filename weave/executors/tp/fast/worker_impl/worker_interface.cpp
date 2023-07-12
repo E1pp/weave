@@ -22,8 +22,6 @@ Worker::Worker(ThreadPool& host, size_t index, Logger::LoggerShard* shard)
       index_(index),
       twister_(host_.random_()),
       indeces_(host_.threads_ - 1),
-      cons_token_(host_.global_tasks_.GetConsumerToken()),
-      prod_token_(host_.global_tasks_.GetProducerToken()),
       logger_shard_(shard) {
   std::iota(indeces_.begin(), indeces_.end(), 1);
 }

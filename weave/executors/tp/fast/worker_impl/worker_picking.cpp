@@ -33,7 +33,7 @@ Task* Worker::TryPickTask() {
 }
 
 Task* Worker::TryGrabTasksFromGlobalQueue() {
-  Task* next = host_.global_tasks_.TryPop(cons_token_);
+  Task* next = host_.global_tasks_.TryPop();
 
   if (next != nullptr && TaskFlags::IsSet(next->flags, TaskFlags::External)) {
     TaskFlags::Reset(next->flags, TaskFlags::External);
@@ -95,7 +95,7 @@ Task* Worker::TryPickTaskFromLocalQueueSlow() {
 
   // write into the buffer from GlobalQueue
   size_t num_taken =
-      host_.global_tasks_.Grab(buffer, host_.threads_, cons_token_);
+      host_.global_tasks_.Grab(buffer, host_.threads_);
   if (num_taken != 0) {
     // Work count processing
     size_t external_tasks = 0;

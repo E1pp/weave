@@ -5,8 +5,6 @@
 
 #include <wheels/intrusive/list.hpp>
 
-#include <concurrentqueue.h>
-
 namespace weave::executors::tp::fast {
 
 template <typename T>
@@ -49,34 +47,6 @@ class ParkingLotBlockingImpl {
  private:
   threads::lockfull::SpinLock spinlock_;  // guards the container
   wheels::IntrusiveList<T> lot_;
-};
-
-// we don't need producers/consumers to
-// be properly connected so we just
-// generate tokens on stack just to
-// ensure explicit overloads are used
-// which seem to not race with each other
-template <typename T>
-class ParkingLotLockfreeImpl {
- public:
-  void Enqueue(T* obj) {
-    moodycamel::ProducerToken token{lot_};
-    lot_.enqueue_bulk(token, &obj, 1);
-  }
-
-  T* TryDequeue() {
-    T* ptr = nullptr;
-    moodycamel::ConsumerToken token{lot_};
-
-    return lot_.try_dequeue_bulk(token, &ptr, 1) ? ptr : nullptr;
-  }
-
-  void RemoveFromQueue(T*){
-    // No-op since you cant remove from concurrentqueue
-  }
-
- private:
-  moodycamel::ConcurrentQueue<T*> lot_;
 };
 
 }  // namespace weave::executors::tp::fast

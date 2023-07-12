@@ -3,7 +3,7 @@ Concurrency for C++
 
 ## Features
 
-- Scalable work-stealing scheduler – `executors::tp::fast::ThreadPool` with an optional lock-free implementation
+- Scalable work-stealing scheduler – `executors::tp::fast::ThreadPool`
 - Transparent stackful fibers via `executors::fibers::ThreadPool` with automatic pooling
 - Functional futures
 - Futures are lazy ⟹ allocation and synchronization amount is minimized (usually to zero)
@@ -102,6 +102,5 @@ This library was created based on solutions for problems from the MIPT [concurre
 - [Mimalloc](https://github.com/microsoft/mimalloc) – memory allocation
 - [function2](https://github.com/Naios/function2.git) – drop-in replacement for `std::function`
 - [fmt](https://github.com/fmtlib/fmt.git) – formatted output
-- [moodycamel](https://github.com/cameron314/concurrentqueue) – scalable MPMC lock-free queue 
 
 
