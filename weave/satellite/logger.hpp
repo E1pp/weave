@@ -1,5 +1,7 @@
 #pragma once
 
+#include <weave/threads/lockfree/atomic_array.hpp>
+
 #include <fmt/core.h>
 
 #include <wheels/core/assert.hpp>
@@ -8,9 +10,9 @@
 #include <unordered_map>
 #include <vector>
 
-namespace weave::executors::tp::fast {
+namespace weave::satellite {
 
-template<bool CollectMetrics>
+template<bool CollectMetrics, bool AtomicMetrics>
 class LoggerImpl {
  public:
   class LoggerShard;
@@ -64,8 +66,8 @@ class LoggerImpl {
   static inline LoggerShard singleton{};
 };
 
-template<>
-class LoggerImpl<true> {
+template<bool AtomicMetrics>
+class LoggerImpl<true, AtomicMetrics> {
  public:
   class LoggerShard;
   class Metrics;
@@ -102,8 +104,10 @@ class LoggerImpl<true> {
   }
 
   void Accumulate(){
-    for(auto& metr : total_.metrics_){
-      metr = 0;
+    const size_t size = total_.metrics_.Size();
+
+    for(size_t i = 0; i < size; ++i){
+      total_.metrics_.Store(i, 0, std::memory_order::relaxed);
     }
 
     for(auto& shard : shards_){
@@ -116,16 +120,17 @@ class LoggerImpl<true> {
   /////////////////////////////////////////////////////////////////////////////
 
   class LoggerShard {
-    using Logger = LoggerImpl<true>;
+    using Logger = LoggerImpl<true, AtomicMetrics>;
 
-    template <bool A>
+    template <bool A, bool B>
     friend class LoggerImpl;
     friend class Metrics;
 
    public:
     LoggerShard() = delete;
 
-    LoggerShard(const LoggerShard&){
+    // Never called but needed for std::optional to work correctly
+    LoggerShard(const LoggerShard&) : metrics_(1) {
       std::abort();
     }
 
@@ -134,42 +139,43 @@ class LoggerImpl<true> {
     LoggerShard(LoggerShard&&) = delete;
     LoggerShard& operator=(LoggerShard&&) = delete;
 
-    explicit LoggerShard(Logger* owner) : owner_(owner), metrics_(owner_->indeces_.size(), 0){
+    explicit LoggerShard(Logger* owner) : owner_(owner), metrics_(owner_->indeces_.size()){
     }
 
     void Increment(std::string_view name, size_t diff){
       WHEELS_VERIFY(owner_->indeces_.contains(name), "You must use a valid metric name!");
-
-      metrics_[owner_->indeces_[name]] += diff;
+      
+      metrics_.FetchAdd(owner_->indeces_[name], diff, std::memory_order::relaxed);
     }
 
     LoggerShard& operator+=(LoggerShard& that){
       WHEELS_VERIFY(that.owner_ == owner_, "Different Loggers!");
 
-      const size_t size = metrics_.size();
+      const size_t size = metrics_.Size();
 
       for(size_t i = 0; i < size; ++i){
-        metrics_[i] += that.metrics_[i];
+        metrics_.FetchAdd(i, that.LookUp(i), std::memory_order::relaxed);
       }
 
       return *this;
     }
 
    private:
+    // One consumer
     Metrics GetMetrics(){
       return Metrics(*this);
     }
 
     size_t LookUp(size_t index){
-      return metrics_[index];
+      return metrics_.Load(index, std::memory_order::relaxed);
     }
 
-    LoggerShard(Logger* owner, size_t count) : owner_(owner), metrics_(count, 0){
+    LoggerShard(Logger* owner, size_t count) : owner_(owner), metrics_(count){
     }
 
    private:
     Logger* owner_;
-    std::vector<size_t> metrics_;
+    threads::lockfree::MaybeAtomicArray<size_t, AtomicMetrics> metrics_;
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -209,4 +215,4 @@ class LoggerImpl<true> {
   LoggerShard total_;
 };
 
-} // namespace weave::executors::tp::fast 
+} // namespace weave::satellite

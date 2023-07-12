@@ -1,10 +1,20 @@
 #pragma once
 
-#include <weave/executors/tp/fast/logger.hpp>
+#include <weave/satellite/logger.hpp>
 
 namespace weave::executors::tp::fast {
 
-const bool kCollectMetrics = true;
+#if defined(__WEAVE_METRICS__)
+inline const bool kCollectMetrics = true;
+#else
+inline const bool kCollectMetrics = false;
+#endif
+
+#if defined(__WEAVE_REALTIME__)
+inline const bool kAtomicMetrics = true;
+#else
+inline const bool kAtomicMetrics = false;
+#endif
 
 inline const std::vector<std::string> kMetrics {
    "Launched from lifo"
@@ -20,6 +30,6 @@ inline const std::vector<std::string> kMetrics {
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-using Logger = LoggerImpl<kCollectMetrics>;
+using Logger = satellite::LoggerImpl<kCollectMetrics, kAtomicMetrics>;
 
 }  // namespace weave::executors::tp::fast

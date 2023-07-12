@@ -62,8 +62,8 @@ add_test_target(weave_fibers_event_storage_tests fibers/sync/event/storage.cpp)
 
 # Mutex
 add_test_target(weave_fibers_mutex_unit_tests fibers/sync/mutex/unit.cpp)
-add_test_target(fibers_mutex_stress_tests fibers/sync/mutex/stress.cpp)
-add_test_target(fibers_mutex_symm_transfer_tests fibers/sync/mutex/symm_transfer.cpp)
+add_test_target(weave_fibers_mutex_stress_tests fibers/sync/mutex/stress.cpp)
+add_test_target(weave_fibers_mutex_symm_transfer_tests fibers/sync/mutex/symm_transfer.cpp)
 
 # WaitGroup
 add_test_target(weave_fibers_wg_unit_tests fibers/sync/wait_group/unit.cpp)
@@ -157,8 +157,8 @@ add_custom_target(weave_stress_tests ALL
                   weave_fibers_sched_stress_tests
                   weave_fibers_event_stress_tests
                   weave_fibers_event_storage_tests
-                  fibers_mutex_stress_tests
-                  fibers_mutex_symm_transfer_tests
+                  weave_fibers_mutex_stress_tests
+                  weave_fibers_mutex_symm_transfer_tests
                   weave_fibers_wg_stress_tests
                   weave_fibers_wg_storage_tests
                   weave_fibers_chan_stress_tests

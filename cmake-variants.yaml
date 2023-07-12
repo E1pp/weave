@@ -98,3 +98,17 @@ dev_mode:
       long: Developer mode disabled
       settings:
         WEAVE_DEVELOPER: ON
+
+metrics:
+  default: off
+  choices:
+    off:
+      short: MetricsOff
+      long: Don't collect metrics
+      settings:
+        WEAVE_REALTIME_METRICS: ""
+    on:
+      short: MetricsOn
+      long: Collect metrics
+      settings:
+        WEAVE_REALTIME_METRICS: ON

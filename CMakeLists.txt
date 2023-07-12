@@ -14,6 +14,8 @@ option(WEAVE_EXAMPLES "Build Weave examples" OFF)
 option(WEAVE_WORKLOADS "Build Weave workloads" OFF)
 option(WEAVE_DEVELOPER "Weave development mode" OFF)
 option(WEAVE_MIMALLOC "Use mimalloc memory allocator" OFF)
+option(WEAVE_METRICS "ThreadPool will collect metrics" OFF)
+option(WEAVE_REALTIME_METRICS "ThreadPool will collect metrics obtainable in real-time" OFF)
 
 add_subdirectory(third_party)
 

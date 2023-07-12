@@ -28,7 +28,7 @@
 #include <thread>
 #include <chrono>
 
-#if !defined(TWIST_FIBERS)
+#if !defined(TWIST_FIBERS) && !(__has_feature(address_sanitizer) || __has_feature(thread_sanitizer) || defined(__SANITIZE_ADDRESS__))
 
 using namespace weave; // NOLINT
 
@@ -48,7 +48,6 @@ void WarmUp(ThreadPool& pool, size_t threads){
 }
 
 TEST_SUITE(AllocFreeFutures) {
-#if !(__has_feature(address_sanitizer) || __has_feature(thread_sanitizer) || defined(__SANITIZE_ADDRESS__))
   SIMPLE_TEST(AllocationCount) {
     {
       size_t before = AllocationCount();
@@ -63,7 +62,6 @@ TEST_SUITE(AllocFreeFutures) {
       delete ptr;
     }
   }
-#endif
 
   SIMPLE_TEST(Value) {
     {

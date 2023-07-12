@@ -34,3 +34,15 @@ endif()
 ProjectLog("Dependencies: ${LIB_DEPENDENCIES}")
 
 target_link_libraries(${LIB_TARGET} PUBLIC ${LIB_DEPENDENCIES})
+
+# --------------------------------------------------------------------
+
+# Compile definitions
+
+if(WEAVE_METRICS OR WEAVE_REALTIME_METRICS)
+    target_compile_definitions(weave PUBLIC __WEAVE_METRICS__=1)
+endif()
+
+if(WEAVE_REALTIME_METRICS)
+    target_compile_definitions(weave PUBLIC __WEAVE_REALTIME__=1)
+endif()
