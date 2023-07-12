@@ -48,9 +48,7 @@ bool Coordinator::TryStartSpinning() {
     auto [idle, spinning] = View(curr);
 
     if (2 * spinning > max_threads) {
-      if constexpr (kCollectMetrics) {
-        caller->metrics_.times_we_failed_to_start_spinning_++;
-      }
+      caller->logger_shard_->Increment("Times denied by coordinator", 1);
 
       return false;
     }
@@ -81,9 +79,7 @@ void Coordinator::TryParkMe(uint32_t old_wakeups) {
   auto caller = Worker::Current();
   WHEELS_VERIFY(caller != nullptr, "TryParkMe: you can't be a non-worker!");
 
-  if constexpr (kCollectMetrics) {
-    caller->metrics_.times_went_to_sleep_++;
-  }
+  caller->logger_shard_->Increment("Syscal parkings", 1);
 
   twist::ed::futex::Wait(caller->wakeups_, old_wakeups,
                          std::memory_order::relaxed);

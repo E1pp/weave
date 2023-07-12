@@ -18,8 +18,10 @@ void Strand::Submit(Task* task, SchedulerHint) {
 
   do {
     task->next_ = former_top;
+    // seq_cst because it can be an external submit to ThreadPool
+    // which manipulates with TaskFlags thus must be cross_var hb
   } while (!stack_->compare_exchange_weak(former_top, task,
-                                          std::memory_order::release,
+                                          std::memory_order::seq_cst,
                                           std::memory_order::relaxed));
 
   if (former_top == no_execution_underway) {
@@ -61,6 +63,7 @@ void Strand::Run() noexcept {
   }
 
   Node* execution_copy = execution_underway;
+  // Always an internal submit thus can be kept at release
   if (!preserved_stack->compare_exchange_strong(
           execution_copy, no_execution_underway, std::memory_order::release,
           std::memory_order::relaxed)) {

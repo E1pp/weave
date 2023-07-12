@@ -11,6 +11,8 @@
 
 #include <thread>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 TEST_SUITE(Fibers) {
@@ -172,5 +174,7 @@ TEST_SUITE(Fibers) {
     ASSERT_EQ(scheduler_2.Drain(), 3);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

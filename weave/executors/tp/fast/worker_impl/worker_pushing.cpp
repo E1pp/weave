@@ -8,11 +8,9 @@ namespace weave::executors::tp::fast {
 void Worker::Push(Task* task, SchedulerHint hint) {
   switch (hint) {
     case SchedulerHint::Next:
-      if constexpr (!kDisbaleLifoInteraction) {
-        PushToLifoSlot(task);
-        break;
-      }
-
+      PushToLifoSlot(task);
+      break;
+      
     case SchedulerHint::UpToYou:
       // overflow handling is delegated to PushToLocalQueue
       PushToLocalQueue(task);
@@ -42,9 +40,7 @@ void Worker::PushToLifoSlot(Task* task) {
   // if we've taken the valid task off the lifo slot, we send it into the local
   // queue
   if (former_lifo != nullptr) {
-    if constexpr (kCollectMetrics) {
-      metrics_.times_discarded_lifo_slot_++;
-    }
+    logger_shard_->Increment("Discarded lifo_slots", 1);
 
     PushToLocalQueue(former_lifo);
   }
@@ -53,9 +49,7 @@ void Worker::PushToLifoSlot(Task* task) {
 // true if fast path
 void Worker::PushToLocalQueue(Task* task) {
   if (!local_tasks_.TryPush(task)) {
-    if constexpr (kCollectMetrics) {
-      metrics_.times_offloaded_to_global_queue_++;
-    }
+    logger_shard_->Increment("Overflows in local queue", 1);
 
     // we have overflow
     std::array<Task*, kLocalQueueCapacity / 2 + 1> overflow{};

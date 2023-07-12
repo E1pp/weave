@@ -1,16 +1,18 @@
+#include <weave/executors/tp/fast/task_flags.hpp>
+
 #include <weave/executors/tp/fast/thread_pool.hpp>
 #include <weave/executors/tp/fast/thread_runner.hpp>
-
-#include <weave/executors/tp/fast/task_flags.hpp>
 
 namespace weave::executors::tp::fast {
 
 ThreadPool::ThreadPool(const size_t threads)
     : threads_(threads),
-      runner_(&runners::ThreadRunner::Instance()) {
+      runner_(&runners::ThreadRunner::Instance()),
+      logger_(kMetrics, threads) {
   // create workers
+
   for (size_t i = 0; i < threads; ++i) {
-    workers_.emplace_back(*this, i);
+    workers_.emplace_back(*this, i, logger_.MakeShard(i));
   }
 }
 
@@ -60,19 +62,12 @@ void ThreadPool::Stop() {
     worker.Join();
   }
 
-  if constexpr (kCollectMetrics) {
-    // accumulate metrics
-    for (auto& worker : workers_) {
-      metrics_.metrics_ += worker.Metrics();
-    }
-  }
-
   // clear workers_
   workers_.clear();
 }
 
-PoolMetrics ThreadPool::Metrics() const {
-  return metrics_;
+Logger::Metrics ThreadPool::Metrics() {
+  return logger_.GatherMetrics();
 }
 
 ThreadPool* ThreadPool::Current() {

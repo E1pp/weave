@@ -4,6 +4,8 @@
 
 #include <string>
 
+#if !defined(TWIST_FIBERS)
+
 template<typename T>
 using LockFreeQueue = weave::threads::lockfree::LockFreeQueue<T>;
 
@@ -71,5 +73,7 @@ TEST_SUITE(LockFreeStack) {
     ASSERT_EQ(*queue_2.TryPop(), 11);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

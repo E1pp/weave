@@ -25,10 +25,14 @@ void StorageTest() {
 
 //////////////////////////////////////////////////////////////////////
 
+#if defined(TWIST_FIBERS)
+
 TEST_SUITE(WaitGroup) {
   TWIST_TEST_REPEAT(Storage, 5s) {
     StorageTest();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

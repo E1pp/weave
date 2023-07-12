@@ -21,6 +21,8 @@
 
 namespace weave::executors::tp::fast {
 
+inline const size_t kVyukovGQueue = 61;
+
 class ThreadPool;
 
 ///////////////////////////////////////////////////////////////////
@@ -28,6 +30,7 @@ class ThreadPool;
 class Worker : public wheels::IntrusiveListNode<Worker>,
                private IPicker {
   friend class Coordinator;
+  friend class ThreadPool;
 
  private:
 #if !defined(TWIST_FAULTY)
@@ -40,7 +43,7 @@ class Worker : public wheels::IntrusiveListNode<Worker>,
       std::min(kVyukovGQueue, kLocalQueueCapacity) / 2;
 
  public:
-  Worker(ThreadPool& host, size_t index);
+  Worker(ThreadPool& host, size_t index, Logger::LoggerShard*);
 
   void Start();
 
@@ -58,10 +61,6 @@ class Worker : public wheels::IntrusiveListNode<Worker>,
   void Wake();
 
   static Worker* Current();
-
-  WorkerMetrics Metrics() const {
-    return metrics_;
-  }
 
   ThreadPool& Host() const {
     return host_;
@@ -128,10 +127,10 @@ class Worker : public wheels::IntrusiveListNode<Worker>,
   twist::ed::stdlike::atomic<uint32_t> wakeups_{0};
   twist::ed::stdlike::atomic<bool> idle_{false};
 
-  WorkerMetrics metrics_;
-
   moodycamel::ConsumerToken cons_token_;
   moodycamel::ProducerToken prod_token_;
+
+  Logger::LoggerShard* logger_shard_{nullptr};
 };
 
 }  // namespace weave::executors::tp::fast

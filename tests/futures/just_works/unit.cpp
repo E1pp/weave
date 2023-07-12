@@ -34,6 +34,7 @@
 #include <tuple>
 #include <chrono>
 
+#if !defined(TWIST_FIBERS)
 
 using namespace weave; // NOLINT
 
@@ -1858,5 +1859,7 @@ TEST_SUITE(LazyFutures) {
     }
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

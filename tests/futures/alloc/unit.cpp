@@ -28,6 +28,8 @@
 #include <thread>
 #include <chrono>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 using executors::ThreadPool;
@@ -163,5 +165,7 @@ TEST_SUITE(AllocFreeFutures) {
     pool.Stop();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

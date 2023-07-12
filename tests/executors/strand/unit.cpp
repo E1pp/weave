@@ -13,6 +13,8 @@
 
 #include <deque>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 using namespace std::chrono_literals;
 using weave::executors::tp::compute::ThreadPool;
@@ -309,5 +311,7 @@ TEST_SUITE(Strand) {
     pool.Stop();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

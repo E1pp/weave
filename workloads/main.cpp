@@ -21,7 +21,9 @@
 
 #include <wheels/core/stop_watch.hpp>
 
-#include "twist/rt/run.hpp"
+#include <twist/rt/run.hpp>
+
+#include <iostream>
 
 using namespace std::chrono_literals;
 using namespace weave; // NOLINT
@@ -299,10 +301,6 @@ void WorkLoadBurst(){
 
 //////////////////////////////////////////////////////////////////////
 
-void PrintMetrics(executors::tp::fast::PoolMetrics metrics) {
-  metrics.Print();
-}
-
 void WorkLoad() {
   wheels::StopWatch sw;
 
@@ -312,8 +310,8 @@ void WorkLoad() {
   fibers::Go(scheduler, []() {
     //WorkLoadYield1();
     //WorkLoadYield2();
-    WorkLoadYield2GoLess();
-    //WorkLoadMutex();
+    //WorkLoadYield2GoLess();
+    WorkLoadMutex();
     //WorkLoadMutexUnstable();
     //WorkLoadFutures();
     //WorkLoadRacy();
@@ -327,8 +325,7 @@ void WorkLoad() {
   const auto elapsed = sw.Elapsed();
 
   std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms " << std::endl;
-
-  PrintMetrics(scheduler.Metrics());
+  scheduler.Metrics().Print();
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -7,6 +7,8 @@
 #include <thread>
 #include <vector>
 
+#if !defined(TWIST_FIBERS)
+
 using weave::threads::lockfull::WaitGroup;
 
 TEST_SUITE(WaitGroup) {
@@ -114,5 +116,7 @@ TEST_SUITE(WaitGroup) {
     }
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

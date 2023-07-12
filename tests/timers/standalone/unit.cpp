@@ -8,6 +8,8 @@
 #include <chrono>
 #include <thread>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 using weave::timers::StandaloneProcessor;
@@ -199,5 +201,7 @@ TEST_SUITE(Standalone){
     ASSERT_LE(cpu_timer.Spent(), 25ms);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

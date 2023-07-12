@@ -42,10 +42,14 @@ void StorageTest() {
 
 //////////////////////////////////////////////////////////////////////
 
+#if defined(TWIST_FIBERS)
+
 TEST_SUITE(Event) {
   TWIST_TEST(Storage, 5s) {
     StorageTest();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS();

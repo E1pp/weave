@@ -14,18 +14,12 @@ Task* Worker::TryStealTasks() {
 
   Task* task = nullptr;
 
-  if constexpr (kCollectMetrics) {
-    metrics_.times_tried_stealing_++;
-  }
+  logger_shard_->Increment("Steal attempts", 1);
 
   // randomise sequence for every iter
   std::shuffle(indeces_.begin(), indeces_.end(), twister_);
 
   for (size_t i = 0; i < steal_attempts && task == nullptr; i++) {
-    if constexpr (kCollectMetrics) {
-      metrics_.times_we_iterated_stealing_++;
-    }
-
     task = TryStealTaskIter();
   }
 
@@ -68,32 +62,25 @@ size_t Worker::StealTasks(std::span<Task*> out_buffer) {
 
   size_t offset = 0;
 
-  if constexpr (!kDisbaleLifoInteraction && !kPreventLifoStealing) {
-    // stealing lifo first
-    Task* task = lifo_slot_.exchange(nullptr, std::memory_order::acquire);
+  // // stealing lifo first
+  // Task* task = lifo_slot_.exchange(nullptr, std::memory_order::acquire);
 
-    if (task != nullptr) {
-      if constexpr (kCollectMetrics) {
-        Worker::Current()->metrics_.times_stolen_from_lifo_slot_++;
-      }
+  // if (task != nullptr) {
 
-      out_buffer[0] = task;
-      // move offset if lifo was stolen
-      offset = 1;
-    }
-  }
-
+  //   out_buffer[0] = task;
+  //   // move offset if lifo was stolen
+  //   offset = 1;
+  // }
+  
   // consider letting owner launch it's task from lifo
 
   size_t stolen_from_local_queue =
       offset +
       local_tasks_.Grab({out_buffer.begin() + offset, out_buffer.end()});
 
-  if constexpr (kCollectMetrics) {
-    if (stolen_from_local_queue != 0) {
-      Worker::Current()->metrics_.tasks_stolen_from_local_queue_++;
-    }
-  }
+  Worker::Current()
+  ->logger_shard_
+  ->Increment("Stolen from local queue", (size_t)(stolen_from_local_queue != 0));
 
   return stolen_from_local_queue;
 }

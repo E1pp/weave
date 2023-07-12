@@ -22,6 +22,8 @@
 using namespace weave; // NOLINT
 using threads::lockfull::WaitGroup;
 
+#if !defined(TWIST_FIBERS)
+
 TEST_SUITE(Await) {
   SIMPLE_TEST(JustWorks) {
     executors::ThreadPool scheduler{4};
@@ -150,5 +152,7 @@ TEST_SUITE(Await) {
     scheduler.Stop();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS();

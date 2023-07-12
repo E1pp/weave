@@ -18,6 +18,8 @@
 
 #include <fmt/core.h>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 using namespace std::chrono_literals;
@@ -361,5 +363,7 @@ TEST_SUITE(Channels) {
     scheduler.Stop();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

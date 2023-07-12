@@ -44,7 +44,7 @@ class StandaloneProcessor : public IProcessor {
   void WorkerLoop() {
     uint32_t old;
 
-    while (!stop_requested_.load(std::memory_order::relaxed)) {
+    while (!stop_requested_.load(std::memory_order::acquire)) {
       old = wakeups_.load();
 
       auto until_next_deadline = PollQueue();
@@ -114,7 +114,7 @@ class StandaloneProcessor : public IProcessor {
   }
 
   void Stop() {
-    stop_requested_.store(true, std::memory_order::relaxed);
+    stop_requested_.store(true, std::memory_order::release);
     WakeWorker();
 
     worker_.join();

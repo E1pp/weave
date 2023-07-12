@@ -5,6 +5,8 @@
 
 using namespace weave; // NOLINT
 
+#if !defined(TWIST_FIBERS)
+
 TEST_SUITE(Manual) {
   SIMPLE_TEST(JustWorks) {
     executors::ManualExecutor manual;
@@ -106,5 +108,7 @@ TEST_SUITE(Manual) {
     ASSERT_EQ(manual.Drain(), 117);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

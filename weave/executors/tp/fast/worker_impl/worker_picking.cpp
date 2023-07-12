@@ -14,23 +14,17 @@ Task* Worker::TryPickTask() {
   // check global queue occasionally
   if (iter_ % kVyukovGQueue == 0) {
     if ((task = TryGrabTasksFromGlobalQueue()) != nullptr) {
-      if constexpr (kCollectMetrics) {
-        metrics_.launched_from_global_queue_++;
-      }
+      logger_shard_->Increment("Launched from global queue", 1);
 
       return task;
     }
   }
 
-  if constexpr (!kDisbaleLifoInteraction) {
-    // check LIFO slot
-    if ((task = TryPickTaskFromLifoSlot()) != nullptr) {
-      if constexpr (kCollectMetrics) {
-        metrics_.launched_from_lifo_slot_++;
-      }
+  // check LIFO slot
+  if ((task = TryPickTaskFromLifoSlot()) != nullptr) {
+    logger_shard_->Increment("Launched from lifo" ,1);
 
-      return task;
-    }
+    return task;
   }
 
   task = TryPickTaskFromLocalQueueFast();
@@ -65,9 +59,7 @@ Task* Worker::TryPickTaskFromLifoSlot() {
     // to reset the counter in this TryPickTask iteration
     lifo_streak_ = 0;
 
-    if constexpr (kCollectMetrics) {
-      metrics_.times_discarded_lifo_slot_++;
-    }
+    logger_shard_->Increment("Discarded lifo_slots", 1);
 
     // push task from lifo_slot to local queue
     PushToLocalQueue(next);
@@ -87,9 +79,7 @@ Task* Worker::TryPickTaskFromLocalQueueFast() {
     // reset lifo streak and return task
     lifo_streak_ = 0;
 
-    if constexpr (kCollectMetrics) {
-      metrics_.launched_from_local_queue_++;
-    }
+    logger_shard_->Increment("Launched from local queue", 1);
 
     return task;
   }
@@ -120,9 +110,7 @@ Task* Worker::TryPickTaskFromLocalQueueSlow() {
     // we found task to return -> reset lifo streak
     lifo_streak_ = 0;
 
-    if constexpr (kCollectMetrics) {
-      metrics_.launched_from_global_queue_++;
-    }
+    logger_shard_->Increment("Launched from global queue", 1);
 
     // grab first task for yourself and push the rest into the empty local queue
     task = buffer[0];

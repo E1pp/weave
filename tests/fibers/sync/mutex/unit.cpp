@@ -10,6 +10,8 @@
 #include <chrono>
 #include <thread>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 using namespace std::chrono_literals;
@@ -95,5 +97,7 @@ TEST_SUITE(Mutex) {
     ASSERT_TRUE(cs);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

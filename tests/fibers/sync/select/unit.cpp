@@ -14,6 +14,8 @@
 
 #include <thread>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 //////////////////////////////////////////////////////////////////////
@@ -352,5 +354,7 @@ TEST_SUITE(Select) {
     ASSERT_TRUE(done);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

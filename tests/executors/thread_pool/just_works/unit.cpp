@@ -12,6 +12,8 @@
 #include <chrono>
 #include <thread>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 using namespace std::chrono_literals;
@@ -327,5 +329,7 @@ TEST_SUITE(ThreadPool) {
     pool.Stop();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

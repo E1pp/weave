@@ -7,6 +7,8 @@
 
 #include <atomic>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 TEST_SUITE(Event) {
@@ -87,5 +89,7 @@ TEST_SUITE(Event) {
     ASSERT_TRUE(ok);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

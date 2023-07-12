@@ -20,7 +20,7 @@ class GlobalQueueBlockingImpl;
 class GlobalQueueLockfreeImpl;
 
 // Unbounded queue shared between workers
-using GlobalQueue = GlobalQueueLockfreeImpl;
+using GlobalQueue = GlobalQueueBlockingImpl;
 
 // Check different mutexes
 class GlobalQueueBlockingImpl {
@@ -92,8 +92,7 @@ class GlobalQueueBlockingImpl {
 
  private:
   wheels::IntrusiveList<Task> tasks_{};
-  // threads::lockfull::SpinLock mutex_;
-  twist::ed::stdlike::mutex mutex_;
+  threads::lockfull::SpinLock mutex_;
   size_t size_{0};
 
   // compatibility with lockfree impl
@@ -113,28 +112,24 @@ class GlobalQueueLockfreeImpl {
   }
 
   void Push(Task* task) {
-    queue_.enqueue(task);
-    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
+    queue_.enqueue_bulk(&task, 1);
   }
 
   // Called only by workers with tokens
 
   void Push(Task* task, moodycamel::ProducerToken& token) {
-    queue_.enqueue(token, task);
-    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
+    queue_.enqueue_bulk(token, &task, 1);
   }
 
   void Append(std::span<Task*> tasks, moodycamel::ProducerToken& token) {
     queue_.enqueue_bulk(token, tasks.begin(), tasks.size());
-    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
   }
 
   // Returns nullptr if queue is empty
   Task* TryPop(moodycamel::ConsumerToken& token) {
     Task* buffer = nullptr;
 
-    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
-    queue_.try_dequeue(token, buffer);
+    queue_.try_dequeue_bulk(token, &buffer, 1);
 
     return buffer;
   }
@@ -148,8 +143,9 @@ class GlobalQueueLockfreeImpl {
       size = 1;
     }
 
-    twist::ed::stdlike::atomic_thread_fence(std::memory_order::seq_cst);
-    return queue_.try_dequeue_bulk(token, out_buffer.begin(), size);
+    size_t ret = queue_.try_dequeue_bulk(token, out_buffer.begin(), size);
+
+    return ret;
   }
 
  private:

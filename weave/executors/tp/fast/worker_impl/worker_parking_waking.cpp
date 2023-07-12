@@ -20,11 +20,8 @@ Task* Worker::PickTask() {
     // spinning routine
     if (host_.coordinator_.TryStartSpinning()) {
       Task* task = nullptr;
-      if constexpr (!kDisableStealing) {
-        task = TryStealTasks();
-      }
 
-      if (task == nullptr) {
+      if ((task = TryStealTasks()) == nullptr) {
         task = TryGrabTasksFromGlobalQueue();
       }
 
@@ -68,12 +65,10 @@ Task* Worker::TryPickTaskBeforePark() {
     return task;
   }
 
-  if constexpr (!kDisableStealing) {
-    if (Task* task = TryStealTaskIter(); task != nullptr) {
-      return task;
-    }
+  if (Task* task = TryStealTaskIter(); task != nullptr) {
+    return task;
   }
-
+  
   return nullptr;
 }
 

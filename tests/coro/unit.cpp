@@ -7,6 +7,8 @@
 #include <sstream>
 #include <thread>
 
+#if !defined(TWIST_FIBERS)
+
 //////////////////////////////////////////////////////////////////////
 
 using Coroutine = weave::coro::SimpleCoroutine;
@@ -295,5 +297,7 @@ TEST_SUITE(Coroutine) {
     ASSERT_FALSE(weak_ptr.lock());
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

@@ -1,5 +1,7 @@
 include(CTest)
 
+enable_testing()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 
 ##################################################################

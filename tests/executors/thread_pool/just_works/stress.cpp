@@ -156,7 +156,7 @@ void SubmitFromAnotherThreadTest(){
   twist::test::Repeat repeat;
 
   while(repeat()){
-    std::deque<std::thread> threads{};
+    std::deque<twist::ed::stdlike::thread> threads{};
 
     size_t external = twist::test::Random(1, 5);
 

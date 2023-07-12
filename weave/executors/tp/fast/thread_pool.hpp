@@ -45,7 +45,7 @@ class ThreadPool : public IExecutor {
   void Stop();
 
   // After Stop
-  PoolMetrics Metrics() const;
+  Logger::Metrics Metrics();
 
   static ThreadPool* Current();
 
@@ -85,7 +85,7 @@ class ThreadPool : public IExecutor {
 
   threads::lockfull::WorkCount work_count_;
 
-  PoolMetrics metrics_{};
+  Logger logger_;
 };
 
 }  // namespace weave::executors::tp::fast

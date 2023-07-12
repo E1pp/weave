@@ -38,10 +38,14 @@ void StorageTest() {
   scheduler.Stop();
 }
 
+#if defined(TWIST_FIBERS)
+
 TEST_SUITE(WaitGroup) {
   TWIST_TEST(Storage, 5s) {
     StorageTest();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS();

@@ -8,6 +8,8 @@
 #include <atomic>
 #include <thread>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 TEST_SUITE(WaitGroup) {
@@ -107,5 +109,7 @@ TEST_SUITE(WaitGroup) {
     ASSERT_TRUE(ok);
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

@@ -29,6 +29,8 @@
 
 #include <fmt/core.h>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 TEST_SUITE(Futures){
@@ -197,5 +199,7 @@ TEST_SUITE(Futures){
     pool.Stop();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

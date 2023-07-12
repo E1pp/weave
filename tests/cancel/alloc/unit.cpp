@@ -48,6 +48,8 @@
 #include <thread>
 #include <tuple>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 inline std::error_code TimeoutError() {
@@ -719,5 +721,7 @@ TEST_SUITE(Cancel){
     futures::no_alloc::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

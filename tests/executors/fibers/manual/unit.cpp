@@ -9,6 +9,8 @@
 
 #include <wheels/test/framework.hpp>
 
+#if !defined(TWIST_FIBERS)
+
 using namespace weave; // NOLINT
 
 TEST_SUITE(Manual) {
@@ -244,5 +246,7 @@ TEST_SUITE(ManualSched){
     manual2.Stop();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()

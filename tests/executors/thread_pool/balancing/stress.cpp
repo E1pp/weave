@@ -20,6 +20,8 @@ using namespace std::chrono_literals;
 
 // Parking + Balancing is hard
 
+#if defined(TWIST_FIBERS)
+
 auto SteadyNow() {
   return twist::ed::stdlike::steady_clock::now();
 }
@@ -101,5 +103,7 @@ TEST_SUITE(BalanceTasks) {
     InternalSubmits();
   }
 }
+
+#endif
 
 RUN_ALL_TESTS()
