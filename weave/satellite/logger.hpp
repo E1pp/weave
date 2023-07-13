@@ -13,19 +13,19 @@
 namespace weave::satellite {
 
 template <bool CollectMetrics, bool AtomicMetrics>
-class LoggerImpl {
+class Logger {
  public:
   class LoggerShard;
   class Metrics;
 
-  explicit LoggerImpl(const std::vector<std::string>&, size_t) {
+  explicit Logger(const std::vector<std::string>&, size_t) {
   }
 
-  LoggerImpl(const LoggerImpl&) = delete;
-  LoggerImpl& operator=(const LoggerImpl&) = delete;
+  Logger(const Logger&) = delete;
+  Logger& operator=(const Logger&) = delete;
 
-  LoggerImpl(LoggerImpl&&) = delete;
-  LoggerImpl& operator=(LoggerImpl&&) = delete;
+  Logger(Logger&&) = delete;
+  Logger& operator=(Logger&&) = delete;
 
   Metrics GatherMetrics() {
     return Metrics();
@@ -67,7 +67,7 @@ class LoggerImpl {
 };
 
 template <bool AtomicMetrics>
-class LoggerImpl<true, AtomicMetrics> {
+class Logger<true, AtomicMetrics> {
  public:
   class LoggerShard;
   class Metrics;
@@ -75,9 +75,9 @@ class LoggerImpl<true, AtomicMetrics> {
   friend class LoggerShard;
   friend class Metrics;
 
-  LoggerImpl() = delete;
+  Logger() = delete;
 
-  explicit LoggerImpl(const std::vector<std::string>& names, size_t num_shards)
+  explicit Logger(const std::vector<std::string>& names, size_t num_shards)
       : shards_(num_shards, std::nullopt),
         total_(this, names.size()) {
     const size_t size = names.size();
@@ -87,11 +87,11 @@ class LoggerImpl<true, AtomicMetrics> {
     }
   }
 
-  LoggerImpl(const LoggerImpl&) = delete;
-  LoggerImpl& operator=(const LoggerImpl&) = delete;
+  Logger(const Logger&) = delete;
+  Logger& operator=(const Logger&) = delete;
 
-  LoggerImpl(LoggerImpl&&) = delete;
-  LoggerImpl& operator=(LoggerImpl&&) = delete;
+  Logger(Logger&&) = delete;
+  Logger& operator=(Logger&&) = delete;
 
   Metrics GatherMetrics() {
     Accumulate();
@@ -121,10 +121,10 @@ class LoggerImpl<true, AtomicMetrics> {
   /////////////////////////////////////////////////////////////////////////////
 
   class LoggerShard {
-    using Logger = LoggerImpl<true, AtomicMetrics>;
+    using Owner = Logger<true, AtomicMetrics>;
 
     template <bool A, bool B>
-    friend class LoggerImpl;
+    friend class Logger;
     friend class Metrics;
 
    public:
@@ -141,7 +141,7 @@ class LoggerImpl<true, AtomicMetrics> {
     LoggerShard(LoggerShard&&) = delete;
     LoggerShard& operator=(LoggerShard&&) = delete;
 
-    explicit LoggerShard(Logger* owner)
+    explicit LoggerShard(Owner* owner)
         : owner_(owner),
           metrics_(owner_->indeces_.size()) {
     }
@@ -176,13 +176,13 @@ class LoggerImpl<true, AtomicMetrics> {
       return metrics_.Load(index, std::memory_order::relaxed);
     }
 
-    LoggerShard(Logger* owner, size_t count)
+    LoggerShard(Owner* owner, size_t count)
         : owner_(owner),
           metrics_(count) {
     }
 
    private:
-    Logger* owner_;
+    Owner* owner_;
     threads::lockfree::MaybeAtomicArray<size_t, AtomicMetrics> metrics_;
   };
 

@@ -28,6 +28,6 @@ inline const std::vector<std::string> kMetrics{"Launched from lifo",
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-using Logger = satellite::LoggerImpl<kCollectMetrics, kAtomicMetrics>;
+using Logger = satellite::Logger<kCollectMetrics, kAtomicMetrics>;
 
 }  // namespace weave::executors::tp::fast

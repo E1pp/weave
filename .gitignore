@@ -94,3 +94,6 @@ __pycache__
 
 # Build dir
 build/
+
+# Format macro
+format.sh
