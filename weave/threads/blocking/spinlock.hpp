@@ -3,7 +3,7 @@
 #include <twist/ed/stdlike/atomic.hpp>
 #include <twist/ed/wait/spin.hpp>
 
-namespace weave::threads::lockfull {
+namespace weave::threads::blocking {
 
 // Test-and-TAS spinlock
 
@@ -53,4 +53,4 @@ class SpinLock {
   twist::ed::stdlike::atomic<uint64_t> locked_{0};
 };
 
-}  // namespace weave::threads::lockfull
+}  // namespace weave::threads::blocking

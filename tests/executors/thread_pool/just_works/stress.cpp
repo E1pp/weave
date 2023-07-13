@@ -1,7 +1,7 @@
 #include <weave/executors/thread_pool.hpp>
 #include <weave/executors/submit.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
@@ -30,7 +30,7 @@ void TestOneTask() {
   pool.Start();
 
   for (twist::test::Repeat repeat; repeat(); ) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -53,7 +53,7 @@ void TestSeries() {
   for (twist::test::Repeat repeat; repeat(); ) {
     const size_t tasks = 1 + repeat.Iter() % 3;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(tasks);
 
     for (size_t i = 0; i < tasks; ++i) {
@@ -76,7 +76,7 @@ void TestCurrent() {
   pool.Start();
 
   for (twist::test::Repeat repeat; repeat(); ) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -101,7 +101,7 @@ void TestSpawners() {
   twist::test::Repeat repeat;
 
   while (repeat()) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     size_t init = twist::test::Random(1, 10);
 
@@ -149,7 +149,7 @@ void TestSpawners() {
 
 void SubmitFromAnotherThreadTest(){
   executors::ThreadPool pool{4};
-  threads::lockfull::WaitGroup wg;
+  threads::blocking::WaitGroup wg;
 
   pool.Start();
 

@@ -2,7 +2,7 @@
 #include <weave/executors/strand.hpp>
 #include <weave/executors/submit.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
@@ -44,7 +44,7 @@ void MaybeAnomaly() {
     executors::Strand strand{pool};
     OnePassBarrier barrier{2};
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(2);
 
     executors::Submit(strand, [&wg, &barrier] {

@@ -1,7 +1,7 @@
 #include <weave/executors/thread_pool.hpp>
 #include <weave/executors/submit.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 
@@ -24,7 +24,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&wg] {
@@ -42,7 +42,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -61,7 +61,7 @@ TEST_SUITE(ThreadPool) {
     pool.Start();
 
     for (size_t i = 0; i < 3; ++i) {
-      threads::lockfull::WaitGroup wg;
+      threads::blocking::WaitGroup wg;
       wg.Add(1);
 
       executors::Submit(pool, [&] {
@@ -82,7 +82,7 @@ TEST_SUITE(ThreadPool) {
 
     static const size_t kTasks = 17;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {
@@ -101,7 +101,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(4);
 
     for (size_t i = 0; i < 4; ++i) {
@@ -121,7 +121,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(4);
 
     for (size_t i = 0; i < 4; ++i) {
@@ -147,7 +147,7 @@ TEST_SUITE(ThreadPool) {
     pool1.Start();
     pool2.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(2);
 
     wheels::StopWatch stop_watch;
@@ -177,7 +177,7 @@ TEST_SUITE(ThreadPool) {
     pool1.Start();
     pool2.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool1, [&]() {
@@ -199,7 +199,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(4);
 
     wheels::ProcessCPUTimer cpu_timer;
@@ -226,7 +226,7 @@ TEST_SUITE(ThreadPool) {
 
     ASSERT_EQ(executors::ThreadPool::Current(), nullptr);
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -244,7 +244,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -308,7 +308,7 @@ TEST_SUITE(ThreadPool) {
 
     std::atomic<size_t> shared_counter{0};
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {

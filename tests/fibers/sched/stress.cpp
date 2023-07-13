@@ -3,7 +3,7 @@
 #include <weave/fibers/sched/go.hpp>
 #include <weave/fibers/sched/yield.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/ed/stdlike/atomic.hpp>
 
@@ -38,7 +38,7 @@ TEST_SUITE(Fibers) {
     executors::ThreadPool scheduler{kThreads};
     scheduler.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kFibers);
 
     for (size_t i = 0; i < kFibers; ++i) {

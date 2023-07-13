@@ -3,8 +3,8 @@
 #include <twist/ed/stdlike/atomic.hpp>
 
 #include <weave/executors/tp/fast/queues/parking_lot.hpp>
-#include <weave/threads/lockfull/spinlock.hpp>
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
+#include <weave/threads/blocking/spinlock.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
 
 namespace weave::executors::tp::fast {
 

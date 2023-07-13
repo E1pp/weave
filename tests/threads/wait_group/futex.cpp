@@ -1,4 +1,4 @@
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 
@@ -15,7 +15,7 @@ TEST_SUITE(WaitGroup) {
       auto* scheduler = twist::rt::fiber::Scheduler::Current();
 
       {
-        weave::threads::lockfull::WaitGroup wg;
+        weave::threads::blocking::WaitGroup wg;
 
         wg.Add(128);
 

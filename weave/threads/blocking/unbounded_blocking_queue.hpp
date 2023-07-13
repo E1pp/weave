@@ -1,14 +1,14 @@
 #pragma once
 
-#include <weave/threads/lockfull/stdlike/condition_variable.hpp>
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
+#include <weave/threads/blocking/stdlike/condition_variable.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
 
 #include <wheels/intrusive/list.hpp>
 
 #include <mutex>
 #include <optional>
 
-namespace weave::support {
+namespace weave::threads::blocking {
 
 // Unbounded blocking multi-producers/multi-consumers (MPMC) queue
 
@@ -51,8 +51,8 @@ class UnboundedBlockingQueue {
  private:
   bool is_open_{true};
   wheels::IntrusiveList<T> queue_;  // guarded by mutex_
-  threads::lockfull::stdlike::Mutex mutex_;
-  threads::lockfull::stdlike::CondVar queue_is_not_empty_;
+  threads::blocking::stdlike::Mutex mutex_;
+  threads::blocking::stdlike::CondVar queue_is_not_empty_;
 };
 
-}  // namespace weave::support
+}  // namespace weave::threads::blocking 

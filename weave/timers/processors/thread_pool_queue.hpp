@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <weave/timers/processor.hpp>
 
-#include <weave/threads/lockfull/spinlock.hpp>
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
+#include <weave/threads/blocking/spinlock.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
 
 #include <chrono>
 #include <optional>
@@ -19,8 +19,8 @@ using namespace std::chrono_literals;
 
 class TimersQueue {
  private:
-  using Guard = weave::threads::lockfull::stdlike::LockGuard<
-      weave::threads::lockfull::SpinLock>;
+  using Guard = weave::threads::blocking::stdlike::LockGuard<
+      weave::threads::blocking::SpinLock>;
   using SteadyClock = std::chrono::steady_clock;
   using TimePoint = SteadyClock::time_point;
 
@@ -135,7 +135,7 @@ class TimersQueue {
   }
 
  private:
-  weave::threads::lockfull::SpinLock spinlock_{};
+  weave::threads::blocking::SpinLock spinlock_{};
   std::vector<TimerNode> timers_{};
 };
 

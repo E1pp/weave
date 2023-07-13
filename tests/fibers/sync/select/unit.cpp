@@ -7,7 +7,7 @@
 #include <weave/fibers/sync/channel.hpp>
 #include <weave/fibers/sync/select.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 #include <wheels/test/util/cpu_timer.hpp>
@@ -25,7 +25,7 @@ void RunScheduler(size_t threads, F routine) {
   executors::ThreadPool scheduler{threads};
   scheduler.Start();
   
-  threads::lockfull::WaitGroup wg;
+  threads::blocking::WaitGroup wg;
 
   auto task = [&wg, f = std::move(routine)]{
     f();

@@ -3,7 +3,7 @@
 #include <twist/ed/stdlike/atomic.hpp>
 #include <twist/ed/wait/futex.hpp>
 
-namespace weave::futures::get_detail {
+namespace weave::threads::blocking {
 
 class Event {
   enum State : uint32_t { NotReady = 0, Ready = 1 };
@@ -23,4 +23,4 @@ class Event {
   twist::ed::stdlike::atomic<uint32_t> ready_{State::NotReady};
 };
 
-}  // namespace weave::futures::get_detail
+}  // namespace weave::threads::blocking

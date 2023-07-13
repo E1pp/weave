@@ -1,4 +1,4 @@
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
@@ -10,7 +10,7 @@
 using namespace weave; // NOLINT
 
 void StressTest() {
-  threads::lockfull::WaitGroup wg;
+  threads::blocking::WaitGroup wg;
 
   size_t workers = twist::test::Random(1, 5);
   size_t waiters = twist::test::Random(1, 5);

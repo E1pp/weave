@@ -3,7 +3,7 @@
 #include <weave/executors/manual.hpp>
 #include <weave/executors/submit.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 #include <wheels/core/stop_watch.hpp>
@@ -30,7 +30,7 @@ TEST_SUITE(Strand) {
 
     executors::Strand strand{pool};
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(strand, [&] {
@@ -50,7 +50,7 @@ TEST_SUITE(Strand) {
 
     static const size_t kTasks = 128;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {
@@ -73,7 +73,7 @@ TEST_SUITE(Strand) {
 
     static const size_t kIncrements = 1234;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kIncrements);
 
     for (size_t i = 0; i < kIncrements; ++i) {
@@ -98,7 +98,7 @@ TEST_SUITE(Strand) {
 
     size_t index = 0;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {
@@ -128,7 +128,7 @@ TEST_SUITE(Strand) {
     static const size_t kPushes = 25;
     static const size_t kIterations = 25;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kStrands * kPushes * kIterations);
 
     for (size_t i = 0; i < kIterations; ++i) {
@@ -157,7 +157,7 @@ TEST_SUITE(Strand) {
 
     static const size_t kTasks = 1024;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {
@@ -220,7 +220,7 @@ TEST_SUITE(Strand) {
 
     static const size_t kTasks = 17;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {
@@ -285,7 +285,7 @@ TEST_SUITE(Strand) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(2);
 
     executors::Submit(strand, [&] {

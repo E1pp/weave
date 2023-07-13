@@ -11,7 +11,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-namespace weave::threads::lockfull {
+namespace weave::threads::blocking {
 
 class WG;
 class WaitGroup1;
@@ -155,4 +155,4 @@ class WG {
   static constexpr uint64_t kNotEmpty = 0;
 };
 
-}  // namespace weave::threads::lockfull
+}  // namespace weave::threads::blocking

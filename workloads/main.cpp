@@ -17,7 +17,7 @@
 
 #include <weave/futures/run/detach.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/core/stop_watch.hpp>
 

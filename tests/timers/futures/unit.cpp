@@ -18,7 +18,7 @@
 #include <weave/futures/run/detach.hpp>
 #include <weave/futures/run/discard.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <weave/timers/processors/standalone.hpp>
 
@@ -52,7 +52,7 @@ TEST_SUITE(Futures){
   SIMPLE_TEST(CancelAfter){
     timers::StandaloneProcessor proc{};
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     proc.MakeGlobal();
@@ -74,7 +74,7 @@ TEST_SUITE(Futures){
   SIMPLE_TEST(CancellableAfter){
     timers::StandaloneProcessor proc{};
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     proc.MakeGlobal();
@@ -99,7 +99,7 @@ TEST_SUITE(Futures){
   SIMPLE_TEST(DontOvershadow){
     timers::StandaloneProcessor proc{};
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     proc.MakeGlobal();
@@ -162,7 +162,7 @@ TEST_SUITE(Futures){
     timers::StandaloneProcessor proc{};
     proc.MakeGlobal();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     bool flag = false;
 
     wg.Add(1);

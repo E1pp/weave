@@ -5,7 +5,7 @@
 #include <weave/fibers/sched/go.hpp>
 #include <weave/fibers/sync/event.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/repeat.hpp>
 
@@ -18,7 +18,7 @@ void StorageTest() {
   scheduler.Start();
 
   for (twist::test::Repeat repeat; repeat(); ) {
-    threads::lockfull::WaitGroup iter;
+    threads::blocking::WaitGroup iter;
     iter.Add(1);
 
     fibers::Go(scheduler, [&iter] {

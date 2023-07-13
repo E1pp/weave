@@ -1,7 +1,7 @@
 #include <weave/executors/thread_pool.hpp>
 #include <weave/executors/submit.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
@@ -35,7 +35,7 @@ void ExternalSubmits() {
   while (repeat()) {
     auto start = SteadyNow();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(3);
 
     for (size_t i = 0; i < 3; ++i) {
@@ -66,7 +66,7 @@ void InternalSubmits() {
   while (repeat()) {
     auto start = SteadyNow();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {

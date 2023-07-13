@@ -37,8 +37,8 @@
 #include <weave/futures/run/detach.hpp>
 #include <weave/futures/run/get.hpp>
 
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 #include <wheels/test/util/cpu_timer.hpp>

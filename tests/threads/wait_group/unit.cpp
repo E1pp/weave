@@ -1,4 +1,4 @@
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 #include <wheels/test/util/cpu_timer.hpp>
@@ -9,7 +9,7 @@
 
 #if !defined(TWIST_FIBERS)
 
-using weave::threads::lockfull::WaitGroup;
+using weave::threads::blocking::WaitGroup;
 
 TEST_SUITE(WaitGroup) {
   SIMPLE_TEST(JustWorks) {

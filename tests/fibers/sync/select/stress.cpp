@@ -8,7 +8,7 @@
 #include <weave/fibers/sync/channel.hpp>
 #include <weave/fibers/sync/select.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 #include <twist/test/budget.hpp>
@@ -41,7 +41,7 @@ class SelectTester {
   };
 
  public:
-  explicit SelectTester(size_t threads, threads::lockfull::WaitGroup* wg) : pool_(threads), wg_(wg) {
+  explicit SelectTester(size_t threads, threads::blocking::WaitGroup* wg) : pool_(threads), wg_(wg) {
   }
 
   void AddChannel(size_t capacity) {
@@ -268,7 +268,7 @@ class SelectTester {
 
  private:
   executors::ThreadPool pool_;
-  threads::lockfull::WaitGroup* wg_;
+  threads::blocking::WaitGroup* wg_;
 
   std::vector<fibers::Channel<int64_t>> channels_;
 
@@ -288,7 +288,7 @@ class SelectTester {
 void AtomicityStressTest() {
   executors::ThreadPool pool{4};
 
-  threads::lockfull::WaitGroup main;
+  threads::blocking::WaitGroup main;
 
   pool.Start();
 
@@ -335,7 +335,7 @@ void AtomicityStressTest() {
 
 TEST_SUITE(TrySelect) {
   TWIST_TEST(ConcurrentSelects, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(7);
@@ -351,7 +351,7 @@ TEST_SUITE(TrySelect) {
   }
 
   TWIST_TEST(Deadlock, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(17);
@@ -367,7 +367,7 @@ TEST_SUITE(TrySelect) {
   }
 
   TWIST_TEST(MixTrySelectsAndReceives, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(11);
@@ -386,7 +386,7 @@ TEST_SUITE(TrySelect) {
   }
 
   TWIST_TEST(OverlappedTrySelects, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(11);
@@ -405,7 +405,7 @@ TEST_SUITE(TrySelect) {
   }
 
   TWIST_TEST(Hard, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(7);
@@ -444,7 +444,7 @@ TEST_SUITE(TrySelect) {
 
 TEST_SUITE(Select) {
   TWIST_TEST(ConcurrentSelects, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(7);
@@ -460,7 +460,7 @@ TEST_SUITE(Select) {
   }
 
   TWIST_TEST(Deadlock, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(17);
@@ -476,7 +476,7 @@ TEST_SUITE(Select) {
   }
 
   TWIST_TEST(MixSelectsAndReceives, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(11);
@@ -494,7 +494,7 @@ TEST_SUITE(Select) {
   }
 
   TWIST_TEST(OverlappedSelects, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(11);
@@ -513,7 +513,7 @@ TEST_SUITE(Select) {
   }
 
   TWIST_TEST(Hard, 5s) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     SelectTester tester{/*threads=*/4, &wg};
 
     tester.AddChannel(7);

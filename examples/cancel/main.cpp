@@ -19,7 +19,7 @@
 #include <weave/futures/run/await.hpp>
 #include <weave/futures/run/detach.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <weave/timers/processors/standalone.hpp>
 
@@ -191,7 +191,7 @@ void DeadlockExample(){
   executors::ThreadPool pool{4};
   pool.Start();
 
-  threads::lockfull::WaitGroup wg;
+  threads::blocking::WaitGroup wg;
 
   fibers::Mutex mutex;
 
@@ -244,7 +244,7 @@ void RAIIExample(){
   executors::ThreadPool pool{4};
   pool.Start();
 
-  threads::lockfull::WaitGroup wg;
+  threads::blocking::WaitGroup wg;
 
   fibers::Mutex mutex;
 
@@ -336,8 +336,8 @@ void SleepForExample(){
   timers::StandaloneProcessor proc{};
   proc.MakeGlobal();
 
-  threads::lockfull::WaitGroup wg1;
-  threads::lockfull::WaitGroup wg2;
+  threads::blocking::WaitGroup wg1;
+  threads::blocking::WaitGroup wg2;
   bool flag = false;
 
   auto start = std::chrono::steady_clock::now();

@@ -5,7 +5,7 @@
 #include <weave/fibers/sync/mutex.hpp>
 #include <weave/fibers/sync/wait_group.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
@@ -35,7 +35,7 @@ void StressTest1(size_t fibers) {
   fibers::Mutex mutex;
   twist::test::Plate plate;
 
-  threads::lockfull::WaitGroup wg;
+  threads::blocking::WaitGroup wg;
   wg.Add(fibers);
 
   for (size_t i = 0; i < fibers; ++i) {
@@ -66,7 +66,7 @@ void StressTest2() {
   for (twist::test::Repeat repeat; repeat(); ) {
     size_t fibers = 2 + repeat.Iter() % 5;
 
-    threads::lockfull::WaitGroup iter;
+    threads::blocking::WaitGroup iter;
     iter.Add(fibers);
 
     fibers::Mutex mutex;
@@ -101,7 +101,7 @@ void StressTest() {
   for (twist::test::Repeat repeat; repeat(); ) {
     const size_t waiters = 1 + repeat.Iter() % 4;
 
-    threads::lockfull::WaitGroup iter;
+    threads::blocking::WaitGroup iter;
     iter.Add(waiters);
 
     fibers::Event event;
@@ -143,7 +143,7 @@ void StressTest() {
     const size_t workers = 1 + twist::test::Random(3);
     const size_t waiters = 1 + twist::test::Random(3);
 
-    threads::lockfull::WaitGroup iter;
+    threads::blocking::WaitGroup iter;
     iter.Add(workers + waiters);
 
     fibers::WaitGroup wg;

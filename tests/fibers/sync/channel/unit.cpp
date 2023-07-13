@@ -7,7 +7,7 @@
 #include <weave/fibers/sync/wait_group.hpp>
 #include <weave/fibers/sync/channel.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 
@@ -255,7 +255,7 @@ TEST_SUITE(Channels) {
 
     scheduler.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     fibers::Channel<int> ints{11};
 
@@ -313,7 +313,7 @@ TEST_SUITE(Channels) {
 
     scheduler.Start();
 
-    threads::lockfull::WaitGroup outer;
+    threads::blocking::WaitGroup outer;
 
     outer.Add(1);
 

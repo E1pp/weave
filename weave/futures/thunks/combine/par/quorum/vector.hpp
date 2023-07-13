@@ -13,8 +13,8 @@
 
 #include <weave/futures/thunks/detail/cancel_base.hpp>
 
-#include <weave/threads/lockfull/spinlock.hpp>
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
+#include <weave/threads/blocking/spinlock.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
 
 #include <optional>
 
@@ -38,7 +38,7 @@ struct QuorumControlBlock<OnHeap, detail::Vector, Future>
                         QuorumControlBlock<OnHeap, detail::Vector, Future>,
                         detail::Dummy, detail::Vector, Future>;
   using Guard =
-      threads::lockfull::stdlike::UniqueLock<threads::lockfull::SpinLock>;
+      threads::blocking::stdlike::UniqueLock<threads::blocking::SpinLock>;
 
   template <typename... Args>
   requires std::is_constructible_v<Base, size_t, Args...>
@@ -146,7 +146,7 @@ struct QuorumControlBlock<OnHeap, detail::Vector, Future>
   std::vector<InputType> storage_{};
 
   // sync
-  threads::lockfull::SpinLock spinlock_;
+  threads::blocking::SpinLock spinlock_;
 };
 
 ///////////////////////////////////////////////////////////////////////
@@ -166,7 +166,7 @@ struct QuorumControlBlock<false, detail::Vector, Future>
                         QuorumControlBlock<false, detail::Vector, Future>,
                         detail::Dummy, detail::Vector, Future>;
   using Guard =
-      threads::lockfull::stdlike::UniqueLock<threads::lockfull::SpinLock>;
+      threads::blocking::stdlike::UniqueLock<threads::blocking::SpinLock>;
 
   template <typename... Args>
   requires std::is_constructible_v<Base, size_t, Args...>
@@ -291,7 +291,7 @@ struct QuorumControlBlock<false, detail::Vector, Future>
   std::vector<InputType> storage_{};
 
   // sync
-  support::Delayed<threads::lockfull::SpinLock> spinlock_;
+  support::Delayed<threads::blocking::SpinLock> spinlock_;
 };
 
 }  // namespace weave::futures::thunks

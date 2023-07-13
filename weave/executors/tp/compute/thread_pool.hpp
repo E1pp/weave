@@ -2,9 +2,9 @@
 
 #include <weave/executors/executor.hpp>
 
-#include <weave/support/unbounded_blocking_queue.hpp>
+#include <weave/threads/blocking/unbounded_blocking_queue.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/ed/stdlike/thread.hpp>
 
@@ -47,10 +47,10 @@ class ThreadPool : public IExecutor {
   // runtime core part: task queue, thread vector, threads number
   const size_t num_threads_;
   std::vector<twist::ed::stdlike::thread> workers_;
-  support::UnboundedBlockingQueue<Task> tasks_;
+  threads::blocking::UnboundedBlockingQueue<Task> tasks_;
 
   // WaitIdle
-  threads::lockfull::WaitGroup incomplete_tasks_;
+  threads::blocking::WaitGroup incomplete_tasks_;
 };
 
 }  // namespace weave::executors::tp::compute

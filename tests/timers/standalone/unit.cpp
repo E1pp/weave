@@ -1,4 +1,4 @@
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <weave/timers/processors/standalone.hpp>
 
@@ -13,7 +13,7 @@
 using namespace weave; // NOLINT
 
 using weave::timers::StandaloneProcessor;
-using weave::threads::lockfull::WaitGroup;
+using weave::threads::blocking::WaitGroup;
 
 TEST_SUITE(Standalone){
   template <typename F>

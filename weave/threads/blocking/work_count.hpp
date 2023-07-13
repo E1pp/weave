@@ -1,7 +1,7 @@
 #pragma once
 
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
-#include <weave/threads/lockfull/spinlock.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
+#include <weave/threads/blocking/spinlock.hpp>
 
 #include <twist/ed/stdlike/atomic.hpp>
 #include <twist/ed/wait/sys.hpp>
@@ -11,10 +11,10 @@
 #endif
 
 #if defined(CAN_RUN_UNSAFE_WAITGROUP)
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 #endif
 
-namespace weave::threads::lockfull {
+namespace weave::threads::blocking {
 
 class WorkCountImpl1;
 class WorkCountImpl2;
@@ -35,7 +35,7 @@ class WorkCountImpl1 {
       return;
     }
 
-    threads::lockfull::stdlike::LockGuard locker(spinlock_);
+    threads::blocking::stdlike::LockGuard locker(spinlock_);
 
     if (counter_.fetch_add(count, std::memory_order::relaxed) == 0) {
       flag_.store(State::SomeWork, std::memory_order::relaxed);
@@ -55,7 +55,7 @@ class WorkCountImpl1 {
       return;
     }
 
-    threads::lockfull::stdlike::LockGuard locker(spinlock_);
+    threads::blocking::stdlike::LockGuard locker(spinlock_);
     // reduced counter to zero
     if (counter_.fetch_sub(count, std::memory_order::acq_rel) == count) {
       auto wake_key = twist::ed::futex::PrepareWake(flag_);
@@ -82,7 +82,7 @@ class WorkCountImpl1 {
   twist::ed::stdlike::atomic<uint32_t> flag_{State::NoWork};
   twist::ed::stdlike::atomic<uint64_t> counter_{0};
 
-  threads::lockfull::SpinLock spinlock_;
+  threads::blocking::SpinLock spinlock_;
 };
 
 #if defined(CAN_RUN_UNSAFE_WAITGROUP)
@@ -110,9 +110,9 @@ class WorkCountImpl2 {
   }
 
  private:
-  threads::lockfull::WG impl_{};
+  threads::blocking::WG impl_{};
 };
 
 #endif
 
-}  // namespace weave::threads::lockfull
+}  // namespace weave::threads::blocking

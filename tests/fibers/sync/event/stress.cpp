@@ -6,7 +6,7 @@
 #include <weave/fibers/sched/yield.hpp>
 #include <weave/fibers/sync/event.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/repeat.hpp>
 
@@ -21,7 +21,7 @@ void StressTest() {
   for (twist::test::Repeat repeat; repeat(); ) {
     const size_t waiters = 1 + repeat.Iter() % 4;
 
-    threads::lockfull::WaitGroup iter;
+    threads::blocking::WaitGroup iter;
     iter.Add(waiters);
 
     fibers::Event event;

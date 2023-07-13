@@ -1,7 +1,7 @@
 #pragma once
 
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
-#include <weave/threads/lockfull/spinlock.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
+#include <weave/threads/blocking/spinlock.hpp>
 
 #include <wheels/intrusive/list.hpp>
 
@@ -22,7 +22,7 @@ class ParkingLotBlockingImpl {
   using Node = wheels::IntrusiveListNode<T>;
   // post condition: obj is on parking lot
   void Enqueue(Node* obj) {
-    threads::lockfull::stdlike::LockGuard lock(spinlock_);
+    threads::blocking::stdlike::LockGuard lock(spinlock_);
     if (obj->IsLinked()) {
       return;
     }
@@ -30,13 +30,13 @@ class ParkingLotBlockingImpl {
   }
 
   T* TryDequeue() {
-    threads::lockfull::stdlike::LockGuard lock(spinlock_);
+    threads::blocking::stdlike::LockGuard lock(spinlock_);
     return lot_.PopFront();
   }
 
   // post condition: key is not present on parking lot
   void RemoveFromQueue(Node* obj) {
-    threads::lockfull::stdlike::LockGuard lock(spinlock_);
+    threads::blocking::stdlike::LockGuard lock(spinlock_);
     obj->Unlink();
   }
 
@@ -45,7 +45,7 @@ class ParkingLotBlockingImpl {
   }
 
  private:
-  threads::lockfull::SpinLock spinlock_;  // guards the container
+  threads::blocking::SpinLock spinlock_;  // guards the container
   wheels::IntrusiveList<T> lot_;
 };
 

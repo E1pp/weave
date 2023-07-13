@@ -4,7 +4,7 @@
 #include <twist/ed/wait/spin.hpp>
 #include <twist/ed/spin/wait.hpp>
 
-namespace exe::threads::lockfull {
+namespace exe::threads::blocking {
 
 class SerialSpinLock {
  public:
@@ -81,4 +81,4 @@ class SerialSpinLock {
   twist::ed::stdlike::atomic<Guard*> tail_{nullptr};
 };
 
-}  // namespace exe::threads::lockfull
+}  // namespace exe::threads::blocking

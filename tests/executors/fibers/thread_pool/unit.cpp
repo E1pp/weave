@@ -17,7 +17,7 @@
 #include <weave/futures/run/detach.hpp>
 #include <weave/futures/run/get.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 
@@ -46,7 +46,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&wg] {
@@ -65,7 +65,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -85,7 +85,7 @@ TEST_SUITE(ThreadPool) {
     pool.Start();
 
     for (size_t i = 0; i < 3; ++i) {
-      threads::lockfull::WaitGroup wg;
+      threads::blocking::WaitGroup wg;
       wg.Add(1);
 
       executors::Submit(pool, [&] {
@@ -107,7 +107,7 @@ TEST_SUITE(ThreadPool) {
 
     static const size_t kTasks = 17;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {
@@ -127,7 +127,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(4);
 
     for (size_t i = 0; i < 4; ++i) {
@@ -148,7 +148,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(4);
 
     for (size_t i = 0; i < 4; ++i) {
@@ -175,7 +175,7 @@ TEST_SUITE(ThreadPool) {
     pool1.Start();
     pool2.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(2);
 
     wheels::StopWatch stop_watch;
@@ -207,7 +207,7 @@ TEST_SUITE(ThreadPool) {
     pool1.Start();
     pool2.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool1, [&]() {
@@ -231,7 +231,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(4);
 
     wheels::ProcessCPUTimer cpu_timer;
@@ -259,7 +259,7 @@ TEST_SUITE(ThreadPool) {
 
     ASSERT_EQ(executors::fibers::ThreadPool::Current(), nullptr);
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -278,7 +278,7 @@ TEST_SUITE(ThreadPool) {
 
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(1);
 
     executors::Submit(pool, [&] {
@@ -345,7 +345,7 @@ TEST_SUITE(ThreadPool) {
 
     std::atomic<size_t> shared_counter{0};
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(kTasks);
 
     for (size_t i = 0; i < kTasks; ++i) {
@@ -373,7 +373,7 @@ TEST_SUITE(ThreadPool) {
 TEST_SUITE(FibersSched) {
   SIMPLE_TEST(Yield1) {
     executors::fibers::ThreadPool pool{1};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     wg.Add(1);
     pool.Start();
@@ -396,7 +396,7 @@ TEST_SUITE(FibersSched) {
 
   SIMPLE_TEST(Yield2) {
     executors::fibers::ThreadPool pool{1};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(2);
 
     enum State : int {
@@ -434,7 +434,7 @@ TEST_SUITE(FibersSched) {
 
   SIMPLE_TEST(Yield3) {
     executors::fibers::ThreadPool pool{4};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(2);
 
     static const size_t kYields = 1024;
@@ -463,7 +463,7 @@ TEST_SUITE(FibersSched) {
     executors::fibers::ThreadPool pool_2{4};
     pool_2.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     auto make_tester = [&wg](executors::fibers::ThreadPool& pool) {
       return [&pool, &wg]() {
@@ -500,7 +500,7 @@ TEST_SUITE(FibersSched) {
 TEST_SUITE(FibersEvent){
   SIMPLE_TEST(OneWaiter) {
     executors::fibers::ThreadPool scheduler{4};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     scheduler.Start();
 
@@ -536,7 +536,7 @@ TEST_SUITE(FibersEvent){
 
   SIMPLE_TEST(DoNotBlockThread) {
     executors::fibers::ThreadPool scheduler{1};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     scheduler.Start();
 
@@ -570,7 +570,7 @@ TEST_SUITE(FibersEvent){
 
   SIMPLE_TEST(MultipleWaiters) {
     executors::fibers::ThreadPool scheduler{1};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     scheduler.Start();
 
     fibers::Event event;
@@ -603,7 +603,7 @@ TEST_SUITE(FibersEvent){
 
   SIMPLE_TEST(DoNotWasteCpu) {
     executors::fibers::ThreadPool scheduler{4};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     scheduler.Start();
 
@@ -638,7 +638,7 @@ TEST_SUITE(FibersEvent){
 TEST_SUITE(FibersMutex){
   SIMPLE_TEST(JustWorks) {
     executors::fibers::ThreadPool scheduler{4};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     scheduler.Start();
 
     fibers::Mutex mutex;
@@ -662,7 +662,7 @@ TEST_SUITE(FibersMutex){
 
   SIMPLE_TEST(Counter) {
     executors::fibers::ThreadPool scheduler{4};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     scheduler.Start();
 
     fibers::Mutex mutex;
@@ -697,7 +697,7 @@ TEST_SUITE(FibersMutex){
 
   SIMPLE_TEST(DoNotWasteCpu) {
     executors::fibers::ThreadPool scheduler{4};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     scheduler.Start();
 
@@ -733,7 +733,7 @@ TEST_SUITE(FibersMutex){
 TEST_SUITE(FibersWaitGroup){
   SIMPLE_TEST(OneWaiter) {
     executors::fibers::ThreadPool scheduler{/*threads=*/5};
-    threads::lockfull::WaitGroup twg;
+    threads::blocking::WaitGroup twg;
 
     scheduler.Start();
 
@@ -771,7 +771,7 @@ TEST_SUITE(FibersWaitGroup){
 
   SIMPLE_TEST(MultipleWaiters) {
     executors::fibers::ThreadPool scheduler{/*threads=*/5};
-    threads::lockfull::WaitGroup twg;
+    threads::blocking::WaitGroup twg;
     scheduler.Start();
 
     fibers::WaitGroup wg;
@@ -813,7 +813,7 @@ TEST_SUITE(FibersWaitGroup){
 
   SIMPLE_TEST(DoNotBlockThread) {
     executors::fibers::ThreadPool scheduler{1};
-    threads::lockfull::WaitGroup twg;
+    threads::blocking::WaitGroup twg;
     scheduler.Start();
 
     fibers::WaitGroup wg;
@@ -849,7 +849,7 @@ TEST_SUITE(FibersWaitGroup){
 
   SIMPLE_TEST(DoNotWasteCpu) {
     executors::fibers::ThreadPool scheduler{/*threads=*/4};
-    threads::lockfull::WaitGroup twg;
+    threads::blocking::WaitGroup twg;
     
     scheduler.Start();
 
@@ -916,7 +916,7 @@ TEST_SUITE(Futures){
 
   SIMPLE_TEST(Await1){
     executors::fibers::ThreadPool scheduler{4};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     scheduler.Start();
 
@@ -937,7 +937,7 @@ TEST_SUITE(Futures){
 
   SIMPLE_TEST(Await2){
     executors::fibers::ThreadPool scheduler{1};
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     auto f = futures::Submit(scheduler, []{
       return result::Ok(42);

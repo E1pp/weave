@@ -1,6 +1,6 @@
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
 
-namespace weave::threads::lockfull::stdlike {
+namespace weave::threads::blocking::stdlike {
 
 void Mutex::Lock() {
   if (CompareExchange(0, 1) != 0) {
@@ -18,4 +18,4 @@ void Mutex::Unlock() {
   }
 }
 
-}  // namespace weave::threads::lockfull::stdlike
+}  // namespace weave::threads::blocking::stdlike

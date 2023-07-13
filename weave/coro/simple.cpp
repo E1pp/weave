@@ -1,15 +1,15 @@
-#include <weave/coro/simple_coro.hpp>
+#include <weave/coro/simple.hpp>
 
 namespace weave::coro {
 
-void SimpleCoro::Resume() {
+void SimpleCoroutine::Resume() {
   // Coro is done -> Resume does nothing
   if (is_completed_) {
     return;
   }
 
   // we set who is being active
-  SimpleCoro* saved_active = currently_active;
+  SimpleCoroutine* saved_active = currently_active;
   currently_active = this;
   // we enter context in which routine_ is being executed
   impl_.Resume();
@@ -22,15 +22,15 @@ void SimpleCoro::Resume() {
   }
 }
 
-SimpleCoro* SimpleCoro::Self() {
+SimpleCoroutine* SimpleCoroutine::Self() {
   return currently_active;
 }
 
-void SimpleCoro::Suspend() {
+void SimpleCoroutine::Suspend() {
   Self()->impl_.Suspend();
 }
 
-bool SimpleCoro::IsCompleted() const {
+bool SimpleCoroutine::IsCompleted() const {
   return is_completed_;
 }
 

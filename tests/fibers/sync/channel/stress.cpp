@@ -5,7 +5,7 @@
 
 #include <weave/fibers/sync/channel.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 #include <twist/test/budget.hpp>
@@ -44,7 +44,7 @@ class ChannelTester {
     
     pool_.Start();
     // Producers
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     
     wg.Add(producers_ + consumers_);
 

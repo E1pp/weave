@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace weave::threads::lockfull::stdlike {
+namespace weave::threads::blocking::stdlike {
 
 class Mutex {
  public:
@@ -131,4 +131,4 @@ class UniqueLock {
   bool finished_{false};
 };
 
-}  // namespace weave::threads::lockfull::stdlike
+}  // namespace weave::threads::blocking::stdlike

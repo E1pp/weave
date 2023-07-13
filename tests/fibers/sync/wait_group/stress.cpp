@@ -7,7 +7,7 @@
 #include <weave/fibers/sched/go.hpp>
 #include <weave/fibers/sync/wait_group.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -25,7 +25,7 @@ void StressTest() {
     const size_t workers = 1 + twist::test::Random(3);
     const size_t waiters = 1 + twist::test::Random(3);
 
-    threads::lockfull::WaitGroup iter;
+    threads::blocking::WaitGroup iter;
     iter.Add(workers + waiters);
 
     fibers::WaitGroup wg;

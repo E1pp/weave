@@ -6,8 +6,8 @@
 
 #include <weave/fibers/sync/waiters.hpp>
 
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
-#include <weave/threads/lockfull/spinlock.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
+#include <weave/threads/blocking/spinlock.hpp>
 
 #include <weave/support/cyclic_buffer.hpp>
 
@@ -86,7 +86,7 @@ class ChannelImpl {
     ChannelWaiter<T> sender;
     sender.WriteValue(std::move(value));
 
-    threads::lockfull::stdlike::UniqueLock lock(chan_spinlock_);
+    threads::blocking::stdlike::UniqueLock lock(chan_spinlock_);
 
     if (TryCompleteSender(&sender) == RendezvousResult::Success) {
       return;
@@ -108,14 +108,14 @@ class ChannelImpl {
     ChannelWaiter<T> sender;
     sender.WriteValue(std::move(value));
 
-    threads::lockfull::stdlike::LockGuard lock(chan_spinlock_);
+    threads::blocking::stdlike::LockGuard lock(chan_spinlock_);
     return TryCompleteSender(&sender) == RendezvousResult::Success;
   }
 
   T Receive() {
     ChannelWaiter<T> receiver;
 
-    threads::lockfull::stdlike::UniqueLock lock(chan_spinlock_);
+    threads::blocking::stdlike::UniqueLock lock(chan_spinlock_);
 
     if (TryCompleteReceiver(&receiver) != RendezvousResult::Success) {
       auto receive_awaiter = [&](FiberHandle handle) mutable {
@@ -136,7 +136,7 @@ class ChannelImpl {
   std::optional<T> TryReceive() {
     ChannelWaiter<T> receiver;
 
-    threads::lockfull::stdlike::LockGuard lock(chan_spinlock_);
+    threads::blocking::stdlike::LockGuard lock(chan_spinlock_);
     if (TryCompleteReceiver(&receiver) == RendezvousResult::Success) {
       return receiver.ReadValue();
     }
@@ -207,7 +207,7 @@ class ChannelImpl {
 
  private:
   const size_t capacity_;
-  threads::lockfull::SpinLock chan_spinlock_;  // Guards storage_
+  threads::blocking::SpinLock chan_spinlock_;  // Guards storage_
 
   support::CyclicBuffer<T> storage_;
   wheels::IntrusiveList<ICargoWaiter<T>> queue_{};

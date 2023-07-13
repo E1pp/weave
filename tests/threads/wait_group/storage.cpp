@@ -1,10 +1,10 @@
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
 #include <twist/ed/stdlike/thread.hpp>
 
-using weave::threads::lockfull::WaitGroup;
+using weave::threads::blocking::WaitGroup;
 
 //////////////////////////////////////////////////////////////////////
 

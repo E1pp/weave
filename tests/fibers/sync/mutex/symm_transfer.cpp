@@ -4,7 +4,7 @@
 #include <weave/fibers/sched/go.hpp>
 #include <weave/fibers/sync/mutex.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <chrono>
 #include <thread>
@@ -22,7 +22,7 @@ TEST_SUITE(MutexExtra) {
 
     fibers::Mutex mutex;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(4);
 
     fibers::Go(scheduler, [&] {

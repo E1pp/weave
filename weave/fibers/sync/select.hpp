@@ -10,7 +10,7 @@
 #include <weave/support/fast_rand.hpp>
 
 #include <weave/threads/lockfree/rendezvous.hpp>
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
 
 #include <twist/ed/local/val.hpp>
 #include <twist/ed/stdlike/random.hpp>
@@ -151,7 +151,7 @@ class Selector
             this);
     Channel<Type>* chan = alternative.chan_;
 
-    threads::lockfull::stdlike::LockGuard lock(chan->impl_->chan_spinlock_);
+    threads::blocking::stdlike::LockGuard lock(chan->impl_->chan_spinlock_);
     leaf->Unlink();
   }
 
@@ -169,7 +169,7 @@ class Selector
         this);
     Channel<typename NthType<Index, Alts...>::Type>* chan = alt.chan_;
 
-    threads::lockfull::stdlike::LockGuard lock(chan->impl_->chan_spinlock_);
+    threads::blocking::stdlike::LockGuard lock(chan->impl_->chan_spinlock_);
 
     if (chan->impl_->TryCompleteReceiver(leaf) == RendezvousResult::Success) {
       rendezvous_.Produce();
@@ -189,7 +189,7 @@ class Selector
 
     leaf->storage_.emplace(std::move(alt.storage_));
 
-    threads::lockfull::stdlike::LockGuard lock(chan->impl_->chan_spinlock_);
+    threads::blocking::stdlike::LockGuard lock(chan->impl_->chan_spinlock_);
 
     if (chan->impl_->TryCompleteSender(leaf) == RendezvousResult::Success) {
       rendezvous_.Produce();

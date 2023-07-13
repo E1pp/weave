@@ -3,7 +3,7 @@
 
 #include <weave/fibers/sched/go.hpp>
 #include <weave/fibers/sched/yield.hpp>
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/core/stop_watch.hpp>
 
@@ -56,7 +56,7 @@ TEST_SUITE(Fibers) {
     executors::ThreadPool pool{3};
     pool.Start();
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     auto sleeper = [&]() {
       std::this_thread::sleep_for(3s);
@@ -137,7 +137,7 @@ TEST_SUITE(Fibers) {
 
     static const size_t kYields = 1024;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(2);
 
     auto runner = [&wg] {

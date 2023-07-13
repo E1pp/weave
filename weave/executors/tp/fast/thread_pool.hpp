@@ -8,7 +8,7 @@
 #include <weave/executors/tp/fast/metrics.hpp>
 #include <weave/executors/tp/fast/runner.hpp>
 
-#include <weave/threads/lockfull/work_count.hpp>
+#include <weave/threads/blocking/work_count.hpp>
 
 // random_device
 #include <twist/ed/stdlike/random.hpp>
@@ -91,7 +91,7 @@ class ThreadPool : public IExecutor {
 
   twist::ed::stdlike::atomic<bool> stopped_{false};
 
-  threads::lockfull::WorkCount work_count_;
+  threads::blocking::WorkCount work_count_;
 
   Logger logger_;
 };

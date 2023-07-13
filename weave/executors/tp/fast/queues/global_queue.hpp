@@ -2,8 +2,8 @@
 
 #include <weave/executors/task.hpp>
 
-#include <weave/threads/lockfull/stdlike/mutex.hpp>
-#include <weave/threads/lockfull/spinlock.hpp>
+#include <weave/threads/blocking/stdlike/mutex.hpp>
+#include <weave/threads/blocking/spinlock.hpp>
 
 #include <twist/ed/stdlike/mutex.hpp>
 
@@ -25,7 +25,7 @@ using GlobalQueue = GlobalQueueBlockingImpl;
 class GlobalQueueBlockingImpl {
  public:
   void Push(Task* item) {
-    threads::lockfull::stdlike::LockGuard lock(mutex_);
+    threads::blocking::stdlike::LockGuard lock(mutex_);
 
     tasks_.PushBack(item);
     size_++;
@@ -39,7 +39,7 @@ class GlobalQueueBlockingImpl {
       overflow_l.PushBack(node);
     }
 
-    threads::lockfull::stdlike::LockGuard lock(mutex_);
+    threads::blocking::stdlike::LockGuard lock(mutex_);
 
     tasks_.Append(overflow_l);
     size_ += overflow.size();
@@ -47,7 +47,7 @@ class GlobalQueueBlockingImpl {
 
   // Returns nullptr if queue is empty
   Task* TryPop() {
-    threads::lockfull::stdlike::LockGuard lock(mutex_);
+    threads::blocking::stdlike::LockGuard lock(mutex_);
 
     Task* task;
     if ((task = tasks_.PopFront()) != nullptr) {
@@ -59,7 +59,7 @@ class GlobalQueueBlockingImpl {
 
   // Returns number of items in `out_buffer`
   size_t Grab(std::span<Task*> out_buffer, size_t workers) {
-    threads::lockfull::stdlike::LockGuard lock(mutex_);
+    threads::blocking::stdlike::LockGuard lock(mutex_);
 
     size_t num_to_grab = std::min(
         size_ < workers && size_ != 0 ? 1 : size_ / workers, out_buffer.size());
@@ -74,7 +74,7 @@ class GlobalQueueBlockingImpl {
 
  private:
   wheels::IntrusiveList<Task> tasks_{};
-  threads::lockfull::SpinLock mutex_;
+  threads::blocking::SpinLock mutex_;
   size_t size_{0};
 };
 

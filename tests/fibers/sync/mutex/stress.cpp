@@ -7,7 +7,7 @@
 #include <weave/fibers/sched/go.hpp>
 #include <weave/fibers/sync/mutex.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -24,7 +24,7 @@ void StressTest1(size_t fibers) {
   fibers::Mutex mutex;
   twist::test::Plate plate;
 
-  threads::lockfull::WaitGroup wg;
+  threads::blocking::WaitGroup wg;
   wg.Add(fibers);
 
   for (size_t i = 0; i < fibers; ++i) {
@@ -55,7 +55,7 @@ void StressTest2() {
   for (twist::test::Repeat repeat; repeat(); ) {
     size_t fibers = 2 + repeat.Iter() % 5;
 
-    threads::lockfull::WaitGroup iter;
+    threads::blocking::WaitGroup iter;
     iter.Add(fibers);
 
     fibers::Mutex mutex;

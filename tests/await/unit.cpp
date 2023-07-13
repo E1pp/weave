@@ -12,7 +12,7 @@
 
 #include <weave/futures/run/await.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <wheels/test/framework.hpp>
 
@@ -20,7 +20,7 @@
 #include <twist/rt/layer/fiber/runtime/scheduler.hpp>
 
 using namespace weave; // NOLINT
-using threads::lockfull::WaitGroup;
+using threads::blocking::WaitGroup;
 
 #if !defined(TWIST_FIBERS)
 

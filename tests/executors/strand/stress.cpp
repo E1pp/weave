@@ -2,7 +2,7 @@
 #include <weave/executors/strand.hpp>
 #include <weave/executors/submit.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
@@ -28,7 +28,7 @@ void ConcurrentStrands(size_t mutexes, size_t pushes) {
   clients.Start();
 
   for (twist::test::Repeat repeat; repeat(); ) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(mutexes * pushes);
 
     for (auto& strand : strands) {
@@ -59,7 +59,7 @@ void MissingTasks() {
   for (twist::test::Repeat repeat; repeat(); ) {
     const size_t todo = 2 + repeat.Iter() % 5;
 
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
     wg.Add(todo);
 
     for (size_t i = 0; i < todo; ++i) {

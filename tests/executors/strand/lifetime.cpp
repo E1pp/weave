@@ -2,7 +2,7 @@
 #include <weave/executors/strand.hpp>
 #include <weave/executors/submit.hpp>
 
-#include <weave/threads/lockfull/wait_group.hpp>
+#include <weave/threads/blocking/wait_group.hpp>
 
 #include <twist/test/with/wheels/stress.hpp>
 
@@ -18,7 +18,7 @@ using namespace weave; // NOLINT
 
 class Automaton : public std::enable_shared_from_this<Automaton> {
  public:
-  Automaton(executors::IExecutor& executor, threads::lockfull::WaitGroup& wg)
+  Automaton(executors::IExecutor& executor, threads::blocking::WaitGroup& wg)
       : strand_(executor), wg_(wg) {
   }
 
@@ -36,7 +36,7 @@ class Automaton : public std::enable_shared_from_this<Automaton> {
 
  private:
   executors::Strand strand_;
-  threads::lockfull::WaitGroup& wg_;
+  threads::blocking::WaitGroup& wg_;
   int state_ = 0;
 };
 
@@ -49,7 +49,7 @@ void StressTest() {
   twist::test::Repeat repeat;
 
   while (repeat()) {
-    threads::lockfull::WaitGroup wg;
+    threads::blocking::WaitGroup wg;
 
     auto automaton = std::make_shared<Automaton>(pool, wg);
 

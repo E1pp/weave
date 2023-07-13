@@ -6,7 +6,7 @@
 
 #include <weave/futures/traits/value_of.hpp>
 
-#include <weave/futures/run/detail/event.hpp>
+#include <weave/threads/blocking/event.hpp>
 
 #include <optional>
 
@@ -50,7 +50,7 @@ struct [[nodiscard]] Get {
 
    private:
     Future future_;
-    get_detail::Event event_;
+    threads::blocking::Event event_;
     std::optional<Result<ValueType>> res_;
   };
 

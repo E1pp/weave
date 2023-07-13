@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace weave::threads::lockfull::stdlike {
+namespace weave::threads::blocking::stdlike {
 class CondVar {
   using Time = uint32_t;
 
@@ -52,4 +52,4 @@ class CondVar {
   twist::ed::stdlike::atomic<Time> timer_{0};
 };
 
-}  // namespace weave::threads::lockfull::stdlike
+}  // namespace weave::threads::blocking::stdlike
