@@ -71,16 +71,15 @@ size_t Worker::StealTasks(std::span<Task*> out_buffer) {
   //   // move offset if lifo was stolen
   //   offset = 1;
   // }
-  
+
   // consider letting owner launch it's task from lifo
 
   size_t stolen_from_local_queue =
       offset +
       local_tasks_.Grab({out_buffer.begin() + offset, out_buffer.end()});
 
-  Worker::Current()
-  ->logger_shard_
-  ->Increment("Stolen from local queue", (size_t)(stolen_from_local_queue != 0));
+  Worker::Current()->logger_shard_->Increment(
+      "Stolen from local queue", (size_t)(stolen_from_local_queue != 0));
 
   return stolen_from_local_queue;
 }

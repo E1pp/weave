@@ -102,7 +102,7 @@ class StandaloneProcessor : public IProcessor {
   void ClearQueue() {
     auto* head = queue_.TakeAll();
 
-    while(head != nullptr){
+    while (head != nullptr) {
       auto* next = static_cast<executors::Task*>(head->next_);
 
       static_cast<ITimer*>(head)->WasCancelled();

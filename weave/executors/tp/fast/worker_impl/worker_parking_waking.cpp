@@ -68,7 +68,7 @@ Task* Worker::TryPickTaskBeforePark() {
   if (Task* task = TryStealTaskIter(); task != nullptr) {
     return task;
   }
-  
+
   return nullptr;
 }
 

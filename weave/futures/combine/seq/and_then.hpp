@@ -51,7 +51,7 @@ struct AndThen {
       : fun(std::move(f)) {
   }
 
-  template<typename Input>
+  template <typename Input>
   using Wrapped = result::Wrap<Input, F>;
 
   template <typename T>
@@ -63,8 +63,8 @@ struct AndThen {
 
     auto completed = Wrapped<InputType>(std::move(fun));
 
-    auto mapper =
-        detail::AndThenMapper<InputType, Wrapped<InputType>>(std::move(completed));
+    auto mapper = detail::AndThenMapper<InputType, Wrapped<InputType>>(
+        std::move(completed));
 
     return futures::thunks::Apply{std::move(f), std::move(mapper)};
   }

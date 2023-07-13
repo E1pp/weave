@@ -32,14 +32,14 @@ class TimersQueue {
     }
 
     bool operator<(const TimerNode& that) const {
-      if(timer_->was_cancelled_ && !that.timer_->was_cancelled_){
+      if (timer_->was_cancelled_ && !that.timer_->was_cancelled_) {
         return false;
       }
 
-      if(!timer_->was_cancelled_ && that.timer_->was_cancelled_){
+      if (!timer_->was_cancelled_ && that.timer_->was_cancelled_) {
         return true;
       }
-      
+
       return deadline_ > that.deadline_;
     }
 
@@ -49,7 +49,7 @@ class TimersQueue {
   };
 
  public:
-  void Push(ITimer* timer){
+  void Push(ITimer* timer) {
     Guard locker(spinlock_);
 
     timers_.push_back(TimerNode{GetDeadline(timer->GetDelay()), timer});
@@ -57,24 +57,26 @@ class TimersQueue {
   }
 
   // Takes timers from queue (including the ongoing ones)
-  void Grab(std::span<executors::Task*> buffer){
-    const size_t size = std::max<size_t>(1, std::min(buffer.size(), timers_.size() / 2));
+  void Grab(std::span<executors::Task*> buffer) {
+    const size_t size =
+        std::max<size_t>(1, std::min(buffer.size(), timers_.size() / 2));
 
     Guard locker(spinlock_);
- 
-    for(size_t i = 0; i < size && !timers_.empty(); i++){
+
+    for (size_t i = 0; i < size && !timers_.empty(); i++) {
       buffer[i] = timers_.front().timer_;
       std::pop_heap(timers_.begin(), timers_.end());
       timers_.pop_back();
     }
   }
 
-  void Grab(std::span<ITimer*> buffer){
-    const size_t size = std::max<size_t>(1, std::min(buffer.size(), timers_.size() / 2));
+  void Grab(std::span<ITimer*> buffer) {
+    const size_t size =
+        std::max<size_t>(1, std::min(buffer.size(), timers_.size() / 2));
 
     Guard locker(spinlock_);
- 
-    for(size_t i = 0; i < size && !timers_.empty(); i++){
+
+    for (size_t i = 0; i < size && !timers_.empty(); i++) {
       buffer[i] = timers_.front().timer_;
       std::pop_heap(timers_.begin(), timers_.end());
       timers_.pop_back();
@@ -110,7 +112,7 @@ class TimersQueue {
   executors::Task* TakeAll() {
     executors::Task* head = nullptr;
 
-    while(!timers_.empty()){
+    while (!timers_.empty()) {
       auto& next = timers_.front();
 
       next.timer_->next_ = head;
@@ -123,7 +125,7 @@ class TimersQueue {
     return head;
   }
 
-  void Cancel(ITimer* timer){
+  void Cancel(ITimer* timer) {
     Guard locker(spinlock_);
     timer->was_cancelled_ = true;
     std::make_heap(timers_.begin(), timers_.end());
@@ -139,4 +141,4 @@ class TimersQueue {
   std::vector<TimerNode> timers_{};
 };
 
-} // namespace weave::timers
+}  // namespace weave::timers

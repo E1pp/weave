@@ -9,10 +9,10 @@ namespace weave::cancel::sources {
 void StrandSource::SetReceiver(SignalReceiver* receiver) {
   State curr = State::Value(kInit);
 
-  if(state_.compare_exchange_strong(curr, State::Pointer(receiver), 
-                                          std::memory_order::release,
-                                          std::memory_order::relaxed)){
-  return; // Attached
+  if (state_.compare_exchange_strong(curr, State::Pointer(receiver),
+                                     std::memory_order::release,
+                                     std::memory_order::relaxed)) {
+    return;  // Attached
   }
 
   WHEELS_VERIFY(!curr.IsPointer(), "Broken state with > 1 receivers");

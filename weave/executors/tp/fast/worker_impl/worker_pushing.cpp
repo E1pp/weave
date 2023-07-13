@@ -10,7 +10,7 @@ void Worker::Push(Task* task, SchedulerHint hint) {
     case SchedulerHint::Next:
       PushToLifoSlot(task);
       break;
-      
+
     case SchedulerHint::UpToYou:
       // overflow handling is delegated to PushToLocalQueue
       PushToLocalQueue(task);

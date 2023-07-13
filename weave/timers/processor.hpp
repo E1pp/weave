@@ -14,7 +14,7 @@ struct IProcessor {
 
   virtual void CancelTimer(ITimer*) = 0;
 
-  Delay DelayFromThis(Millis ms){
+  Delay DelayFromThis(Millis ms) {
     return Delay{ms, *this};
   }
 

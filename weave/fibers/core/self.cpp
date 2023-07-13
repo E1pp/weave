@@ -4,12 +4,12 @@
 
 namespace weave::fibers {
 
-Fiber* Self(){
+Fiber* Self() {
   return Fiber::Self();
 }
 
-bool IAmFiber(){
+bool IAmFiber() {
   return Fiber::Self() != nullptr;
 }
 
-} // namespace weave::fibers
+}  // namespace weave::fibers

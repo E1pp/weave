@@ -31,4 +31,4 @@ struct CompleteOutput {
   Invokable invokable_;
 };
 
-} // namespace weave::result
+}  // namespace weave::result

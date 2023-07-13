@@ -12,13 +12,13 @@
 
 namespace weave::satellite {
 
-template<bool CollectMetrics, bool AtomicMetrics>
+template <bool CollectMetrics, bool AtomicMetrics>
 class LoggerImpl {
  public:
   class LoggerShard;
   class Metrics;
 
-  explicit LoggerImpl(const std::vector<std::string>&, size_t){
+  explicit LoggerImpl(const std::vector<std::string>&, size_t) {
   }
 
   LoggerImpl(const LoggerImpl&) = delete;
@@ -27,23 +27,23 @@ class LoggerImpl {
   LoggerImpl(LoggerImpl&&) = delete;
   LoggerImpl& operator=(LoggerImpl&&) = delete;
 
-  Metrics GatherMetrics(){
+  Metrics GatherMetrics() {
     return Metrics();
   }
 
-  LoggerShard* MakeShard(size_t){
+  LoggerShard* MakeShard(size_t) {
     return &singleton;
   }
 
-  void Accumulate(){
+  void Accumulate() {
   }
 
   class LoggerShard {
    public:
-    void Increment(std::string_view, size_t){
+    void Increment(std::string_view, size_t) {
     }
 
-    LoggerShard& operator+=(const LoggerShard&){
+    LoggerShard& operator+=(const LoggerShard&) {
       return *this;
     }
   };
@@ -57,8 +57,8 @@ class LoggerImpl {
 
     Metrics(Metrics&&) = default;
     Metrics& operator=(Metrics&&) = default;
-    
-    void Print(){
+
+    void Print() {
     }
   };
 
@@ -66,7 +66,7 @@ class LoggerImpl {
   static inline LoggerShard singleton{};
 };
 
-template<bool AtomicMetrics>
+template <bool AtomicMetrics>
 class LoggerImpl<true, AtomicMetrics> {
  public:
   class LoggerShard;
@@ -77,10 +77,12 @@ class LoggerImpl<true, AtomicMetrics> {
 
   LoggerImpl() = delete;
 
-  explicit LoggerImpl(const std::vector<std::string>& names, size_t num_shards) : shards_(num_shards, std::nullopt), total_(this, names.size()) {
+  explicit LoggerImpl(const std::vector<std::string>& names, size_t num_shards)
+      : shards_(num_shards, std::nullopt),
+        total_(this, names.size()) {
     const size_t size = names.size();
 
-    for(size_t i = 0; i < size; ++i){
+    for (size_t i = 0; i < size; ++i) {
       indeces_[names[i]] = i;
     }
   }
@@ -91,32 +93,31 @@ class LoggerImpl<true, AtomicMetrics> {
   LoggerImpl(LoggerImpl&&) = delete;
   LoggerImpl& operator=(LoggerImpl&&) = delete;
 
-  Metrics GatherMetrics(){
+  Metrics GatherMetrics() {
     Accumulate();
 
     return total_.GetMetrics();
   }
 
-  LoggerShard* MakeShard(size_t index){
+  LoggerShard* MakeShard(size_t index) {
     shards_[index].emplace(this);
 
     return &*shards_[index];
   }
 
-  void Accumulate(){
+  void Accumulate() {
     const size_t size = total_.metrics_.Size();
 
-    for(size_t i = 0; i < size; ++i){
+    for (size_t i = 0; i < size; ++i) {
       total_.metrics_.Store(i, 0, std::memory_order::relaxed);
     }
 
-    for(auto& shard : shards_){
-        total_ += *shard;
+    for (auto& shard : shards_) {
+      total_ += *shard;
     }
   }
 
  public:
-
   /////////////////////////////////////////////////////////////////////////////
 
   class LoggerShard {
@@ -130,7 +131,8 @@ class LoggerImpl<true, AtomicMetrics> {
     LoggerShard() = delete;
 
     // Never called but needed for std::optional to work correctly
-    LoggerShard(const LoggerShard&) : metrics_(1) {
+    LoggerShard(const LoggerShard&)
+        : metrics_(1) {
       std::abort();
     }
 
@@ -139,21 +141,25 @@ class LoggerImpl<true, AtomicMetrics> {
     LoggerShard(LoggerShard&&) = delete;
     LoggerShard& operator=(LoggerShard&&) = delete;
 
-    explicit LoggerShard(Logger* owner) : owner_(owner), metrics_(owner_->indeces_.size()){
+    explicit LoggerShard(Logger* owner)
+        : owner_(owner),
+          metrics_(owner_->indeces_.size()) {
     }
 
-    void Increment(std::string_view name, size_t diff){
-      WHEELS_VERIFY(owner_->indeces_.contains(name), "You must use a valid metric name!");
-      
-      metrics_.FetchAdd(owner_->indeces_[name], diff, std::memory_order::relaxed);
+    void Increment(std::string_view name, size_t diff) {
+      WHEELS_VERIFY(owner_->indeces_.contains(name),
+                    "You must use a valid metric name!");
+
+      metrics_.FetchAdd(owner_->indeces_[name], diff,
+                        std::memory_order::relaxed);
     }
 
-    LoggerShard& operator+=(LoggerShard& that){
+    LoggerShard& operator+=(LoggerShard& that) {
       WHEELS_VERIFY(that.owner_ == owner_, "Different Loggers!");
 
       const size_t size = metrics_.Size();
 
-      for(size_t i = 0; i < size; ++i){
+      for (size_t i = 0; i < size; ++i) {
         metrics_.FetchAdd(i, that.LookUp(i), std::memory_order::relaxed);
       }
 
@@ -162,15 +168,17 @@ class LoggerImpl<true, AtomicMetrics> {
 
    private:
     // One consumer
-    Metrics GetMetrics(){
+    Metrics GetMetrics() {
       return Metrics(*this);
     }
 
-    size_t LookUp(size_t index){
+    size_t LookUp(size_t index) {
       return metrics_.Load(index, std::memory_order::relaxed);
     }
 
-    LoggerShard(Logger* owner, size_t count) : owner_(owner), metrics_(count){
+    LoggerShard(Logger* owner, size_t count)
+        : owner_(owner),
+          metrics_(count) {
     }
 
    private:
@@ -191,16 +199,16 @@ class LoggerImpl<true, AtomicMetrics> {
 
     Metrics(Metrics&&) = default;
     Metrics& operator=(Metrics&&) = default;
-    
-    void Print(){
-      for(auto [name, count] : data_){
+
+    void Print() {
+      for (auto [name, count] : data_) {
         fmt::println("{}: {}", name, count);
       }
     }
 
    private:
-    explicit Metrics(LoggerShard& source){
-      for(auto [name, index] : source.owner_->indeces_){
+    explicit Metrics(LoggerShard& source) {
+      for (auto [name, index] : source.owner_->indeces_) {
         data_.emplace_back(name, source.LookUp(index));
       }
     }
@@ -215,4 +223,4 @@ class LoggerImpl<true, AtomicMetrics> {
   LoggerShard total_;
 };
 
-} // namespace weave::satellite
+}  // namespace weave::satellite

@@ -15,8 +15,8 @@ namespace weave::executors::tp::fast {
 
 class GlobalQueueBlockingImpl;
 
-class GlobalQueueLockfreeImpl; // ConcurrentQueue is not seq_cst 
-                               // also cringe and fake + L + ratio
+class GlobalQueueLockfreeImpl;  // ConcurrentQueue is not seq_cst
+                                // also cringe and fake + L + ratio
 
 // Unbounded queue shared between workers
 using GlobalQueue = GlobalQueueBlockingImpl;

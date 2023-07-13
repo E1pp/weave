@@ -53,11 +53,13 @@ class ThreadPool : public IExecutor {
     runner_ = &runner;
   }
 
-  Logger* GetLogger(){
-    #if !defined(__WEAVE_REALTIME__)
-      WHEELS_PANIC("Real-time Logging is not supported. Please turn flag WEAVE_REALTIME_METRICS on.");
-    #endif
-    
+  Logger* GetLogger() {
+#if !defined(__WEAVE_REALTIME__)
+    WHEELS_PANIC(
+        "Real-time Logging is not supported. Please turn flag "
+        "WEAVE_REALTIME_METRICS on.");
+#endif
+
     return &logger_;
   }
 

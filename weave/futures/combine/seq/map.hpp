@@ -51,10 +51,10 @@ struct Map {
       : fun(std::move(f)) {
   }
 
-  template<typename Input>
+  template <typename Input>
   using Completed = result::Complete<Input, F>;
 
-  template<typename Input>
+  template <typename Input>
   using U = std::invoke_result_t<Completed<Input>, Input>;
 
   template <SomeFuture InputFuture>
@@ -63,8 +63,8 @@ struct Map {
 
     auto completed = Completed<InputType>(std::move(fun));
 
-    auto mapper =
-        detail::MapMapper<InputType, Completed<InputType>>(std::move(completed));
+    auto mapper = detail::MapMapper<InputType, Completed<InputType>>(
+        std::move(completed));
 
     return futures::thunks::Apply(std::move(f), std::move(mapper));
   }

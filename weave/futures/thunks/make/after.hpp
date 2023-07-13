@@ -49,7 +49,7 @@ class [[nodiscard]] After final : public timers::ITimer,
   }
 
   void Run() noexcept override final {
-    if(consumer_->CancelToken().CancelRequested()){
+    if (consumer_->CancelToken().CancelRequested()) {
       consumer_->Cancel(Context{});
     } else {
       consumer_->Complete(result::Ok());
@@ -61,7 +61,7 @@ class [[nodiscard]] After final : public timers::ITimer,
   }
 
   void Forward(cancel::Signal signal) override final {
-    if(signal.CancelRequested()){
+    if (signal.CancelRequested()) {
       delay_.processor_->CancelTimer(this);
     }
   }

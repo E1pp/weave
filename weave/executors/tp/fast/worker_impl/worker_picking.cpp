@@ -22,7 +22,7 @@ Task* Worker::TryPickTask() {
 
   // check LIFO slot
   if ((task = TryPickTaskFromLifoSlot()) != nullptr) {
-    logger_shard_->Increment("Launched from lifo" ,1);
+    logger_shard_->Increment("Launched from lifo", 1);
 
     return task;
   }
@@ -94,8 +94,7 @@ Task* Worker::TryPickTaskFromLocalQueueSlow() {
   std::array<Task*, kLocalQueueCapacity> buffer{};
 
   // write into the buffer from GlobalQueue
-  size_t num_taken =
-      host_.global_tasks_.Grab(buffer, host_.threads_);
+  size_t num_taken = host_.global_tasks_.Grab(buffer, host_.threads_);
   if (num_taken != 0) {
     // Work count processing
     size_t external_tasks = 0;

@@ -6,7 +6,6 @@
 
 #include <weave/timers/millis.hpp>
 
-
 namespace weave::timers {
 
 struct ITimer : public executors::Task {

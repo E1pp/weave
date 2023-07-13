@@ -78,7 +78,7 @@ struct [[nodiscard]] Await {
   template <SomeFuture InputFuture>
   Result<traits::ValueOf<InputFuture>> Pipe(InputFuture f) {
     // Check if we are outside of fiber context
-    if(fibers::Fiber::Self() == nullptr){
+    if (fibers::Fiber::Self() == nullptr) {
       return std::move(f) | futures::Get();
     }
 

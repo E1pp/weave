@@ -10,4 +10,4 @@ Fiber* Self();
 // true iff in fiber context
 bool IAmFiber();
 
-} // namespace weave::fibers
+}  // namespace weave::fibers

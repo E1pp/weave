@@ -46,8 +46,8 @@ struct OrElse {
       : fun(std::move(f)) {
   }
 
-  using InvokeType =
-      result::traits::ValueOf<std::invoke_result_t<result::Wrap<Error, F>, Error>>;
+  using InvokeType = result::traits::ValueOf<
+      std::invoke_result_t<result::Wrap<Error, F>, Error>>;
 
   template <SomeFuture InputFuture>
   requires std::is_same_v<traits::ValueOf<InputFuture>, InvokeType>
@@ -57,8 +57,8 @@ struct OrElse {
 
     auto wrapped = result::Wrap<Error, F>(std::move(fun));
 
-    auto mapper =
-        detail::OrElseMapper<InputType, result::Wrap<Error, F>>(std::move(wrapped));
+    auto mapper = detail::OrElseMapper<InputType, result::Wrap<Error, F>>(
+        std::move(wrapped));
 
     return futures::thunks::Apply(std::move(f), std::move(mapper));
   }

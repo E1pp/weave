@@ -55,4 +55,4 @@ class UnboundedBlockingQueue {
   threads::blocking::stdlike::CondVar queue_is_not_empty_;
 };
 
-}  // namespace weave::threads::blocking 
+}  // namespace weave::threads::blocking

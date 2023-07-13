@@ -16,17 +16,15 @@ inline const bool kAtomicMetrics = true;
 inline const bool kAtomicMetrics = false;
 #endif
 
-inline const std::vector<std::string> kMetrics {
-   "Launched from lifo"
-  ,"Launched from local queue"
-  ,"Launched from global queue"
-  ,"Discarded lifo_slots"
-  ,"Overflows in local queue"
-  ,"Syscal parkings"
-  ,"Steal attempts"
-  ,"Times denied by coordinator"
-  ,"Stolen from local queue"
-};
+inline const std::vector<std::string> kMetrics{"Launched from lifo",
+                                               "Launched from local queue",
+                                               "Launched from global queue",
+                                               "Discarded lifo_slots",
+                                               "Overflows in local queue",
+                                               "Syscal parkings",
+                                               "Steal attempts",
+                                               "Times denied by coordinator",
+                                               "Stolen from local queue"};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 

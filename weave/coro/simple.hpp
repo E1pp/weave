@@ -42,7 +42,8 @@ class SimpleCoroutine {
   Coroutine impl_;
   bool is_completed_{false};
 
-  static inline twist::ed::ThreadLocalPtr<SimpleCoroutine> currently_active{nullptr};
+  static inline twist::ed::ThreadLocalPtr<SimpleCoroutine> currently_active{
+      nullptr};
 };
 
 }  // namespace weave::coro
