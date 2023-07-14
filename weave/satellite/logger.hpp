@@ -1,5 +1,7 @@
 #pragma once
 
+#include <weave/result/types/unit.hpp>
+
 #include <weave/threads/lockfree/atomic_array.hpp>
 
 #include <fmt/core.h>
@@ -11,6 +13,8 @@
 #include <vector>
 
 namespace weave::satellite {
+
+/////////////////////////////////////////////////////////////////////////////
 
 template <bool CollectMetrics, bool AtomicMetrics>
 class Logger {
@@ -60,6 +64,10 @@ class Logger {
 
     void Print() {
     }
+
+    Unit Data() && {
+      return {};
+    }
   };
 
  private:
@@ -105,6 +113,7 @@ class Logger<true, AtomicMetrics> {
     return &*shards_[index];
   }
 
+ private:
   void Accumulate() {
     const size_t size = total_.metrics_.Size();
 
@@ -150,7 +159,11 @@ class Logger<true, AtomicMetrics> {
       WHEELS_VERIFY(owner_->indeces_.contains(name),
                     "You must use a valid metric name!");
 
-      metrics_.FetchAdd(owner_->indeces_[name], diff,
+      // C++20 doesn't support heterogenous lookup for operator[]
+      // but find does. Treat this line as owner_->indeces_[name]
+      size_t index = std::get<1>(*(owner_->indeces_.find(name)));
+
+      metrics_.FetchAdd(index, diff,
                         std::memory_order::relaxed);
     }
 
@@ -206,6 +219,10 @@ class Logger<true, AtomicMetrics> {
       }
     }
 
+    auto Data() && {
+      return std::move(data_);
+    }
+
    private:
     explicit Metrics(LoggerShard& source) {
       for (auto [name, index] : source.owner_->indeces_) {
@@ -218,7 +235,24 @@ class Logger<true, AtomicMetrics> {
   };
 
  private:
-  std::unordered_map<std::string_view, size_t> indeces_{};
+
+  //////////////////////////////////////////////////////////////////////////////////
+  // heterogenous lookup https://www.cppstories.com/2021/heterogeneous-access-cpp20/
+
+  struct StringHash { // NOLINT
+    using is_transparent = void; // NOLINT
+    [[nodiscard]] size_t operator()(const char *txt) const {
+      return std::hash<std::string_view>{}(txt);
+    }
+    [[nodiscard]] size_t operator()(std::string_view txt) const {
+      return std::hash<std::string_view>{}(txt);
+    }
+    [[nodiscard]] size_t operator()(const std::string &txt) const {
+      return std::hash<std::string>{}(txt);
+    }
+  };
+
+  std::unordered_map<std::string, size_t, StringHash, std::equal_to<>> indeces_{};
   std::vector<std::optional<LoggerShard>> shards_;
   LoggerShard total_;
 };

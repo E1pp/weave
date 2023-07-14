@@ -109,6 +109,11 @@ add_test_target(weave_timers_standalone_stress_tests timers/standalone/stress.cp
 
 add_test_target(weave_timers_futures_unit_tests timers/futures/unit.cpp)
 
+# Logger
+
+add_test_target(weave_logger_unit_tests logger/unit.cpp)
+add_test_target(weave_logger_stress_tests logger/stress.cpp)
+
 #####################################################################################
 
 # Unit tests
@@ -138,6 +143,7 @@ add_custom_target(weave_unit_tests ALL
                   weave_cancel_alloc_tests
                   weave_timers_standalone_unit_tests
                   weave_timers_futures_unit_tests
+                  weave_logger_unit_tests
                   )
 
 add_custom_target(weave_stress_tests ALL
@@ -166,6 +172,7 @@ add_custom_target(weave_stress_tests ALL
                   weave_fibers_tp_stress_tests
                   weave_cancel_stress_tests
                   weave_timers_standalone_stress_tests
+                  weave_logger_stress_tests
                   )
 
 add_custom_target(weave_tests ALL DEPENDS weave_unit_tests weave_stress_tests)
