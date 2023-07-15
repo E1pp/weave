@@ -7,8 +7,8 @@
 namespace weave::futures {
 
 template <typename F>
-concept Thunk = std::movable<F> && !std::copyable<F> && requires(F ){
+concept Thunk = std::movable<F> && !std::copyable<F> && requires(F) {
   typename F::ValueType;
 };
 
-} // namespace weave::futures
+}  // namespace weave::futures

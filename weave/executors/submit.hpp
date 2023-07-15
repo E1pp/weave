@@ -27,21 +27,23 @@ namespace weave::executors {
 //     return result::Ok();
 //   };
 
-//   futures::Just() | futures::Via(exe, hint) | futures::Map(std::move(wrapped)) |
+//   futures::Just() | futures::Via(exe, hint) |
+//   futures::Map(std::move(wrapped)) |
 //       futures::Detach();
 // }
 
 template <typename F>
 struct UserTask : public Task {
-  explicit UserTask(F&& fun) : fun_(std::move(fun)){
+  explicit UserTask(F&& fun)
+      : fun_(std::move(fun)) {
   }
-  
+
   void Run() noexcept {
     std::move(fun_)();
     delete this;
   }
 
- F fun_;
+  F fun_;
 };
 
 template <typename F>

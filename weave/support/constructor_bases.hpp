@@ -12,7 +12,7 @@ struct NonCopyableBase {
   NonCopyableBase& operator=(NonCopyableBase&&) = default;
 };
 
-struct NonMovableBase{
+struct NonMovableBase {
   NonMovableBase() = default;
 
   NonMovableBase(const NonMovableBase&) = default;
@@ -32,6 +32,4 @@ struct PinnedBase {
   PinnedBase& operator=(PinnedBase&&) = delete;
 };
 
-
-
-} // namespace weave::support
+}  // namespace weave::support

@@ -2,7 +2,7 @@
 
 #include <weave/futures/thunks/combine/seq/apply.hpp>
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/syntax/pipe.hpp>
 
 #include <weave/result/complete/complete.hpp>
 #include <weave/result/make/ok.hpp>

@@ -28,14 +28,14 @@ class [[nodiscard]] Failure : support::NonCopyableBase {
   template <Consumer<ValueType> Cons>
   class FailureEvaluation : support::PinnedBase {
    public:
-    FailureEvaluation(Failure fail, Cons& cons){
-      cons.Consume(result::Err(std::move(fail.error_)));
+    FailureEvaluation(Failure fail, Cons& cons) {
+      cons.Complete(result::Err(std::move(fail.error_)));
     }
   };
 
  public:
   template <Consumer<ValueType> Cons>
-  Evaluation<Failure, Cons> auto Force(Cons& cons){
+  Evaluation<Failure, Cons> auto Force(Cons& cons) {
     return FailureEvaluation<Cons>(std::move(*this), cons);
   }
 

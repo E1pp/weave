@@ -1,13 +1,16 @@
 #pragma once
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
+//#include <weave/futures/thunks/detail/cancel_base.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/model/evaluation.hpp>
+#include <weave/futures/traits/value_of.hpp>
 
 #include <weave/result/traits/value_of.hpp>
 
-#include <weave/satellite/meta_data.hpp>
-#include <weave/satellite/satellite.hpp>
+// #include <weave/satellite/meta_data.hpp>
+// #include <weave/satellite/satellite.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 #include <wheels/core/defer.hpp>
 
@@ -32,9 +35,7 @@ concept Mapper = SomeFuture<InputFuture> &&
 ////////////////////////////////////////////////////////////////////////////////
 
 template <SomeFuture Future, Mapper<Future> Mapper>
-class [[nodiscard]] Apply final : public IConsumer<typename Future::ValueType>,
-                                  public executors::Task,
-                                  public detail::CancellableBase<Future> {
+class [[nodiscard]] Apply : support::NonCopyableBase {
  public:
   using InputValueType = typename Future::ValueType;
   using ValueType = result::traits::ValueOf<typename Mapper::InvokeResult>;
@@ -44,82 +45,85 @@ class [[nodiscard]] Apply final : public IConsumer<typename Future::ValueType>,
         mapper_(std::move(mapper)) {
   }
 
-  // Non-copyable
-  Apply(const Apply&) = delete;
-  Apply& operator=(const Apply&) = delete;
-
   // Movable
   Apply(Apply&& that)
-      : consumer_(that.consumer_),
-        future_(std::move(that.future_)),
-        mapper_(std::move(that.mapper_)),
-        input_(std::move(that.input_)) {
+      : future_(std::move(that.future_)),
+        mapper_(std::move(that.mapper_)) {
   }
   Apply& operator=(Apply&&) = default;
 
-  void Start(IConsumer<ValueType>* consumer) {
-    consumer_ = consumer;
-    future_.Start(this);
-  }
-
  private:
-  void Consume(Output<InputValueType> input) noexcept override final {
-    if (CancelToken().CancelRequested()) {
-      Cancel(std::move(input.context));
-      return;
+  template <Consumer<ValueType> Cons>
+  class ApplyEvaluation : support::PinnedBase,
+                          public executors::Task {
+   public:
+    ApplyEvaluation(Apply owner, Cons& consumer)
+        : map_(std::move(owner.mapper_)),
+          consumer_(consumer),
+          evaluation_(std::move(owner.future_).Force(*this)) {
     }
 
-    if (mapper_.Predicate(input)) {
-      input_.emplace((std::move(input)));
-      (*input_).context.executor_->Submit(this, (*input_).context.hint_);
+    // Satisfies Consumer<InputValueType>
+    void Complete(Output<InputValueType> input) {
+      if (map_.Predicate(input)) {
+        input_.emplace((std::move(input)));
+        (*input_).context.executor_->Submit(this, (*input_).context.hint_);
 
-    } else {
-      Result<ValueType> forwarded_result = mapper_.Forward(std::move(input));
-      consumer_->Complete({std::move(forwarded_result), input.context});
+      } else {
+        Result<ValueType> forwarded_result = map_.Forward(std::move(input));
+        consumer_.Complete({std::move(forwarded_result), input.context});
+      }
     }
-  }
 
-  void Cancel(Context ctx) noexcept override final {
-    consumer_->Cancel(std::move(ctx));
-  }
+    void Complete(Result<InputValueType> r) {
+      Complete(Output<InputValueType>({std::move(r), Context{}}));
+    }
 
-  cancel::Token CancelToken() override final {
-    return consumer_->CancelToken();
-  }
+    using EvalType =
+        decltype(std::declval<std::add_rvalue_reference_t<Future>>().Force(
+            std::declval<std::add_lvalue_reference_t<ApplyEvaluation>>()));
 
-  void Run() noexcept override final {
-    try {
+   private:
+    void Run() noexcept override final {
       Result<ValueType> output = RunMapper();
 
-      consumer_->Complete({std::move(output), std::move(input_->context)});
-    } catch (cancel::CancelledException) {
-      consumer_->Cancel(
-          Context{satellite::GetExecutor(), executors::SchedulerHint::UpToYou});
+      consumer_.Complete({std::move(output), std::move(input_->context)});
     }
-  }
 
-  Result<ValueType> RunMapper() {
-    // Setup satellite context
-    satellite::MetaData old = satellite::SetContext(input_->context.executor_,
-                                                    consumer_->CancelToken());
+    Result<ValueType> RunMapper() {
+      // // Setup satellite context
+      // satellite::MetaData old =
+      // satellite::SetContext(input_->context.executor_,
+      //                                                 consumer_->CancelToken());
 
-    // Map() may throw
-    wheels::Defer cleanup([old] {
-      satellite::RestoreContext(old);
-    });
+      // // Map() may throw
+      // wheels::Defer cleanup([old] {
+      //   satellite::RestoreContext(old);
+      // });
 
-    {
-      Mapper moved = std::move(mapper_);
+      {
+        Mapper moved = std::move(map_);
 
-      return moved.Map(std::move(*input_));
+        return moved.Map(std::move(*input_));
+      }
     }
+
+   private:
+    Mapper map_;
+    Cons& consumer_;
+    std::optional<Output<InputValueType>> input_{};
+    EvalType evaluation_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Apply, Cons> auto Force(Cons& cons) {
+    return ApplyEvaluation<Cons>(std::move(*this), cons);
   }
 
  private:
-  IConsumer<ValueType>* consumer_;
   Future future_;
   Mapper mapper_;
-  std::optional<Output<InputValueType>> input_;
 };
 
 }  // namespace weave::futures::thunks

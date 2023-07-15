@@ -7,10 +7,10 @@
 // #include <weave/futures/make/submit.hpp>
 #include <weave/futures/make/just.hpp>
 
-// #include <weave/futures/combine/seq/map.hpp>
-// #include <weave/futures/combine/seq/and_then.hpp>
+#include <weave/futures/combine/seq/map.hpp>
+#include <weave/futures/combine/seq/and_then.hpp>
 // #include <weave/futures/combine/seq/on_success.hpp>
-// #include <weave/futures/combine/seq/or_else.hpp>
+#include <weave/futures/combine/seq/or_else.hpp>
 // #include <weave/futures/combine/seq/flatten.hpp>
 // #include <weave/futures/combine/seq/flat_map.hpp>
 // #include <weave/futures/combine/seq/fork.hpp>
@@ -89,58 +89,58 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(r.error(), timeout);
   }
 
-//   SIMPLE_TEST(MapValue) {
-//     auto f = futures::Value(1)
-//              | futures::Map([](int v) {
-//                  return v + 1;
-//                });
+  SIMPLE_TEST(MapValue) {
+    auto f = futures::Value(1)
+             | futures::Map([](int v) {
+                 return v + 1;
+               });
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, 2);
-//   }
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 2);
+  }
 
-//   SIMPLE_TEST(MapError) {
-//     auto f = futures::Failure<int>(TimeoutError())
-//              | futures::Map([](int) {
-//                  FAIL_TEST("Skip this mapper");
-//                  return Unit{};
-//                });
+  SIMPLE_TEST(MapError) {
+    auto f = futures::Failure<int>(TimeoutError())
+             | futures::Map([](int) {
+                 FAIL_TEST("Skip this mapper");
+                 return Unit{};
+               });
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_FALSE(r);
-//     ASSERT_EQ(r.error(), TimeoutError());
-//   }
+    ASSERT_FALSE(r);
+    ASSERT_EQ(r.error(), TimeoutError());
+  }
 
-//   SIMPLE_TEST(AndThen) {
-//     auto f = futures::Value<std::string>("ok")
-//              | futures::AndThen([](std::string s) {
-//                  return result::Ok(s + "!");
-//                })
-//              | futures::AndThen([](std::string s) {
-//                  return result::Ok(s + "!");
-//                });
+  SIMPLE_TEST(AndThen) {
+    auto f = futures::Value<std::string>("ok")
+             | futures::AndThen([](std::string s) {
+                 return result::Ok(s + "!");
+               })
+             | futures::AndThen([](std::string s) {
+                 return result::Ok(s + "!");
+               });
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, "ok!!");
-//   }
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, "ok!!");
+  }
 
-//   SIMPLE_TEST(OrElse) {
-//     auto f = futures::Failure<std::string>(IoError())
-//              | futures::OrElse([](Error e) {
-//                  ASSERT_EQ(e, IoError());
-//                  return result::Ok(std::string("fallback"));
-//                });
+  SIMPLE_TEST(OrElse) {
+    auto f = futures::Failure<std::string>(IoError())
+             | futures::OrElse([](Error e) {
+                 ASSERT_EQ(e, IoError());
+                 return result::Ok(std::string("fallback"));
+               });
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, "fallback");
-//   }
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, "fallback");
+  }
 
 //   SIMPLE_TEST(SubmitPool) {
 //     executors::ThreadPool pool{4};

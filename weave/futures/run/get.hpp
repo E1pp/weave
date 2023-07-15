@@ -27,19 +27,20 @@ struct [[nodiscard]] Get {
     }
 
     Result<ValueType> Get() {
-      [[maybe_unused]] Evaluation<Future, Waiter> auto eval = std::move(future_).Force(*this);
+      [[maybe_unused]] Evaluation<Future, Waiter> auto eval =
+          std::move(future_).Force(*this);
 
       event_.Wait();
 
       return std::move(*res_);
     }
 
-    void Consume(Output<ValueType> o) {
+    void Complete(Output<ValueType> o) {
       res_.emplace(std::move(o.result));
       event_.Set();
     }
 
-    void Consume(Result<ValueType> r){
+    void Complete(Result<ValueType> r) {
       res_.emplace(std::move(r));
       event_.Set();
     }

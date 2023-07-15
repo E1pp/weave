@@ -165,8 +165,7 @@ class Logger<true, AtomicMetrics> {
       // but find does. Treat this line as owner_->indices_[name]
       size_t index = pos->second;
 
-      metrics_.FetchAdd(index, diff,
-                        std::memory_order::relaxed);
+      metrics_.FetchAdd(index, diff, std::memory_order::relaxed);
     }
 
     LoggerShard& operator+=(LoggerShard& that) {
@@ -237,24 +236,25 @@ class Logger<true, AtomicMetrics> {
   };
 
  private:
-
   //////////////////////////////////////////////////////////////////////////////////
-  // heterogenous lookup https://www.cppstories.com/2021/heterogeneous-access-cpp20/
+  // heterogenous lookup
+  // https://www.cppstories.com/2021/heterogeneous-access-cpp20/
 
-  struct StringHash { // NOLINT
-    using is_transparent = void; // NOLINT
-    [[nodiscard]] size_t operator()(const char *txt) const {
+  struct StringHash {             // NOLINT
+    using is_transparent = void;  // NOLINT
+    [[nodiscard]] size_t operator()(const char* txt) const {
       return std::hash<std::string_view>{}(txt);
     }
     [[nodiscard]] size_t operator()(std::string_view txt) const {
       return std::hash<std::string_view>{}(txt);
     }
-    [[nodiscard]] size_t operator()(const std::string &txt) const {
+    [[nodiscard]] size_t operator()(const std::string& txt) const {
       return std::hash<std::string>{}(txt);
     }
   };
 
-  std::unordered_map<std::string, size_t, StringHash, std::equal_to<>> indices_{};
+  std::unordered_map<std::string, size_t, StringHash, std::equal_to<>>
+      indices_{};
   std::vector<std::optional<LoggerShard>> shards_;
   LoggerShard total_;
 };

@@ -16,7 +16,7 @@ class [[nodiscard]] Just : support::NonCopyableBase {
   Just() = default;
 
   // Movable
-  Just(Just&&) {};
+  Just(Just&&){};
   Just& operator=(Just&&) = default;
 
  private:
@@ -24,13 +24,13 @@ class [[nodiscard]] Just : support::NonCopyableBase {
   class JustEvaluation : support::PinnedBase {
    public:
     JustEvaluation(Just, Cons& cons) {
-      cons.Consume(result::Ok());
+      cons.Complete(result::Ok());
     }
   };
 
  public:
   template <Consumer<ValueType> Cons>
-  Evaluation<Just, Cons> auto Force(Cons& cons){
+  Evaluation<Just, Cons> auto Force(Cons& cons) {
     return JustEvaluation<Cons>(std::move(*this), cons);
   }
 };
