@@ -38,13 +38,13 @@ twist::ed::ThreadLocal<support::FastRand> rand{
 template <size_t Size>
 std::array<size_t, Size> IterationStrategy() {
   size_t first = (*rand)() % Size;
-  std::array<size_t, Size> indeces;
-  std::iota(indeces.begin(), indeces.end(), 0);
+  std::array<size_t, Size> indices;
+  std::iota(indices.begin(), indices.end(), 0);
 
-  std::rotate(indeces.begin(), indeces.begin() + 1,
-              indeces.begin() + first + 1);
+  std::rotate(indices.begin(), indices.begin() + 1,
+              indices.begin() + first + 1);
 
-  return std::move(indeces);
+  return std::move(indices);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

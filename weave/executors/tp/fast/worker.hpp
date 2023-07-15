@@ -121,7 +121,7 @@ class Worker : public wheels::IntrusiveListNode<Worker>,
 
   // random generationc
   std::mt19937_64 twister_;
-  std::vector<int> indeces_;
+  std::vector<int> indices_;
 
   // Parking lot & other coordination
   twist::ed::stdlike::atomic<uint32_t> wakeups_{0};

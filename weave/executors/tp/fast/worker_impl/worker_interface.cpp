@@ -21,9 +21,9 @@ Worker::Worker(ThreadPool& host, size_t index, Logger::LoggerShard* shard)
     : host_(host),
       index_(index),
       twister_(host_.random_()),
-      indeces_(host_.threads_ - 1),
+      indices_(host_.threads_ - 1),
       logger_shard_(shard) {
-  std::iota(indeces_.begin(), indeces_.end(), 1);
+  std::iota(indices_.begin(), indices_.end(), 1);
 }
 
 Worker* Worker::Current() {

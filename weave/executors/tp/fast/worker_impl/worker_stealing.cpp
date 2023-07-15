@@ -17,7 +17,7 @@ Task* Worker::TryStealTasks() {
   logger_shard_->Increment("Steal attempts", 1);
 
   // randomise sequence for every iter
-  std::shuffle(indeces_.begin(), indeces_.end(), twister_);
+  std::shuffle(indices_.begin(), indices_.end(), twister_);
 
   for (size_t i = 0; i < steal_attempts && task == nullptr; i++) {
     task = TryStealTaskIter();
@@ -31,7 +31,7 @@ Task* Worker::TryStealTaskIter() {
   std::array<Task*, kLocalQueueCapacity / 2> buffer{};
   const size_t max_index = host_.threads_;
 
-  for (auto offset : indeces_) {
+  for (auto offset : indices_) {
     // we try to steal from worker and if we steal something we assign it to
     // task
 

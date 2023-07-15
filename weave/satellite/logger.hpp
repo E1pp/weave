@@ -91,7 +91,7 @@ class Logger<true, AtomicMetrics> {
     const size_t size = names.size();
 
     for (size_t i = 0; i < size; ++i) {
-      indeces_[names[i]] = i;
+      indices_[names[i]] = i;
     }
   }
 
@@ -152,16 +152,18 @@ class Logger<true, AtomicMetrics> {
 
     explicit LoggerShard(Owner* owner)
         : owner_(owner),
-          metrics_(owner_->indeces_.size()) {
+          metrics_(owner_->indices_.size()) {
     }
 
     void Increment(std::string_view name, size_t diff) {
-      WHEELS_VERIFY(owner_->indeces_.contains(name),
+      auto pos = owner_->indices_.find(name);
+
+      WHEELS_VERIFY(pos != owner_->indices_.end(),
                     "You must use a valid metric name!");
 
       // C++20 doesn't support heterogenous lookup for operator[]
-      // but find does. Treat this line as owner_->indeces_[name]
-      size_t index = std::get<1>(*(owner_->indeces_.find(name)));
+      // but find does. Treat this line as owner_->indices_[name]
+      size_t index = pos->second;
 
       metrics_.FetchAdd(index, diff,
                         std::memory_order::relaxed);
@@ -225,7 +227,7 @@ class Logger<true, AtomicMetrics> {
 
    private:
     explicit Metrics(LoggerShard& source) {
-      for (auto [name, index] : source.owner_->indeces_) {
+      for (auto [name, index] : source.owner_->indices_) {
         data_.emplace_back(name, source.LookUp(index));
       }
     }
@@ -252,7 +254,7 @@ class Logger<true, AtomicMetrics> {
     }
   };
 
-  std::unordered_map<std::string, size_t, StringHash, std::equal_to<>> indeces_{};
+  std::unordered_map<std::string, size_t, StringHash, std::equal_to<>> indices_{};
   std::vector<std::optional<LoggerShard>> shards_;
   LoggerShard total_;
 };
