@@ -1,14 +1,14 @@
 #pragma once
 
-//#include <weave/futures/thunks/detail/cancel_base.hpp>
+// #include <weave/futures/thunks/detail/cancel_base.hpp>
 
 #include <weave/futures/model/evaluation.hpp>
 #include <weave/futures/traits/value_of.hpp>
 
 #include <weave/result/traits/value_of.hpp>
 
-// #include <weave/satellite/meta_data.hpp>
-// #include <weave/satellite/satellite.hpp>
+#include <weave/satellite/meta_data.hpp>
+#include <weave/satellite/satellite.hpp>
 
 #include <weave/support/constructor_bases.hpp>
 
@@ -64,7 +64,12 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
     }
 
     // Satisfies Consumer<InputValueType>
-    void Complete(Output<InputValueType> input) {
+    void Complete(Output<InputValueType> input) noexcept {
+      if(CancelToken().CancelRequested()) {
+        Cancel(std::move(input.context));
+        return;
+      }
+
       if (map_.Predicate(input)) {
         input_.emplace((std::move(input)));
         (*input_).context.executor_->Submit(this, (*input_).context.hint_);
@@ -75,31 +80,39 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
       }
     }
 
-    void Complete(Result<InputValueType> r) {
+    void Complete(Result<InputValueType> r) noexcept {
       Complete(Output<InputValueType>({std::move(r), Context{}}));
     }
 
-    // using EvalType = EvaluationType<Future, ApplyEvaluation>;
-        // decltype(std::declval<std::add_rvalue_reference_t<Future>>().Force(
-        //     std::declval<std::add_lvalue_reference_t<ApplyEvaluation>>()));
+    void Cancel(Context ctx) noexcept {
+      consumer_.Cancel(std::move(ctx));
+    }
+
+    cancel::Token CancelToken() {
+      return consumer_.CancelToken();
+    }
 
    private:
     void Run() noexcept override final {
+    try {
       Result<ValueType> output = RunMapper();
 
       consumer_.Complete({std::move(output), std::move(input_->context)});
+    } catch (cancel::CancelledException) {
+      consumer_.Cancel(
+          Context{satellite::GetExecutor(), executors::SchedulerHint::UpToYou});
+    }
     }
 
     Result<ValueType> RunMapper() {
-      // // Setup satellite context
-      // satellite::MetaData old =
-      // satellite::SetContext(input_->context.executor_,
-      //                                                 consumer_->CancelToken());
+      // Setup satellite context
+      satellite::MetaData old =
+      satellite::SetContext(input_->context.executor_, consumer_.CancelToken());
 
-      // // Map() may throw
-      // wheels::Defer cleanup([old] {
-      //   satellite::RestoreContext(old);
-      // });
+      // Map() may throw
+      wheels::Defer cleanup([old] {
+        satellite::RestoreContext(old);
+      });
 
       {
         Mapper moved = std::move(map_);

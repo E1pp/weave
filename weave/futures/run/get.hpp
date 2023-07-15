@@ -1,6 +1,6 @@
 #pragma once
 
-//#include <weave/cancel/never.hpp>
+#include <weave/cancel/never.hpp>
 
 #include <weave/futures/syntax/pipe.hpp>
 
@@ -32,25 +32,25 @@ struct [[nodiscard]] Get {
       return std::move(*res_);
     }
 
-    void Complete(Output<ValueType> o) {
+    void Complete(Output<ValueType> o) noexcept {
       res_.emplace(std::move(o.result));
       event_.Set();
     }
 
-    void Complete(Result<ValueType> r) {
+    void Complete(Result<ValueType> r) noexcept {
       res_.emplace(std::move(r));
       event_.Set();
     }
 
-    // void Cancel(Context) noexcept override final {
-    //   event_.Set();
+    void Cancel(Context) noexcept {
+      event_.Set();
 
-    //   WHEELS_PANIC("Get got cancelled!");
-    // }
+      WHEELS_PANIC("futures::Get got cancelled!");
+    }
 
-    // cancel::Token CancelToken() override final {
-    //   return cancel::Never();
-    // }
+    cancel::Token CancelToken() {
+      return cancel::Never();
+    }
 
    private:
     threads::blocking::Event event_{};

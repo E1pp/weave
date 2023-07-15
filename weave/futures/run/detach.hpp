@@ -1,6 +1,6 @@
 #pragma once
 
-//#include <weave/cancel/never.hpp>
+#include <weave/cancel/never.hpp>
 
 #include <weave/futures/model/evaluation.hpp>
 
@@ -28,14 +28,14 @@ struct [[nodiscard]] Detach {
       delete this;
     }
 
-    // void Cancel(Context) noexcept override final {
-    //   WHEELS_PANIC("Cancelled Detach!");
-    //   delete this;
-    // }
+    void Cancel(Context) noexcept {
+      WHEELS_PANIC("Cancelled Detach!");
+      delete this;
+    }
 
-    // cancel::Token CancelToken() override final {
-    //   return cancel::Never();
-    // }
+    cancel::Token CancelToken(){
+      return cancel::Never();
+    }
 
    private:
     EvaluationType<Runner, Future> eval_;

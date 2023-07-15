@@ -49,6 +49,16 @@ class [[nodiscard]] Via : support::NonCopyableBase {
       consumer_.Complete(std::move(o));
     }
 
+    // insert your own context
+    void Cancel(Context) noexcept {
+      consumer_.Cancel(std::move(next_context_));
+    }
+
+    cancel::Token CancelToken() {
+      // forward down the chain
+      return consumer_.CancelToken();
+    }
+
    private:
     Context next_context_;
     Cons& consumer_;
@@ -61,16 +71,6 @@ class [[nodiscard]] Via : support::NonCopyableBase {
   Evaluation<Via, Cons> auto Force(Cons& cons){
     return ViaEvaluation<Cons>(std::move(*this), cons);
   }
-
-  // // insert your own context
-  // void Cancel(Context) noexcept override final {
-  //   consumer_->Cancel(std::move(next_context_));
-  // }
-
-  // cancel::Token CancelToken() override final {
-  //   // forward down the chain
-  //   return consumer_->CancelToken();
-  // }
 
  private:
   Future future_;
