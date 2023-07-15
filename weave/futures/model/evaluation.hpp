@@ -14,7 +14,7 @@ concept Evaluation = !std::movable<E> && !std::copyable<E> && requires(F fut, C&
 
 template <typename F, typename C>
 concept ProducerFor = Thunk<F> && Consumer<C, typename F::ValueType> && requires(F thunk, C& consumer){
-    thunk.Force(consumer) -> Evaluation<F, C>;
+    std::move(thunk).Force(consumer) -> Evaluation<F, C>;
 };
 
 } // namespace weave::futures

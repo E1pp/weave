@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weave/futures/syntax/pipe.hpp>
+#include <weave/futures/old_syntax/pipe.hpp>
 
 #include <weave/futures/thunks/combine/seq/apply.hpp>
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <weave/futures/old_model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
+#include <weave/futures/model/thunk.hpp>
 
 #include <weave/result/make/ok.hpp>
 
@@ -26,16 +27,27 @@ class [[nodiscard]] Value {
   }
   Value& operator=(Value&&) = default;
 
-  void Start(IConsumer<T>* consumer) {
-    if (consumer->CancelToken().CancelRequested()) {
-      consumer->Cancel(Context{});
-    } else {
-      consumer->Complete(result::Ok(std::move(value_)));
-    }
-  }
+ private:
+  template <Consumer<ValueType> Cons>
+  class ValueEvaluation {
+   public:
+    // Pinned
+    ValueEvaluation(const ValueEvaluation&) = delete;
+    ValueEvaluation& operator=(const ValueEvaluation&) = delete;
 
-  void Cancellable() {
-    // No-Op
+    ValueEvaluation(ValueEvaluation&&) = delete;
+    ValueEvaluation& operator=(ValueEvaluation&&) = delete;
+
+    
+    ValueEvaluation(Value fut, Cons& consumer) {
+      consumer.Consume(result::Ok(std::move(fut.value_)));
+    }
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Value, Cons> auto Force(Cons& consumer){
+    return ValueEvaluation<Cons>(std::move(*this), consumer);
   }
 
  private:

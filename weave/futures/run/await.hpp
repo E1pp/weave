@@ -4,9 +4,9 @@
 
 #include <weave/fibers/sched/suspend.hpp>
 
-#include <weave/futures/run/get.hpp>
+//#include <weave/futures/run/get.hpp>
 
-#include <weave/futures/syntax/pipe.hpp>
+#include <weave/futures/old_syntax/pipe.hpp>
 
 #include <weave/futures/old_traits/value_of.hpp>
 
@@ -78,9 +78,9 @@ struct [[nodiscard]] Await {
   template <SomeFuture InputFuture>
   Result<traits::ValueOf<InputFuture>> Pipe(InputFuture f) {
     // Check if we are outside of fiber context
-    if (fibers::Fiber::Self() == nullptr) {
-      return std::move(f) | futures::Get();
-    }
+    // if (fibers::Fiber::Self() == nullptr) {
+    //   return std::move(f) | futures::Get();
+    // }
 
     return Waiter(std::move(f)).Await();
   }

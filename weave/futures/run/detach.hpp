@@ -2,7 +2,7 @@
 
 #include <weave/cancel/never.hpp>
 
-#include <weave/futures/syntax/pipe.hpp>
+#include <weave/futures/old_syntax/pipe.hpp>
 
 namespace weave::futures {
 

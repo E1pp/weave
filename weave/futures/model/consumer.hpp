@@ -5,8 +5,9 @@
 namespace weave::futures {
 
 template <typename C, typename T>
-concept Consumer = requires(C* consumer, Output<T> o){
-    consumer->Consume(std::move(o));
+concept Consumer = requires(C& consumer, Output<T> o, Result<T> r){
+    consumer.Consume(std::move(o));
+    consumer.Consume(std::move(r));
     // consumer->CancelToken()
 };
 

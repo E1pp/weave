@@ -1,10 +1,12 @@
 #pragma once
 
-#include <weave/cancel/never.hpp>
+//#include <weave/cancel/never.hpp>
 
 #include <weave/futures/syntax/pipe.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/model/evaluation.hpp>
+
+#include <weave/futures/traits/value_of.hpp>
 
 #include <weave/threads/blocking/event.hpp>
 
@@ -15,8 +17,8 @@ namespace weave::futures {
 namespace pipe {
 
 struct [[nodiscard]] Get {
-  template <SomeFuture Future>
-  class Waiter final : public IConsumer<typename Future::ValueType> {
+  template <Thunk Future>
+  class Waiter {
    public:
     using ValueType = typename Future::ValueType;
 
@@ -25,28 +27,32 @@ struct [[nodiscard]] Get {
     }
 
     Result<ValueType> Get() {
-      future_.Start(this);
+      [[maybe_unused]] Evaluation<Future, Waiter> auto eval = std::move(future_).Force(*this);
 
       event_.Wait();
 
       return std::move(*res_);
     }
 
-   private:
-    void Consume(Output<ValueType> o) noexcept override final {
+    void Consume(Output<ValueType> o) {
       res_.emplace(std::move(o.result));
       event_.Set();
     }
 
-    void Cancel(Context) noexcept override final {
+    void Consume(Result<ValueType> r){
+      res_.emplace(std::move(r));
       event_.Set();
-
-      WHEELS_PANIC("Get got cancelled!");
     }
 
-    cancel::Token CancelToken() override final {
-      return cancel::Never();
-    }
+    // void Cancel(Context) noexcept override final {
+    //   event_.Set();
+
+    //   WHEELS_PANIC("Get got cancelled!");
+    // }
+
+    // cancel::Token CancelToken() override final {
+    //   return cancel::Never();
+    // }
 
    private:
     Future future_;
