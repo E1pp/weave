@@ -5,20 +5,18 @@
 
 #include <weave/result/make/ok.hpp>
 
+#include <weave/support/constructor_bases.hpp>
+
 namespace weave::futures::thunks {
 
 template <typename T>
-class [[nodiscard]] Value {
+class [[nodiscard]] Value : support::NonCopyableBase {
  public:
   using ValueType = T;
 
   explicit Value(T&& val)
       : value_(std::move(val)) {
   }
-
-  // Non-Copyable
-  Value(const Value&) = delete;
-  Value& operator=(const Value&) = delete;
 
   // Movable
   // Construction is non-trivial because tl::expected is broken
@@ -29,16 +27,8 @@ class [[nodiscard]] Value {
 
  private:
   template <Consumer<ValueType> Cons>
-  class ValueEvaluation {
+  class ValueEvaluation : support::PinnedBase{
    public:
-    // Pinned
-    ValueEvaluation(const ValueEvaluation&) = delete;
-    ValueEvaluation& operator=(const ValueEvaluation&) = delete;
-
-    ValueEvaluation(ValueEvaluation&&) = delete;
-    ValueEvaluation& operator=(ValueEvaluation&&) = delete;
-
-    
     ValueEvaluation(Value fut, Cons& consumer) {
       consumer.Consume(result::Ok(std::move(fut.value_)));
     }

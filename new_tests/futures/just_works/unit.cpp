@@ -3,9 +3,9 @@
 
 // #include <weave/futures/make/contract.hpp>
 #include <weave/futures/make/value.hpp>
-// #include <weave/futures/make/failure.hpp>
+#include <weave/futures/make/failure.hpp>
 // #include <weave/futures/make/submit.hpp>
-// #include <weave/futures/make/just.hpp>
+#include <weave/futures/make/just.hpp>
 
 // #include <weave/futures/combine/seq/map.hpp>
 // #include <weave/futures/combine/seq/and_then.hpp>
@@ -70,25 +70,24 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(*r, 111);
   }
 
-//   SIMPLE_TEST(Just) {
-//     futures::Future<Unit> auto f = futures::Just();
+  SIMPLE_TEST(Just) {
+    futures::Future<Unit> auto f = futures::Just();
 
-//     auto r = std::move(f) | futures::Get();
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, Unit{});
-//   }
+    auto r = std::move(f) | futures::Get();
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, Unit{});
+  }
 
-//   SIMPLE_TEST(Failure) {
-//     auto timeout = TimeoutError();
+  SIMPLE_TEST(Failure) {
+    auto timeout = TimeoutError();
 
-//     futures::Future<int> auto f = futures::Failure<int>(timeout);
+    futures::Future<int> auto f = futures::Failure<int>(timeout);
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_FALSE(r);
-//     ASSERT_EQ(r.error(), timeout);
-//   }
-
+    ASSERT_FALSE(r);
+    ASSERT_EQ(r.error(), timeout);
+  }
 
 //   SIMPLE_TEST(MapValue) {
 //     auto f = futures::Value(1)

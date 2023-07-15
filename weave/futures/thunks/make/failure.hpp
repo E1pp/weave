@@ -1,13 +1,16 @@
 #pragma once
 
-#include <weave/futures/old_model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
+#include <weave/futures/model/thunk.hpp>
 
 #include <weave/result/make/err.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
 
 template <typename T>
-class [[nodiscard]] Failure {
+class [[nodiscard]] Failure : support::NonCopyableBase {
  public:
   using ValueType = T;
 
@@ -15,26 +18,25 @@ class [[nodiscard]] Failure {
       : error_(std::move(with)) {
   }
 
-  // Non-copyable
-  Failure(const Failure&) = delete;
-  Failure& operator=(const Failure&) = delete;
-
   // Movable
   Failure(Failure&& that)
       : error_(std::move(that.error_)) {
   }
   Failure& operator=(Failure&&) = default;
 
-  void Start(IConsumer<T>* consumer) {
-    if (consumer->CancelToken().CancelRequested()) {
-      consumer->Cancel(Context{});
-    } else {
-      consumer->Complete(result::Err(std::move(error_)));
+ private:
+  template <Consumer<ValueType> Cons>
+  class FailureEvaluation : support::PinnedBase {
+   public:
+    FailureEvaluation(Failure fail, Cons& cons){
+      cons.Consume(result::Err(std::move(fail.error_)));
     }
-  }
+  };
 
-  void Cancellable() {
-    // No-Op
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Failure, Cons> auto Force(Cons& cons){
+    return FailureEvaluation<Cons>(std::move(*this), cons);
   }
 
  private:
