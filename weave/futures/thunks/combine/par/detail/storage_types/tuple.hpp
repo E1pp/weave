@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weave/futures/types/future.hpp>
+#include <weave/futures/old_types/future.hpp>
 
 namespace weave::futures::thunks::detail {
 

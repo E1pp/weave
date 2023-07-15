@@ -4,7 +4,7 @@
 
 #include <weave/futures/thunks/detail/shared_state.hpp>
 
-#include <weave/futures/types/future.hpp>
+#include <weave/futures/old_types/future.hpp>
 
 namespace weave::futures::thunks::detail {
 

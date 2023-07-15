@@ -6,7 +6,7 @@
 #include <weave/futures/thunks/combine/par/detail/storage_types/tuple.hpp>
 #include <weave/futures/thunks/combine/par/detail/join_block.hpp>
 
-#include <weave/futures/traits/value_of.hpp>
+#include <weave/futures/old_traits/value_of.hpp>
 
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>

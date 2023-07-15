@@ -2,7 +2,7 @@
 
 #include <weave/futures/thunks/detail/cancel_base.hpp>
 
-#include <weave/futures/traits/value_of.hpp>
+#include <weave/futures/old_traits/value_of.hpp>
 
 #include <weave/result/traits/value_of.hpp>
 

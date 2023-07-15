@@ -2,7 +2,7 @@
 
 #include <weave/cancel/sources/join.hpp>
 
-#include <weave/futures/types/future.hpp>
+#include <weave/futures/old_types/future.hpp>
 
 #include <weave/threads/lockfree/count_and_flags.hpp>
 

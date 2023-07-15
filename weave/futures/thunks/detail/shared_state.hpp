@@ -2,7 +2,7 @@
 
 #include <weave/cancel/sources/strand.hpp>
 
-#include <weave/futures/model/thunk.hpp>
+#include <weave/futures/old_model/thunk.hpp>
 
 #include <weave/result/make/err.hpp>
 

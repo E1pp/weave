@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weave/futures/model/thunk.hpp>
+#include <weave/futures/old_model/thunk.hpp>
 
 #include <weave/futures/thunks/combine/seq/detail/start_state.hpp>
 

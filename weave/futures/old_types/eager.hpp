@@ -4,7 +4,7 @@
 
 #include <weave/futures/thunks/combine/seq/started.hpp>
 
-#include <weave/futures/traits/is_lazy.hpp>
+#include <weave/futures/old_traits/is_lazy.hpp>
 
 namespace weave::futures {
 

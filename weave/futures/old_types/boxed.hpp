@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weave/futures/types/naked.hpp>
+#include <weave/futures/old_types/naked.hpp>
 
 #include <weave/futures/thunks/combine/seq/box.hpp>
 

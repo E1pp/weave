@@ -2,17 +2,13 @@
 
 #include <weave/futures/model/consumer.hpp>
 
+#include <concepts>
+
 namespace weave::futures {
 
-// https://wiki.haskell.org/Thunk
-// Represents arbitrary (asynchronous) computation
-
-template <typename T>
-concept Thunk = requires(T thunk, IConsumer<typename T::ValueType>* consumer) {
-  typename T::ValueType;
-
-  // Start evaluation
-  thunk.Start(consumer);
+template <typename F>
+concept Thunk = std::movable<F> && !std::copyable<F> && requires(F ){
+  typename F::ValueType;
 };
 
-}  // namespace weave::futures
+} // namespace weave::futures

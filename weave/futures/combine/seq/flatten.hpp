@@ -4,7 +4,7 @@
 
 #include <weave/futures/thunks/combine/seq/flatten.hpp>
 
-#include <weave/futures/traits/value_of.hpp>
+#include <weave/futures/old_traits/value_of.hpp>
 
 #include <optional>
 

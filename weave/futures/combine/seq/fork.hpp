@@ -4,7 +4,7 @@
 
 #include <weave/futures/thunks/combine/seq/fork.hpp>
 
-#include <weave/futures/traits/value_of.hpp>
+#include <weave/futures/old_traits/value_of.hpp>
 
 #include <optional>
 #include <type_traits>

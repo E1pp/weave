@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weave/futures/types/eager.hpp>
+#include <weave/futures/old_types/eager.hpp>
 
 #include <weave/result/types/result.hpp>
 

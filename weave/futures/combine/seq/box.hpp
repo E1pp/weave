@@ -2,9 +2,9 @@
 
 #include <weave/futures/syntax/pipe.hpp>
 
-#include <weave/futures/traits/value_of.hpp>
+#include <weave/futures/old_traits/value_of.hpp>
 
-#include <weave/futures/types/boxed.hpp>
+#include <weave/futures/old_types/boxed.hpp>
 
 namespace weave::futures {
 
