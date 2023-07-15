@@ -23,13 +23,10 @@ struct [[nodiscard]] Get {
     using ValueType = typename Future::ValueType;
 
     explicit Waiter(Future f)
-        : future_(std::move(f)) {
+        : eval_(std::move(f).Force(*this)) {
     }
 
     Result<ValueType> Get() {
-      [[maybe_unused]] Evaluation<Future, Waiter> auto eval =
-          std::move(future_).Force(*this);
-
       event_.Wait();
 
       return std::move(*res_);
@@ -56,9 +53,9 @@ struct [[nodiscard]] Get {
     // }
 
    private:
-    Future future_;
-    threads::blocking::Event event_;
-    std::optional<Result<ValueType>> res_;
+    threads::blocking::Event event_{};
+    std::optional<Result<ValueType>> res_{};
+    EvaluationType<Waiter, Future> eval_;
   };
 
   template <SomeFuture InputFuture>

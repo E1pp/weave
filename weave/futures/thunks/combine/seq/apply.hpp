@@ -54,7 +54,7 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class ApplyEvaluation : support::PinnedBase,
+  class ApplyEvaluation final : support::PinnedBase,
                           public executors::Task {
    public:
     ApplyEvaluation(Apply owner, Cons& consumer)
@@ -79,9 +79,9 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
       Complete(Output<InputValueType>({std::move(r), Context{}}));
     }
 
-    using EvalType =
-        decltype(std::declval<std::add_rvalue_reference_t<Future>>().Force(
-            std::declval<std::add_lvalue_reference_t<ApplyEvaluation>>()));
+    // using EvalType = EvaluationType<Future, ApplyEvaluation>;
+        // decltype(std::declval<std::add_rvalue_reference_t<Future>>().Force(
+        //     std::declval<std::add_lvalue_reference_t<ApplyEvaluation>>()));
 
    private:
     void Run() noexcept override final {
@@ -112,7 +112,7 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
     Mapper map_;
     Cons& consumer_;
     std::optional<Output<InputValueType>> input_{};
-    EvalType evaluation_;
+    EvaluationType<ApplyEvaluation, Future> evaluation_;
   };
 
  public:

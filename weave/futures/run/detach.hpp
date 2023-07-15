@@ -1,8 +1,10 @@
 #pragma once
 
-#include <weave/cancel/never.hpp>
+//#include <weave/cancel/never.hpp>
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/model/evaluation.hpp>
+
+#include <weave/futures/syntax/pipe.hpp>
 
 namespace weave::futures {
 
@@ -10,40 +12,38 @@ namespace pipe {
 
 struct [[nodiscard]] Detach {
   template <SomeFuture Future>
-  class Runner final : public IConsumer<typename Future::ValueType> {
+  class Runner {
    public:
     using ValueType = typename Future::ValueType;
 
     explicit Runner(Future f)
-        : future_(std::move(f)) {
+        : eval_(std::move(f).Force(*this)) {
     }
 
-    void Start() {
-      future_.Start(this);
-    }
-
-   private:
-    void Consume(Output<ValueType>) noexcept override final {
+    void Complete(Output<ValueType>) {
       delete this;
     }
 
-    void Cancel(Context) noexcept override final {
-      WHEELS_PANIC("Cancelled Detach!");
+    void Complete(Result<ValueType>) {
       delete this;
     }
 
-    cancel::Token CancelToken() override final {
-      return cancel::Never();
-    }
+    // void Cancel(Context) noexcept override final {
+    //   WHEELS_PANIC("Cancelled Detach!");
+    //   delete this;
+    // }
+
+    // cancel::Token CancelToken() override final {
+    //   return cancel::Never();
+    // }
 
    private:
-    Future future_;
+    EvaluationType<Runner, Future> eval_;
   };
 
   template <SomeFuture Future>
   void Pipe(Future f) {
-    auto* runner = new Runner(std::move(f));
-    runner->Start();
+    new Runner(std::move(f));
   }
 };
 

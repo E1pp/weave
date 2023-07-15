@@ -4,7 +4,7 @@
 // #include <weave/futures/make/contract.hpp>
 #include <weave/futures/make/value.hpp>
 #include <weave/futures/make/failure.hpp>
-// #include <weave/futures/make/submit.hpp>
+#include <weave/futures/make/submit.hpp>
 #include <weave/futures/make/just.hpp>
 
 #include <weave/futures/combine/seq/map.hpp>
@@ -24,7 +24,7 @@
 // #include <weave/futures/combine/par/select.hpp>
 
 #include <weave/futures/run/get.hpp>
-// #include <weave/futures/run/detach.hpp>
+#include <weave/futures/run/detach.hpp>
 
 #include <wheels/test/framework.hpp>
 #include <wheels/test/util/cpu_timer.hpp>
@@ -142,77 +142,77 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(*r, "fallback");
   }
 
-//   SIMPLE_TEST(SubmitPool) {
-//     executors::ThreadPool pool{4};
-//     pool.Start();
+  SIMPLE_TEST(SubmitPool) {
+    executors::ThreadPool pool{4};
+    pool.Start();
 
-//     futures::Future<int> auto f = futures::Submit(pool, [] {
-//       return result::Ok(11);
-//     });
+    futures::Future<int> auto f = futures::Submit(pool, [] {
+      return result::Ok(11);
+    });
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, 11);
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 11);
 
-//     pool.Stop();
-//   }
+    pool.Stop();
+  }
 
-//   SIMPLE_TEST(SubmitManual) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(SubmitManual) {
+    executors::ManualExecutor manual;
 
-//     bool done = false;
+    bool done = false;
 
-//     auto f = futures::Submit(manual, [&] {
-//       done = true;
-//       return result::Ok();
-//     });
+    auto f = futures::Submit(manual, [&] {
+      done = true;
+      return result::Ok();
+    });
 
-//     std::move(f) | futures::Detach();
+    std::move(f) | futures::Detach();
 
-//     ASSERT_FALSE(done);
+    ASSERT_FALSE(done);
 
-//     manual.Drain();
+    manual.Drain();
 
-//     ASSERT_TRUE(done);
-//   }
+    ASSERT_TRUE(done);
+  }
 
-//   SIMPLE_TEST(SubmitPoolError) {
-//     executors::ThreadPool pool{4};
-//     pool.Start();
+  SIMPLE_TEST(SubmitPoolError) {
+    executors::ThreadPool pool{4};
+    pool.Start();
 
-//     auto f = futures::Submit(pool, []() -> Result<int> {
-//       return result::Err(IoError());
-//     });
+    auto f = futures::Submit(pool, []() -> Result<int> {
+      return result::Err(IoError());
+    });
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_TRUE(!r);
-//     ASSERT_EQ(r.error(), IoError());
+    ASSERT_TRUE(!r);
+    ASSERT_EQ(r.error(), IoError());
 
-//     pool.Stop();
-//   }
+    pool.Stop();
+  }
 
-//   SIMPLE_TEST(SubmitPoolWait) {
-//     executors::ThreadPool pool{4};
-//     pool.Start();
+  SIMPLE_TEST(SubmitPoolWait) {
+    executors::ThreadPool pool{4};
+    pool.Start();
 
-//     auto f = futures::Submit(pool, [] {
-//       std::this_thread::sleep_for(1s);
-//       return result::Ok(11);
-//     });
+    auto f = futures::Submit(pool, [] {
+      std::this_thread::sleep_for(1s);
+      return result::Ok(11);
+    });
 
-//     wheels::ProcessCPUTimer timer;
+    wheels::ProcessCPUTimer timer;
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_TRUE(timer.Spent() < 100ms);
+    ASSERT_TRUE(timer.Spent() < 100ms);
 
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, 11);
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 11);
 
-//     pool.Stop();
-//   }
+    pool.Stop();
+  }
 
 //   SIMPLE_TEST(ContractValue) {
 //     auto [f, p] = futures::Contract<std::string>();

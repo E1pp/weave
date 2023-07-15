@@ -2,11 +2,11 @@
 
 #include <weave/executors/executor.hpp>
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/syntax/pipe.hpp>
 
 #include <weave/futures/thunks/combine/seq/via.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/traits/value_of.hpp>
 
 namespace weave::futures {
 
