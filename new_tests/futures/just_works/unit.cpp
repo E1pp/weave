@@ -214,107 +214,6 @@ TEST_SUITE(Futures) {
     pool.Stop();
   }
 
-//   SIMPLE_TEST(ContractValue) {
-//     auto [f, p] = futures::Contract<std::string>();
-
-//     std::move(p).SetValue("Hi");
-//     auto r = std::move(f) | futures::Get();
-
-//     ASSERT_TRUE(r.has_value());
-//     ASSERT_EQ(*r, "Hi");
-//   }
-
-//   SIMPLE_TEST(ContractError) {
-//     auto [f, p] = futures::Contract<int>();
-
-//     auto timeout = TimeoutError();
-
-//     std::move(p).SetError(timeout);
-//     auto r = std::move(f) | futures::Get();
-
-//     ASSERT_TRUE(!r);
-//     ASSERT_EQ(r.error(), timeout);
-//   }
-
-//   SIMPLE_TEST(ContractDetach) {
-//     {
-//       auto [f, p] = futures::Contract<int>();
-
-//       std::move(f) | futures::Detach();
-//       std::move(p).SetValue(1);
-//     }
-
-//     {
-//       auto [f, p] = futures::Contract<int>();
-
-//       std::move(p).SetValue(1);
-//       std::move(f) | futures::Detach();
-//     }
-//   }
-
-//   SIMPLE_TEST(ContractMoveOnly) {
-//     auto [f, p] = futures::Contract<MoveOnly>();
-
-//     std::move(p).SetValue(MoveOnly{});
-//     auto r = std::move(f) | futures::Get();
-
-//     ASSERT_TRUE(r);
-//   }
-
-//   SIMPLE_TEST(ContractNonDefaultConstructible) {
-//     auto [f, p] = futures::Contract<NonDefaultConstructible>();
-
-//     std::move(p).SetValue({128});
-//     auto r = std::move(f) | futures::Get();
-
-//     ASSERT_TRUE(r);
-//   }
-
-//   SIMPLE_TEST(Pipeline) {
-//     auto [f, p] = futures::Contract<int>();
-
-//     auto g = std::move(f) | futures::Map([](int v) {
-//                return v + 1;
-//              }) | futures::Map([](int v) {
-//                return v + 2;
-//              }) | futures::OrElse([](Error) {
-//                FAIL_TEST("Skip this");
-//                return result::Ok(111);
-//              }) | futures::AndThen([](int) -> Result<int> {
-//                return result::Err(TimeoutError());
-//              }) | futures::AndThen([](int v) {
-//                FAIL_TEST("Skip this");
-//                return result::Ok(v + 3);
-//              }) | futures::Map([](int v) {
-//                FAIL_TEST("Skip this");
-//                return v + 4;
-//              }) | futures::OrElse([](Error) -> Result<int> {
-//                return 17;
-//              }) | futures::Map([](int v) {
-//                return v + 1;
-//              });
-
-//     std::move(p).Set(3);
-
-//     auto r = std::move(g) | futures::Get();
-
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, 18);
-//   }
-
-//   SIMPLE_TEST(ContractMap) {
-//     auto [f, p] = futures::Contract<int>();
-
-//     auto g = std::move(f) | futures::Map([](int v) { return v + 1; });
-
-//     std::move(p).SetValue(35);
-
-//     auto r = std::move(g) | futures::Get();
-
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, 36);
-//   }
-
 //   SIMPLE_TEST(Flatten1) {
 //     executors::ManualExecutor manual;
 
@@ -448,6 +347,107 @@ TEST_SUITE(Futures) {
 //     }
 
 //     ASSERT_EQ(steps, 7);
+//   }
+
+//   SIMPLE_TEST(ContractValue) {
+//     auto [f, p] = futures::Contract<std::string>();
+
+//     std::move(p).SetValue("Hi");
+//     auto r = std::move(f) | futures::Get();
+
+//     ASSERT_TRUE(r.has_value());
+//     ASSERT_EQ(*r, "Hi");
+//   }
+
+//   SIMPLE_TEST(ContractError) {
+//     auto [f, p] = futures::Contract<int>();
+
+//     auto timeout = TimeoutError();
+
+//     std::move(p).SetError(timeout);
+//     auto r = std::move(f) | futures::Get();
+
+//     ASSERT_TRUE(!r);
+//     ASSERT_EQ(r.error(), timeout);
+//   }
+
+//   SIMPLE_TEST(ContractDetach) {
+//     {
+//       auto [f, p] = futures::Contract<int>();
+
+//       std::move(f) | futures::Detach();
+//       std::move(p).SetValue(1);
+//     }
+
+//     {
+//       auto [f, p] = futures::Contract<int>();
+
+//       std::move(p).SetValue(1);
+//       std::move(f) | futures::Detach();
+//     }
+//   }
+
+//   SIMPLE_TEST(ContractMoveOnly) {
+//     auto [f, p] = futures::Contract<MoveOnly>();
+
+//     std::move(p).SetValue(MoveOnly{});
+//     auto r = std::move(f) | futures::Get();
+
+//     ASSERT_TRUE(r);
+//   }
+
+//   SIMPLE_TEST(ContractNonDefaultConstructible) {
+//     auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+//     std::move(p).SetValue({128});
+//     auto r = std::move(f) | futures::Get();
+
+//     ASSERT_TRUE(r);
+//   }
+
+//   SIMPLE_TEST(Pipeline) {
+//     auto [f, p] = futures::Contract<int>();
+
+//     auto g = std::move(f) | futures::Map([](int v) {
+//                return v + 1;
+//              }) | futures::Map([](int v) {
+//                return v + 2;
+//              }) | futures::OrElse([](Error) {
+//                FAIL_TEST("Skip this");
+//                return result::Ok(111);
+//              }) | futures::AndThen([](int) -> Result<int> {
+//                return result::Err(TimeoutError());
+//              }) | futures::AndThen([](int v) {
+//                FAIL_TEST("Skip this");
+//                return result::Ok(v + 3);
+//              }) | futures::Map([](int v) {
+//                FAIL_TEST("Skip this");
+//                return v + 4;
+//              }) | futures::OrElse([](Error) -> Result<int> {
+//                return 17;
+//              }) | futures::Map([](int v) {
+//                return v + 1;
+//              });
+
+//     std::move(p).Set(3);
+
+//     auto r = std::move(g) | futures::Get();
+
+//     ASSERT_TRUE(r);
+//     ASSERT_EQ(*r, 18);
+//   }
+
+//   SIMPLE_TEST(ContractMap) {
+//     auto [f, p] = futures::Contract<int>();
+
+//     auto g = std::move(f) | futures::Map([](int v) { return v + 1; });
+
+//     std::move(p).SetValue(35);
+
+//     auto r = std::move(g) | futures::Get();
+
+//     ASSERT_TRUE(r);
+//     ASSERT_EQ(*r, 36);
 //   }
 
 //   SIMPLE_TEST(FirstOk1) {
