@@ -28,17 +28,17 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class StartEvaluation final : public support::PinnedBase,
+  class EvaluationFor final : public support::PinnedBase,
                                 public AbstractConsumer<ValueType> {
    public:
-    StartEvaluation(StartFuture fut, Cons& cons) : state_(fut.Release()), cons_(cons) {
+    EvaluationFor(StartFuture fut, Cons& cons) : state_(fut.Release()), cons_(cons) {
     }
 
     void Start(){
       std::exchange(state_, nullptr)->Consume(this);
     }
 
-    ~StartEvaluation() override final {
+    ~EvaluationFor() override final {
       WHEELS_VERIFY(state_ == nullptr, "Must use Evaluation!");
     }
 
@@ -63,7 +63,7 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase {
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<StartFuture, Cons> auto Force(Cons& cons){
-    return StartEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
   void RequestCancel() && {

@@ -14,16 +14,16 @@
 #include <weave/futures/make/value.hpp>
 #include <weave/futures/make/submit.hpp>
 #include <weave/futures/make/just.hpp>
-// #include <weave/futures/make/never.hpp>
+#include <weave/futures/make/never.hpp>
 
 #include <weave/futures/combine/seq/and_then.hpp>
-// #include <weave/futures/combine/seq/anyway.hpp>
+#include <weave/futures/combine/seq/anyway.hpp>
 #include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
 // #include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/map.hpp>
-// #include <weave/futures/combine/seq/on_cancel.hpp>
-// #include <weave/futures/combine/seq/on_success.hpp>
+#include <weave/futures/combine/seq/on_cancel.hpp>
+#include <weave/futures/combine/seq/on_success.hpp>
 #include <weave/futures/combine/seq/or_else.hpp>
 #include <weave/futures/combine/seq/start.hpp>
 #include <weave/futures/combine/seq/via.hpp>
@@ -194,124 +194,128 @@ TEST_SUITE(Sequential){
     std::move(p).Set(result::Ok());
   }
 
-  // SIMPLE_TEST(OnCancelJust){
-  //   bool flag = false;
+  SIMPLE_TEST(DiscardNever){
+    futures::Never() | futures::Discard();
+  }
 
-  //   futures::Just() | futures::OnCancel([&flag]{
-  //     flag = true;
-  //   }) | futures::Discard();
+  SIMPLE_TEST(OnCancelJust){
+    bool flag = false;
 
-  //   ASSERT_TRUE(flag);
+    futures::Just() | futures::OnCancel([&flag]{
+      flag = true;
+    }) | futures::Discard();
 
-  //   futures::Just() | futures::OnCancel([&flag]{
-  //     flag = false;
-  //   }) | futures::Detach();
+    ASSERT_TRUE(flag);
 
-  //   ASSERT_TRUE(flag);
-  // }
+    futures::Just() | futures::OnCancel([&flag]{
+      flag = false;
+    }) | futures::Detach();
 
-  // SIMPLE_TEST(OnCancelFailure){
-  //   bool flag = false;
+    ASSERT_TRUE(flag);
+  }
 
-  //   futures::Failure<Unit>(TimeoutError()) | futures::OnCancel([&flag]{
-  //     flag = true;
-  //   }) | futures::Discard();
+  SIMPLE_TEST(OnCancelFailure){
+    bool flag = false;
 
-  //   ASSERT_TRUE(flag);
+    futures::Failure<Unit>(TimeoutError()) | futures::OnCancel([&flag]{
+      flag = true;
+    }) | futures::Discard();
 
-  //   futures::Failure<Unit>(TimeoutError()) | futures::OnCancel([&flag]{
-  //     flag = false;
-  //   }) | futures::Detach();
+    ASSERT_TRUE(flag);
 
-  //   ASSERT_TRUE(flag);
-  // }
+    futures::Failure<Unit>(TimeoutError()) | futures::OnCancel([&flag]{
+      flag = false;
+    }) | futures::Detach();
 
-  // SIMPLE_TEST(OnCancelVia) {
-  //   executors::ManualExecutor manual;
-  //   bool flag = false;
+    ASSERT_TRUE(flag);
+  }
 
-  //   futures::Just() | futures::Via(manual) | futures::OnCancel([&flag]{
-  //     flag = true;
-  //   }) | futures::Discard();
+  SIMPLE_TEST(OnCancelVia) {
+    executors::ManualExecutor manual;
+    bool flag = false;
 
-  //   ASSERT_FALSE(flag);
+    futures::Just() | futures::Via(manual) | futures::OnCancel([&flag]{
+      flag = true;
+    }) | futures::Discard();
 
-  //   ASSERT_EQ(manual.Drain(), 1);
+    ASSERT_FALSE(flag);
 
-  //   ASSERT_TRUE(flag);
+    ASSERT_EQ(manual.Drain(), 1);
 
-  //   futures::Just() | futures::Via(manual) | futures::OnCancel([&flag]{
-  //     flag = false;
-  //   }) | futures::Detach();
+    ASSERT_TRUE(flag);
 
-  //   ASSERT_TRUE(flag);
+    futures::Just() | futures::Via(manual) | futures::OnCancel([&flag]{
+      flag = false;
+    }) | futures::Detach();
 
-  //   ASSERT_EQ(manual.Drain(), 0);
-  // }
+    ASSERT_TRUE(flag);
 
-  // SIMPLE_TEST(OnSuccessJust){
-  //   bool flag = true;
+    ASSERT_EQ(manual.Drain(), 0);
+  }
 
-  //   futures::Just() | futures::OnSuccess([&flag]{
-  //     flag = false;
-  //   }) | futures::Discard();
+  SIMPLE_TEST(OnSuccessJust){
+    bool flag = true;
 
-  //   ASSERT_TRUE(flag);
+    futures::Just() | futures::OnSuccess([&flag]{
+      flag = false;
+    }) | futures::Discard();
 
-  //   futures::Just() | futures::OnSuccess([&flag]{
-  //     flag = false;
-  //   }) | futures::Detach();
+    ASSERT_TRUE(flag);
 
-  //   ASSERT_FALSE(flag);
-  // }
+    futures::Just() | futures::OnSuccess([&flag]{
+      flag = false;
+    }) | futures::Detach();
 
-  // SIMPLE_TEST(OnSuccessFailure){
-  //   bool flag = true;
+    ASSERT_FALSE(flag);
+  }
 
-  //   futures::Failure<Unit>(TimeoutError()) | futures::OnSuccess([&flag]{
-  //     flag = false;
-  //   }) | futures::Discard();
+  SIMPLE_TEST(OnSuccessFailure){
+    bool flag = true;
 
-  //   ASSERT_TRUE(flag);
+    futures::Failure<Unit>(TimeoutError()) | futures::OnSuccess([&flag]{
+      flag = false;
+    }) | futures::Discard();
 
-  //   futures::Failure<Unit>(TimeoutError()) | futures::OnSuccess([&flag]{
-  //     flag = false;
-  //   }) | futures::Detach();
+    ASSERT_TRUE(flag);
 
-  //   ASSERT_FALSE(flag);
-  // }
+    futures::Failure<Unit>(TimeoutError()) | futures::OnSuccess([&flag]{
+      flag = false;
+    }) | futures::Detach();
 
-  // SIMPLE_TEST(AnywayJust){
-  //   bool flag = true;
+    ASSERT_FALSE(flag);
+  }
 
-  //   futures::Just() | futures::Anyway([&flag]{
-  //     flag = false;
-  //   }) | futures::Detach();
+  SIMPLE_TEST(AnywayJust){
+    bool flag = true;
 
-  //   ASSERT_FALSE(flag);
+    futures::Just() | futures::Anyway([&flag]{
+      flag = false;
+    }) | futures::Detach();
 
-  //   futures::Just() | futures::Anyway([&flag]{
-  //     flag = true;
-  //   }) | futures::Discard();
+    ASSERT_FALSE(flag);
 
-  //   ASSERT_TRUE(flag);
-  // }
+    futures::Just() | futures::Anyway([&flag]{
+      flag = true;
+    }) | futures::Discard();
 
-  // SIMPLE_TEST(AnywayFailure){
-  //   bool flag = true;
+    ASSERT_TRUE(flag);
+  }
 
-  //   futures::Failure<Unit>(TimeoutError()) | futures::Anyway([&flag]{
-  //     flag = false;
-  //   }) | futures::Detach();
+  SIMPLE_TEST(AnywayFailure){
+    bool flag = true;
 
-  //   ASSERT_FALSE(flag);
+    futures::Failure<Unit>(TimeoutError()) | futures::Anyway([&flag]{
+      flag = false;
+    }) | futures::Detach();
 
-  //   futures::Failure<Unit>(TimeoutError()) | futures::Anyway([&flag]{
-  //     flag = true;
-  //   }) | futures::Discard();
+    ASSERT_FALSE(flag);
 
-  //   ASSERT_TRUE(flag);
-  // }
+    futures::Failure<Unit>(TimeoutError()) | futures::Anyway([&flag]{
+      flag = true;
+    }) | futures::Discard();
+
+    ASSERT_TRUE(flag);
+  }
 
   // SIMPLE_TEST(CancelFork1){
   //   executors::ManualExecutor manual;

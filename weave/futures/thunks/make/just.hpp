@@ -20,9 +20,9 @@ class [[nodiscard]] Just final : public support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class JustEvaluation final : public support::PinnedBase {
+  class EvaluationFor final : public support::PinnedBase {
    public:
-    JustEvaluation(Just, Cons& consumer) : consumer_(consumer) {
+    EvaluationFor(Just, Cons& consumer) : consumer_(consumer) {
     }
 
     void Start(){
@@ -40,7 +40,7 @@ class [[nodiscard]] Just final : public support::NonCopyableBase {
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<Just, Cons> auto Force(Cons& cons) {
-    return JustEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 };
 

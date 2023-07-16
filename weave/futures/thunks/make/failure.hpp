@@ -24,9 +24,9 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class FailureEvaluation final : public support::PinnedBase {
+  class EvaluationFor final : public support::PinnedBase {
    public:
-    FailureEvaluation(Failure fut, Cons& consumer) : err_(std::move(fut.error_)), consumer_(consumer) {
+    EvaluationFor(Failure fut, Cons& consumer) : err_(std::move(fut.error_)), consumer_(consumer) {
     }
 
     void Start(){
@@ -45,7 +45,7 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<Failure, Cons> auto Force(Cons& cons) {
-    return FailureEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:

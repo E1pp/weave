@@ -2,7 +2,9 @@
 
 #include <weave/futures/thunks/combine/seq/on_cancel.hpp>
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/syntax/pipe.hpp>
+
+#include <weave/futures/traits/value_of.hpp>
 
 #include <weave/result/complete/complete.hpp>
 

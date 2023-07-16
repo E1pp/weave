@@ -26,20 +26,20 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase{
 
  private:
   template<Consumer<ValueType> Cons>
-  class ContractEvaluation final: public support::PinnedBase,
+  class EvaluationFor final: public support::PinnedBase,
                              public AbstractConsumer<ValueType> {
    public:
     using U = ValueType;
 
     // Evaluation
-    ContractEvaluation(ContractFuture fut, Cons& cons) : state_(fut.Release()), cons_(cons){
+    EvaluationFor(ContractFuture fut, Cons& cons) : state_(fut.Release()), cons_(cons){
     }
 
     void Start(){
       std::exchange(state_, nullptr)->Consume(this);
     }
 
-    ~ContractEvaluation() override final {
+    ~EvaluationFor() override final {
       WHEELS_VERIFY(state_ == nullptr, "You must call Start on this evaluation!");
     }
 
@@ -65,7 +65,7 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase{
  public:
   template<Consumer<ValueType> Cons>
   Evaluation<ContractFuture, Cons> auto Force(Cons& cons){
-    return ContractEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
   void RequestCancel() && {

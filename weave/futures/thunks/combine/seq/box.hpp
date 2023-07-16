@@ -71,16 +71,16 @@ class [[nodiscard]] Boxed final : public support::NonCopyableBase {
  
  private:
   template <Consumer<ValueType> Cons>
-  class BoxedEvaluation final: public support::PinnedBase, public AbstractConsumer<ValueType> {
+  class EvaluationFor final: public support::PinnedBase, public AbstractConsumer<ValueType> {
    public:
-    BoxedEvaluation(Boxed fut, Cons& cons) : sender_(std::exchange(fut.erased_, nullptr)), cons_(cons) {
+    EvaluationFor(Boxed fut, Cons& cons) : sender_(std::exchange(fut.erased_, nullptr)), cons_(cons) {
     }
 
     void Start(){
       sender_->RequestOutput(this);
     }
 
-    ~BoxedEvaluation() override final {
+    ~EvaluationFor() override final {
       if(sender_ == nullptr){
         return;
       }
@@ -109,7 +109,7 @@ class [[nodiscard]] Boxed final : public support::NonCopyableBase {
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<Boxed, Cons> auto Force(Cons& cons){
-    return BoxedEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
   ~Boxed() {

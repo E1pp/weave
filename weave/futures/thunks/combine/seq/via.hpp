@@ -31,9 +31,9 @@ class [[nodiscard]] Via final : public support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class ViaEvaluation final: public support::PinnedBase {
+  class EvaluationFor final: public support::PinnedBase {
    public:
-    ViaEvaluation(Via fut, Cons& consumer) noexcept: next_context_(std::move(fut.next_context_)), consumer_(consumer), eval_(std::move(fut.future_).Force(*this)){
+    EvaluationFor(Via fut, Cons& consumer) noexcept: next_context_(std::move(fut.next_context_)), consumer_(consumer), eval_(std::move(fut.future_).Force(*this)){
     }
 
     void Start() {
@@ -59,14 +59,14 @@ class [[nodiscard]] Via final : public support::NonCopyableBase {
    private:
     Context next_context_;
     Cons& consumer_;
-    EvaluationType<ViaEvaluation, Future> eval_;
+    EvaluationType<EvaluationFor, Future> eval_;
   };
 
 
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<Via, Cons> auto Force(Cons& cons){
-    return ViaEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:

@@ -24,9 +24,9 @@ class [[nodiscard]] Value final : public support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class ValueEvaluation final : public support::PinnedBase {
+  class EvaluationFor final : public support::PinnedBase {
    public:
-    ValueEvaluation(Value fut, Cons& consumer) : val_(std::move(fut.value_)), consumer_(consumer){
+    EvaluationFor(Value fut, Cons& consumer) : val_(std::move(fut.value_)), consumer_(consumer){
     }
 
     void Start() {
@@ -45,7 +45,7 @@ class [[nodiscard]] Value final : public support::NonCopyableBase {
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<Value, Cons> auto Force(Cons& consumer) {
-    return ValueEvaluation<Cons>(std::move(*this), consumer);
+    return EvaluationFor<Cons>(std::move(*this), consumer);
   }
 
  private:

@@ -1,11 +1,13 @@
 #pragma once
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
+// #include <weave/futures/thunks/detail/cancel_base.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
 #include <weave/satellite/meta_data.hpp>
 #include <weave/satellite/satellite.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 #include <wheels/core/defer.hpp>
 
@@ -14,11 +16,8 @@
 
 namespace weave::futures::thunks {
 
-template <SomeFuture Future, typename F>
-class [[nodiscard]] OnCancel final
-    : public IConsumer<typename Future::ValueType>,
-      public detail::CancellableBase<Future>,
-      public executors::Task {
+template <Thunk Future, typename F>
+class [[nodiscard]] OnCancel final: public support::NonCopyableBase {
  public:
   using ValueType = typename Future::ValueType;
 
@@ -27,55 +26,56 @@ class [[nodiscard]] OnCancel final
         fun_(std::move(fun)) {
   }
 
-  // Non-copyable
-  OnCancel(const OnCancel&) = delete;
-  OnCancel& operator=(const OnCancel&) = delete;
-
   // Movable
   OnCancel(OnCancel&& that)
       : future_(std::move(that.future_)),
-        fun_(std::move(that.fun_)),
-        consumer_(that.consumer_) {
+        fun_(std::move(that.fun_)){
   }
   OnCancel& operator=(OnCancel&&) = default;
 
-  void Start(IConsumer<ValueType>* consumer) {
-    consumer_ = consumer;
-    future_.Start(this);
-  }
-
-  ~OnCancel() override final = default;
-
  private:
-  // IConsumer
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final: public support::PinnedBase, public executors::Task {
+   public:
+    EvaluationFor(OnCancel fut, Cons& cons) : eval_(std::move(fut.future_).Force(*this)), fun_(std::move(fut.fun_)), cons_(cons) {
+    }
 
-  void Consume(Output<ValueType> out) noexcept override final {
-    consumer_->Consume(std::move(out));
-  }
+    void Start(){
+      eval_.Start();
+    }
 
-  // To ensure that side effect is activated
-  // in the correct executor we have to submit ourselves
-  void Cancel(Context ctx) noexcept override final {
-    context_.emplace(std::move(ctx));
+    // Completable
+    void Consume(Output<ValueType> o) noexcept {
+      Complete(cons_, std::move(o));
+    }
 
-    context_->executor_->Submit(this, executors::SchedulerHint::Next);
-  }
+    // CancelSource
+    // To ensure that side effect is activated
+    // in the correct executor we have to submit ourselves
+    void Cancel(Context ctx) noexcept {
+      ctx_.emplace(std::move(ctx));
 
-  cancel::Token CancelToken() override final {
-    return consumer_->CancelToken();
-  }
+      ctx_->executor_->Submit(this, executors::SchedulerHint::Next);
+    }
 
-  // Task
-  void Run() noexcept override final {
-    RunSideEffect();
+    cancel::Token CancelToken() {
+      return cons_.CancelToken();
+    }
 
-    consumer_->Cancel(std::move(*context_));
-  }
+    ~EvaluationFor() override final = default;
+
+   private:
+    // Task
+    void Run() noexcept override final {
+      RunSideEffect();
+
+      cons_.Cancel(std::move(*ctx_));
+    }
 
   void RunSideEffect() {
     // We prevent instant cancellation within side effect scope
     satellite::MetaData old =
-        satellite::SetContext(context_->executor_, cancel::Never());
+        satellite::SetContext(ctx_->executor_, cancel::Never());
 
     wheels::Defer cleanup([&] {
       satellite::RestoreContext(std::move(old));
@@ -84,11 +84,22 @@ class [[nodiscard]] OnCancel final
     std::move(fun_)();
   }
 
+   private:
+    EvaluationType<EvaluationFor, Future> eval_;
+    F fun_;
+    Cons& cons_;
+    std::optional<Context> ctx_{};
+  };
+
+ public:
+  template<Consumer<ValueType> Cons>
+  Evaluation<OnCancel, Cons> auto Force(Cons& cons){
+    return EvaluationFor<Cons>(std::move(*this), cons);
+  }
+
  private:
   Future future_;
   F fun_;
-  std::optional<Context> context_;
-  IConsumer<ValueType>* consumer_;
 };
 
 }  // namespace weave::futures::thunks

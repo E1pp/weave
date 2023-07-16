@@ -30,9 +30,9 @@ class Flattenned final : public support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class FlattennedEvaluation final : public support::PinnedBase {
+  class EvaluationFor final : public support::PinnedBase {
    public:
-    FlattennedEvaluation(Flattenned fut, Cons& cons) : consumer_(cons), outer_eval_(std::move(fut.future_).Force(*this)) {
+    EvaluationFor(Flattenned fut, Cons& cons) : consumer_(cons), outer_eval_(std::move(fut.future_).Force(*this)) {
     }
 
     void Start(){
@@ -65,7 +65,7 @@ class Flattenned final : public support::NonCopyableBase {
       return consumer_.CancelToken();
     }   
 
-    ~FlattennedEvaluation(){
+    ~EvaluationFor(){
       if(need_delete_){
         std::destroy_at(&inner_eval_);
       }
@@ -78,13 +78,13 @@ class Flattenned final : public support::NonCopyableBase {
     };
     bool need_delete_{false};
 
-    EvaluationType<FlattennedEvaluation, Future> outer_eval_;
+    EvaluationType<EvaluationFor, Future> outer_eval_;
   };
 
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<Flattenned, Cons> auto Force(Cons& cons){
-    return FlattennedEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:

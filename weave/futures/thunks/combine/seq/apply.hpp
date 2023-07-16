@@ -52,10 +52,10 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase {
 
  private:
   template <Consumer<ValueType> Cons>
-  class ApplyEvaluation final : public support::PinnedBase,
+  class EvaluationFor final : public support::PinnedBase,
                                 public executors::Task {
    public:
-    ApplyEvaluation(Apply fut, Cons& consumer)
+    EvaluationFor(Apply fut, Cons& consumer)
         : map_(std::move(fut.mapper_)),
           consumer_(consumer),
           evaluation_(std::move(fut.future_).Force(*this)) {
@@ -124,13 +124,13 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase {
     Mapper map_;
     Cons& consumer_;
     std::optional<Output<InputValueType>> input_{};
-    EvaluationType<ApplyEvaluation, Future> evaluation_;
+    EvaluationType<EvaluationFor, Future> evaluation_;
   };
 
  public:
   template <Consumer<ValueType> Cons>
   Evaluation<Apply, Cons> auto Force(Cons& cons) {
-    return ApplyEvaluation<Cons>(std::move(*this), cons);
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:

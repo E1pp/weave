@@ -3,28 +3,27 @@ Concurrency for C++
 
 # Branch Status:
 
- - [CancelTrais] – Not done
  - [TaggedBuffer] Rework – Not done
 
  - [futures]:
     - [model]:
       - [Thunk] – Final
-      - [Evaluation] – Not Final
+      - [Evaluation] – Final
       - [Context]/[Output] – Final
-      - [Consumer] – Not Final
+      - [Consumer] – Final
     - [make]:
       - [Just] – Done
       - [Value] – Done
       - [Failure] – Done
       - [Submit] – Done
       - [Contract] – Done
-      - [Never] – Not Done
+      - [Never] – Done
       - [After] – Not Done
     - [combine/seq]
       - [AndThen]/[Map]/[OrElse] – Done
       - [Via] – Done
       - [Flatten/FlatMap] – Done
-      - [OnCancel]/[OnSuccess]/[Anyway] – Not Done
+      - [OnCancel]/[OnSuccess]/[Anyway] – Done
       - [Start] – Done
       - [Box] – Done
       - [WithTimeout] – Not Done
