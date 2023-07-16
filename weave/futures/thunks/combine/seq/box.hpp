@@ -6,6 +6,9 @@
 
 namespace weave::futures::thunks {
 
+template<typename T>
+class Boxed;
+
 namespace detail {
 
 template <typename T>
@@ -51,6 +54,9 @@ class TemplateSender final: public IErasedFuture<typename Future::ValueType>,
   EvaluationType<TemplateSender, Future> eval_;
 };
 
+template<typename F, typename T>
+concept NotBoxed = !std::is_same_v<F, Boxed<T>> && Thunk<F> && std::is_same_v<typename F::ValueType, T>;
+
 }  // namespace detail
 
 template <typename T>
@@ -59,7 +65,7 @@ class [[nodiscard]] Boxed final : public support::NonCopyableBase {
   using ValueType = T;
 
   // Auto-boxing
-  template <Thunk Future>
+  template <detail::NotBoxed<T> Future>
   Boxed(Future fut) { // NOLINT
     erased_ = new detail::TemplateSender<Future>(std::move(fut));
   }
