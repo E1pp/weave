@@ -18,7 +18,7 @@
 
 #include <weave/futures/combine/seq/and_then.hpp>
 // #include <weave/futures/combine/seq/anyway.hpp>
-// #include <weave/futures/combine/seq/box.hpp>
+#include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
 // #include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/map.hpp>
@@ -172,27 +172,27 @@ TEST_SUITE(Sequential){
     ASSERT_EQ(manual.Drain(), 1);
   }
 
-  // SIMPLE_TEST(CancelBoxedLazy){
-  //   futures::BoxedFuture<Unit> f = futures::Just() | futures::AndThen([](Unit){
-  //     WHEELS_PANIC("Test failed!");
-  //   });
+  SIMPLE_TEST(CancelBoxedLazy){
+    futures::BoxedFuture<Unit> f = futures::Just() | futures::AndThen([](Unit){
+      WHEELS_PANIC("Test failed!");
+    });
 
-  //   std::move(f) | futures::AndThen([](Unit){
-  //     WHEELS_PANIC("Test failed!");
-  //   }) | futures::Discard();
-  // }
+    std::move(f) | futures::AndThen([](Unit){
+      WHEELS_PANIC("Test failed!");
+    }) | futures::Discard();
+  }
 
-  // SIMPLE_TEST(CancelBoxedEager){
-  //   auto [f, p] = futures::Contract<Unit>();
+  SIMPLE_TEST(CancelBoxedEager){
+    auto [f, p] = futures::Contract<Unit>();
 
-  //   futures::BoxedFuture<Unit> boxed = std::move(f);
+    futures::BoxedFuture<Unit> boxed = std::move(f);
 
-  //   std::move(boxed) | futures::AndThen([](Unit){
-  //     WHEELS_PANIC("boxed : Test failed!");
-  //   }) | futures::Discard();
+    std::move(boxed) | futures::AndThen([](Unit){
+      WHEELS_PANIC("boxed : Test failed!");
+    }) | futures::Discard();
 
-  //   std::move(p).Set(result::Ok());
-  // }
+    std::move(p).Set(result::Ok());
+  }
 
   // SIMPLE_TEST(OnCancelJust){
   //   bool flag = false;

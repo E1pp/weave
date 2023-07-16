@@ -8,7 +8,7 @@ Concurrency for C++
 
  - [futures]:
     - [model]:
-      - [Thunk] – Not Final
+      - [Thunk] – Final
       - [Evaluation] – Not Final
       - [Context]/[Output] – Final
       - [Consumer] – Not Final
@@ -26,7 +26,7 @@ Concurrency for C++
       - [Flatten/FlatMap] – Done
       - [OnCancel]/[OnSuccess]/[Anyway] – Not Done
       - [Start] – Done
-      - [Box] – Not Done
+      - [Box] – Done
       - [WithTimeout] – Not Done
       - [Fork] – Not Done
     - [combine/par]

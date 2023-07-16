@@ -1,75 +1,115 @@
 #pragma once
 
-#include <weave/futures/old_model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
-#include <cstdlib>
+#include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
 
 namespace detail {
 
 template <typename T>
-class IErasedFuture {
- public:
-  virtual void Start(IConsumer<T>*) = 0;
-
+struct IErasedFuture {
   virtual ~IErasedFuture() = default;
+
+  virtual void RequestOutput(AbstractConsumer<T>*) = 0;
 };
 
 template <Thunk Future>
-class TemplateFuture final : public IErasedFuture<typename Future::ValueType> {
+class TemplateSender final: public IErasedFuture<typename Future::ValueType>,
+                            public support::PinnedBase {
  public:
-  using ValueType = typename Future::ValueType;
+  using T = typename Future::ValueType;
 
-  explicit TemplateFuture(Future future)
-      : future_(std::move(future)) {
+  explicit TemplateSender(Future fut) : eval_(std::move(fut).Force(*this)) {
   }
 
-  // Non-copyable
-  TemplateFuture(const TemplateFuture&) = delete;
-  TemplateFuture& operator=(const TemplateFuture&) = delete;
+  ~TemplateSender() override final = default;
 
-  // Movable
-  TemplateFuture(TemplateFuture&& that)
-      : future_(std::move(that.future)) {
-  }
-  TemplateFuture& operator=(TemplateFuture&&) = default;
-
-  void Start(IConsumer<ValueType>* consumer) override final {
-    future_.Start(consumer);
+  // Completable<T>
+  void Consume(Output<T> o) noexcept {
+    receiver_->Consume(std::move(o));
   }
 
-  ~TemplateFuture() override = default;
+  // CancelSource
+  void Cancel(Context ctx) noexcept {
+    receiver_->Cancel(std::move(ctx));
+  }
+
+  cancel::Token CancelToken() {
+    return receiver_->CancelToken();
+  }
 
  private:
-  Future future_;
+  void RequestOutput(AbstractConsumer<T>* rec) override final {
+    receiver_ = rec;
+    eval_.Start();
+  }
+
+ private:
+  AbstractConsumer<T>* receiver_{nullptr};
+  EvaluationType<TemplateSender, Future> eval_;
 };
 
 }  // namespace detail
 
 template <typename T>
-class [[nodiscard]] Boxed {
+class [[nodiscard]] Boxed final : public support::NonCopyableBase {
  public:
   using ValueType = T;
 
   // Auto-boxing
-  template <Thunk Thunk>
-  Boxed(Thunk future) {  // NOLINT
-    erased_ = new detail::TemplateFuture<Thunk>(std::move(future));
+  template <Thunk Future>
+  Boxed(Future fut) { // NOLINT
+    erased_ = new detail::TemplateSender<Future>(std::move(fut));
   }
-
-  // Non-copyable
-  Boxed(const Boxed&) = delete;
-  Boxed& operator=(const Boxed&) = delete;
 
   // Movable
-  Boxed(Boxed&& that)
-      : erased_(std::exchange(that.erased_, nullptr)) {
+  Boxed(Boxed&& that) noexcept: erased_(std::exchange(that.erased_, nullptr)) {
   }
-  Boxed& operator=(Boxed&&) = default;
+  Boxed& operator=(Boxed&&) = delete;
+ 
+ private:
+  template <Consumer<ValueType> Cons>
+  class BoxedEvaluation final: public support::PinnedBase, public AbstractConsumer<ValueType> {
+   public:
+    BoxedEvaluation(Boxed fut, Cons& cons) : sender_(std::exchange(fut.erased_, nullptr)), cons_(cons) {
+    }
 
-  void Start(IConsumer<T>* consumer) {
-    erased_->Start(consumer);
+    void Start(){
+      sender_->RequestOutput(this);
+    }
+
+    ~BoxedEvaluation() override final {
+      if(sender_ == nullptr){
+        return;
+      }
+
+      delete sender_;
+    }
+
+   private:
+    void Consume(Output<ValueType> o) noexcept override final {
+      Complete(cons_, std::move(o));
+    }
+
+    void Cancel(Context ctx) noexcept override final {
+      cons_.Cancel(std::move(ctx));
+    }
+
+    cancel::Token CancelToken() override final {
+      return cons_.CancelToken();
+    }
+   
+   private:
+    detail::IErasedFuture<T>* sender_;
+    Cons& cons_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Boxed, Cons> auto Force(Cons& cons){
+    return BoxedEvaluation<Cons>(std::move(*this), cons);
   }
 
   ~Boxed() {

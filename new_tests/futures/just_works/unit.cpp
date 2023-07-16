@@ -15,7 +15,7 @@
 #include <weave/futures/combine/seq/flat_map.hpp>
 // #include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/via.hpp>
-// #include <weave/futures/combine/seq/box.hpp>
+#include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/start.hpp>
 
 // #include <weave/futures/combine/par/all.hpp>
@@ -534,54 +534,54 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(*r, 7);
   }
 
-//   SIMPLE_TEST(BoxValue) {
-//     futures::BoxedFuture<int> f = futures::Value(1) | futures::Box();
+  SIMPLE_TEST(BoxValue) {
+    futures::BoxedFuture<int> f = futures::Value(1) | futures::Box();
 
-//     auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::Get();
 
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, 1);
-//   }
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 1);
+  }
 
-//   SIMPLE_TEST(BoxPipeline) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(BoxPipeline) {
+    executors::ManualExecutor manual;
 
-//     bool done = false;
+    bool done = false;
 
-//     futures::BoxedFuture<Unit> f = futures::Just()
-//                                    | futures::Via(manual)
-//                                    | futures::Map([](Unit) { return Unit{}; })
-//                                    | futures::AndThen([](Unit) { return result::Ok(); })
-//                                    | futures::Map([&](Unit) {
-//                                        done = true;
-//                                        return Unit{};
-//                                      })
-//                                    | futures::Box();
+    futures::BoxedFuture<Unit> f = futures::Just()
+                                   | futures::Via(manual)
+                                   | futures::Map([](Unit) { return Unit{}; })
+                                   | futures::AndThen([](Unit) { return result::Ok(); })
+                                   | futures::Map([&](Unit) {
+                                       done = true;
+                                       return Unit{};
+                                     })
+                                   | futures::Box();
 
-//     std::move(f) | futures::Detach();
+    std::move(f) | futures::Detach();
 
-//     manual.Drain();
+    manual.Drain();
 
-//     ASSERT_TRUE(done);
-//   }
+    ASSERT_TRUE(done);
+  }
 
-//   SIMPLE_TEST(AutoBoxing) {
-//     {
-//       static const std::string kHello = "Hello";
-//       futures::BoxedFuture<std::string> f = futures::Value(kHello);
+  SIMPLE_TEST(AutoBoxing) {
+    {
+      static const std::string kHello = "Hello";
+      futures::BoxedFuture<std::string> f = futures::Value(kHello);
 
-//       std::move(f) | futures::Detach();
-//     }
+      std::move(f) | futures::Detach();
+    }
 
-//     {
-//       futures::BoxedFuture<int> f = futures::Value(2) | futures::Map([](int v) { return v + 1; });
+    {
+      futures::BoxedFuture<int> f = futures::Value(2) | futures::Map([](int v) { return v + 1; });
 
-//       auto r = std::move(f) | futures::Get();
+      auto r = std::move(f) | futures::Get();
 
-//       ASSERT_TRUE(r);
-//       ASSERT_EQ(*r, 3);
-//     }
-//   }
+      ASSERT_TRUE(r);
+      ASSERT_EQ(*r, 3);
+    }
+  }
 
 //   SIMPLE_TEST(FirstOk1) {
 //     auto [f1, p1] = futures::Contract<int>();
@@ -1101,83 +1101,83 @@ TEST_SUITE(Futures) {
 //     ASSERT_TRUE(ok);
 //   }
 
-//   SIMPLE_TEST(Inline1) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(Inline1) {
+    executors::ManualExecutor manual;
 
-//     bool ok = false;
+    bool ok = false;
 
-//     futures::Just()
-//         | futures::Via(manual)
-//         | futures::Map([&](Unit) {
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    futures::Just()
+        | futures::Via(manual)
+        | futures::Map([&](Unit) {
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     size_t tasks = manual.Drain();
-//     ASSERT_TRUE(ok);
-//     ASSERT_EQ(tasks, 1);
-//   }
+    size_t tasks = manual.Drain();
+    ASSERT_TRUE(ok);
+    ASSERT_EQ(tasks, 1);
+  }
 
-//   SIMPLE_TEST(Inline2) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(Inline2) {
+    executors::ManualExecutor manual;
 
-//     auto r = futures::Value(1)
-//              | futures::Via(manual)
-//              | futures::Get();
+    auto r = futures::Value(1)
+             | futures::Via(manual)
+             | futures::Get();
 
-//     ASSERT_TRUE(r);
-//     ASSERT_EQ(*r, 1);
-//   }
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 1);
+  }
 
-//   SIMPLE_TEST(Inline3) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(Inline3) {
+    executors::ManualExecutor manual;
 
-//     bool flat_map = false;
-//     bool map1 = false;
-//     bool map2 = false;
+    bool flat_map = false;
+    bool map1 = false;
+    bool map2 = false;
 
-//     futures::Just()
-//         | futures::Via(manual)
-//         | futures::FlatMap([&](Unit) {
-//             flat_map = true;
-//             return futures::Value(Unit{});
-//           })
-//         | futures::Map([&](Unit u) {
-//             map1 = true;
-//             return u;
-//           })
-//         | futures::Map([&](Unit u) {
-//             map2 = true;
-//             return u;
-//           })
-//         | futures::Detach();
+    futures::Just()
+        | futures::Via(manual)
+        | futures::FlatMap([&](Unit) {
+            flat_map = true;
+            return futures::Value(Unit{});
+          })
+        | futures::Map([&](Unit u) {
+            map1 = true;
+            return u;
+          })
+        | futures::Map([&](Unit u) {
+            map2 = true;
+            return u;
+          })
+        | futures::Detach();
 
-//     ASSERT_TRUE(manual.RunNext());
-//     ASSERT_TRUE(flat_map);
-//     ASSERT_FALSE(map1);
+    ASSERT_TRUE(manual.RunNext());
+    ASSERT_TRUE(flat_map);
+    ASSERT_FALSE(map1);
 
-//     ASSERT_TRUE(manual.RunNext());
-//     ASSERT_TRUE(map1);
-//     ASSERT_FALSE(map2);
+    ASSERT_TRUE(manual.RunNext());
+    ASSERT_TRUE(map1);
+    ASSERT_FALSE(map2);
 
-//     ASSERT_EQ(manual.Drain(), 1);
-//     ASSERT_TRUE(map2);
-//   }
+    ASSERT_EQ(manual.Drain(), 1);
+    ASSERT_TRUE(map2);
+  }
 
-//   SIMPLE_TEST(Inline4) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(Inline4) {
+    executors::ManualExecutor manual;
 
-//     futures::Submit(manual, [&] {
-//       auto g = futures::Submit(manual, [] {
-//         return result::Ok(19);
-//       });
-//       return result::Ok(std::move(g));
-//     }) | futures::Flatten() | futures::Detach();
+    futures::Submit(manual, [&] {
+      auto g = futures::Submit(manual, [] {
+        return result::Ok(19);
+      });
+      return result::Ok(std::move(g));
+    }) | futures::Flatten() | futures::Detach();
 
-//     size_t tasks = manual.Drain();
-//     ASSERT_EQ(tasks, 2);
-//   }
+    size_t tasks = manual.Drain();
+    ASSERT_EQ(tasks, 2);
+  }
 
 //   SIMPLE_TEST(Inline5) {
 //     executors::ManualExecutor manual;
@@ -1781,22 +1781,22 @@ TEST_SUITE(LazyFutures) {
     ASSERT_TRUE(manual.Drain() > 0);
   }
 
-//   SIMPLE_TEST(Box) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(Box) {
+    executors::ManualExecutor manual;
 
-//     futures::BoxedFuture<int> f = futures::Just()
-//                                   | futures::Via(manual)
-//                                   | futures::Map([](Unit) {
-//                                       return 7;
-//                                     })
-//                                   | futures::Box();
+    futures::BoxedFuture<int> f = futures::Just()
+                                  | futures::Via(manual)
+                                  | futures::Map([](Unit) {
+                                      return 7;
+                                    })
+                                  | futures::Box();
 
-//     ASSERT_TRUE(manual.IsEmpty());
+    ASSERT_TRUE(manual.IsEmpty());
 
-//     std::move(f) | futures::Detach();
+    std::move(f) | futures::Detach();
 
-//     ASSERT_TRUE(manual.Drain() > 0);
-//   }
+    ASSERT_TRUE(manual.Drain() > 0);
+  }
 
 //   SIMPLE_TEST(First) {
 //     executors::ManualExecutor manual;
