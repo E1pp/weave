@@ -15,7 +15,7 @@ namespace weave::futures::thunks {
 // Via is seemless thus no need for lookup of CancelRequested inside to be
 // Cancellable
 template <SomeFuture Future>
-class [[nodiscard]] Via : support::NonCopyableBase {
+class [[nodiscard]] Via final : public support::NonCopyableBase {
  public:
   using ValueType = typename Future::ValueType;
 
@@ -25,31 +25,28 @@ class [[nodiscard]] Via : support::NonCopyableBase {
   }
 
   // Movable
-  Via(Via&& that) : future_(std::move(that.future_)),
-                    next_context_(std::move(that.next_context_)){
+  Via(Via&& that) noexcept: future_(std::move(that.future_)), next_context_(std::move(that.next_context_)){
                     } 
   Via& operator=(Via&& that) = default;
 
  private:
   template <Consumer<ValueType> Cons>
-  class ViaEvaluation : support::PinnedBase {
+  class ViaEvaluation final: public support::PinnedBase {
    public:
-    ViaEvaluation(Via owner, Cons& consumer) : next_context_(std::move(owner.next_context_)),
-                                               consumer_(consumer),
-                                               eval_(std::move(owner.future_).Force(*this)){
-                                               }
-
-    // Consumer<ValueType>
-    void Complete(Result<ValueType> r){
-      Complete({std::move(r), Context{}});
+    ViaEvaluation(Via fut, Cons& consumer) noexcept: next_context_(std::move(fut.next_context_)), consumer_(consumer), eval_(std::move(fut.future_).Force(*this)){
     }
 
-    void Complete(Output<ValueType> o){
+    void Start() {
+      eval_.Start();
+    }
+
+    // Completable<ValueType>
+    void Consume(Output<ValueType> o) noexcept {
       o.context = std::move(next_context_);
-      consumer_.Complete(std::move(o));
+      Complete(consumer_, std::move(o));
     }
 
-    // insert your own context
+    // CancelSource
     void Cancel(Context) noexcept {
       consumer_.Cancel(std::move(next_context_));
     }

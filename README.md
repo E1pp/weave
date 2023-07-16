@@ -1,6 +1,56 @@
 # Weave
 Concurrency for C++
 
+# Branch Status:
+
+ - [CancelTrais] – Not done
+ - [TaggedBuffer] Rework – Not done
+
+ - [futures]:
+    - [model]:
+      - [Thunk] – Not Final
+      - [Evaluation] – Not Final
+      - [Context]/[Output] – Final
+      - [Consumer] – Not Final
+    - [make]:
+      - [Just] – Done
+      - [Value] – Done
+      - [Failure] – Done
+      - [Submit] – Done
+      - [Contract] – Not Done
+      - [Never] – Not Done
+      - [After] – Not Done
+    - [combine/seq]
+      - [AndThen]/[Map]/[OrElse] – Done
+      - [Via] – Done
+      - [Flatten/FlatMap] – Done
+      - [OnCancel]/[OnSuccess]/[Anyway] – Not Done
+      - [Start] – Not Done
+      - [Box] – Not Done
+      - [WithTimeout] – Not Done
+      - [Fork] – Not Done
+    - [combine/par]
+      - [default/tuple] – Not Done
+      - [default/vector] – Not Done
+      - [no_alloc/tuple] – Not Done
+      - [no_alloc/vector] – Not Done
+    - [run]
+      - [Get] – Done
+      - [Detach] – Done
+      - [Await] – Not Done
+      - [Discard] – Not Done
+    - [syntax]
+      - [pipe] – Done
+      - [bang] – Not Done
+      - [or]/[and] – Not Done
+    - [types]
+      - [eager] – Not Done
+      - [boxed] – Not Done
+    - [traits]
+      - [cancellable] – Not Done
+
+  - [executors/submit] – Done
+
 ## Features
 
 - Scalable work-stealing scheduler – `executors::tp::fast::ThreadPool`

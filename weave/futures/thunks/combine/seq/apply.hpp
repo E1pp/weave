@@ -35,7 +35,7 @@ concept Mapper = SomeFuture<InputFuture> &&
 ////////////////////////////////////////////////////////////////////////////////
 
 template <SomeFuture Future, Mapper<Future> Mapper>
-class [[nodiscard]] Apply : support::NonCopyableBase {
+class [[nodiscard]] Apply final : public support::NonCopyableBase {
  public:
   using InputValueType = typename Future::ValueType;
   using ValueType = result::traits::ValueOf<typename Mapper::InvokeResult>;
@@ -46,25 +46,27 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
   }
 
   // Movable
-  Apply(Apply&& that)
-      : future_(std::move(that.future_)),
-        mapper_(std::move(that.mapper_)) {
+  Apply(Apply&& that) noexcept: future_(std::move(that.future_)), mapper_(std::move(that.mapper_)) {
   }
   Apply& operator=(Apply&&) = default;
 
  private:
   template <Consumer<ValueType> Cons>
-  class ApplyEvaluation final : support::PinnedBase,
-                          public executors::Task {
+  class ApplyEvaluation final : public support::PinnedBase,
+                                public executors::Task {
    public:
-    ApplyEvaluation(Apply owner, Cons& consumer)
-        : map_(std::move(owner.mapper_)),
+    ApplyEvaluation(Apply fut, Cons& consumer)
+        : map_(std::move(fut.mapper_)),
           consumer_(consumer),
-          evaluation_(std::move(owner.future_).Force(*this)) {
+          evaluation_(std::move(fut.future_).Force(*this)) {
     }
 
-    // Satisfies Consumer<InputValueType>
-    void Complete(Output<InputValueType> input) noexcept {
+    void Start(){
+      evaluation_.Start();
+    }
+
+    // Completable<InputValueType>
+    void Consume(Output<InputValueType> input) noexcept {
       if(CancelToken().CancelRequested()) {
         Cancel(std::move(input.context));
         return;
@@ -76,14 +78,11 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
 
       } else {
         Result<ValueType> forwarded_result = map_.Forward(std::move(input));
-        consumer_.Complete({std::move(forwarded_result), input.context});
+        Complete<ValueType>(consumer_, {std::move(forwarded_result), input.context});
       }
     }
 
-    void Complete(Result<InputValueType> r) noexcept {
-      Complete(Output<InputValueType>({std::move(r), Context{}}));
-    }
-
+    // CancelSource
     void Cancel(Context ctx) noexcept {
       consumer_.Cancel(std::move(ctx));
     }
@@ -97,7 +96,7 @@ class [[nodiscard]] Apply : support::NonCopyableBase {
     try {
       Result<ValueType> output = RunMapper();
 
-      consumer_.Complete({std::move(output), std::move(input_->context)});
+      Complete<ValueType>(consumer_, {std::move(output), std::move(input_->context)});
     } catch (cancel::CancelledException) {
       consumer_.Cancel(
           Context{satellite::GetExecutor(), executors::SchedulerHint::UpToYou});

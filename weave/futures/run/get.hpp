@@ -24,6 +24,7 @@ struct [[nodiscard]] Get {
 
     explicit Waiter(Future f)
         : eval_(std::move(f).Force(*this)) {
+      eval_.Start();
     }
 
     Result<ValueType> Get() {
@@ -32,13 +33,8 @@ struct [[nodiscard]] Get {
       return std::move(*res_);
     }
 
-    void Complete(Output<ValueType> o) noexcept {
+    void Consume(Output<ValueType> o) noexcept {
       res_.emplace(std::move(o.result));
-      event_.Set();
-    }
-
-    void Complete(Result<ValueType> r) noexcept {
-      res_.emplace(std::move(r));
       event_.Set();
     }
 

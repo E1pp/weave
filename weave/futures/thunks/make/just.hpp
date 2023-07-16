@@ -1,7 +1,6 @@
 #pragma once
 
 #include <weave/futures/model/evaluation.hpp>
-#include <weave/futures/model/thunk.hpp>
 
 #include <weave/result/make/ok.hpp>
 
@@ -9,23 +8,33 @@
 
 namespace weave::futures::thunks {
 
-class [[nodiscard]] Just : support::NonCopyableBase {
+class [[nodiscard]] Just final : public support::NonCopyableBase {
  public:
   using ValueType = Unit;
 
   Just() = default;
 
   // Movable
-  Just(Just&&){};
+  Just(Just&&) noexcept {};
   Just& operator=(Just&&) = default;
 
  private:
   template <Consumer<ValueType> Cons>
-  class JustEvaluation : support::PinnedBase {
+  class JustEvaluation final : public support::PinnedBase {
    public:
-    JustEvaluation(Just, Cons& cons) {
-      cons.Complete(result::Ok());
+    JustEvaluation(Just, Cons& consumer) : consumer_(consumer) {
     }
+
+    void Start(){
+      if(consumer_.CancelToken().CancelRequested()){
+        consumer_.Cancel(Context{});
+      } else {
+        Complete(consumer_, result::Ok());
+      }
+    }
+
+   private:
+    Cons& consumer_;
   };
 
  public:

@@ -18,13 +18,10 @@ struct [[nodiscard]] Detach {
 
     explicit Runner(Future f)
         : eval_(std::move(f).Force(*this)) {
+      eval_.Start();
     }
 
-    void Complete(Output<ValueType>) {
-      delete this;
-    }
-
-    void Complete(Result<ValueType>) {
+    void Consume(Output<ValueType>) noexcept {
       delete this;
     }
 

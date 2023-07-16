@@ -1,8 +1,8 @@
 #pragma once
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/syntax/pipe.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/traits/value_of.hpp>
 
 #include <weave/futures/combine/seq/flatten.hpp>
 #include <weave/futures/combine/seq/map.hpp>

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <weave/futures/model/evaluation.hpp>
-#include <weave/futures/model/thunk.hpp>
 
 #include <weave/result/make/err.hpp>
 
@@ -10,7 +9,7 @@
 namespace weave::futures::thunks {
 
 template <typename T>
-class [[nodiscard]] Failure : support::NonCopyableBase {
+class [[nodiscard]] Failure final : public support::NonCopyableBase {
  public:
   using ValueType = T;
 
@@ -19,18 +18,28 @@ class [[nodiscard]] Failure : support::NonCopyableBase {
   }
 
   // Movable
-  Failure(Failure&& that)
-      : error_(std::move(that.error_)) {
+  Failure(Failure&& that) noexcept: error_(std::move(that.error_)) {
   }
   Failure& operator=(Failure&&) = default;
 
  private:
   template <Consumer<ValueType> Cons>
-  class FailureEvaluation : support::PinnedBase {
+  class FailureEvaluation final : public support::PinnedBase {
    public:
-    FailureEvaluation(Failure fail, Cons& cons) {
-      cons.Complete(result::Err(std::move(fail.error_)));
+    FailureEvaluation(Failure fut, Cons& consumer) : err_(std::move(fut.error_)), consumer_(consumer) {
     }
+
+    void Start(){
+      if(consumer_.CancelToken().CancelRequested()){
+        consumer_.Cancel(Context{});
+      } else {
+        Complete<ValueType>(consumer_, result::Err(std::move(err_)));
+      }
+    }
+
+   private:
+    Error err_;
+    Cons& consumer_;
   };
 
  public:
