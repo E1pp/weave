@@ -29,7 +29,7 @@
 #include <weave/futures/combine/seq/via.hpp>
 
 // #include <weave/futures/combine/par/all.hpp>
-// #include <weave/futures/combine/par/first.hpp>
+#include <weave/futures/combine/par/first.hpp>
 // #include <weave/futures/combine/par/quorum.hpp>
 // #include <weave/futures/combine/par/select.hpp>
 
@@ -404,130 +404,130 @@ TEST_SUITE(Sequential){
   // }
 }
 
-// TEST_SUITE(Parallel){
-//   SIMPLE_TEST(FirstShortCircuit){
-//     auto [f, p] = futures::Contract<int>();
+TEST_SUITE(Parallel){
+  SIMPLE_TEST(FirstShortCircuit){
+    auto [f, p] = futures::Contract<int>();
   
-//     auto deadly_signal = std::move(f) | futures::Map([](int){
-//       WHEELS_PANIC("deadly_signal : Test failed!");
-//       return 47;
-//     });
+    auto deadly_signal = std::move(f) | futures::Map([](int){
+      WHEELS_PANIC("deadly_signal : Test failed!");
+      return 47;
+    });
 
-//     futures::First(std::move(deadly_signal), futures::Value(42)) | futures::Detach();
+    futures::First(std::move(deadly_signal), futures::Value(42)) | futures::Detach();
 
-//     std::move(p).SetValue(13);
-//   }
+    std::move(p).SetValue(13);
+  }
 
-//   SIMPLE_TEST(CancelFirst){
-//     auto f1 = futures::Just() | futures::Map([](Unit){
-//       WHEELS_PANIC("f1 : Test failed!");
-//     });
+  SIMPLE_TEST(CancelFirst){
+    auto f1 = futures::Just() | futures::Map([](Unit){
+      WHEELS_PANIC("f1 : Test failed!");
+    });
 
-//     auto f2 = futures::Just() | futures::Map([](Unit){
-//       WHEELS_PANIC("f2 : Test failed!");
-//     });
+    auto f2 = futures::Just() | futures::Map([](Unit){
+      WHEELS_PANIC("f2 : Test failed!");
+    });
 
-//     futures::First(std::move(f1), std::move(f2)) | futures::AndThen([](Unit){
-//       WHEELS_PANIC("AndThen : Test failed!");
-//     }) | futures::Discard();
-//   }
+    futures::First(std::move(f1), std::move(f2)) | futures::AndThen([](Unit){
+      WHEELS_PANIC("AndThen : Test failed!");
+    }) | futures::Discard();
+  }
 
-//   SIMPLE_TEST(FirstAndFirst){
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(FirstAndFirst){
+    executors::ManualExecutor manual;
 
-//     auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-//       WHEELS_PANIC("f1 : Test failed!");
-//     });
+    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f1 : Test failed!");
+    });
 
-//     auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-//       WHEELS_PANIC("f2 : Test failed!");
-//     });
+    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f2 : Test failed!");
+    });
 
-//     futures::First(futures::First(std::move(f1), std::move(f2)),  futures::Just()) | futures::Detach();
+    futures::First(futures::First(std::move(f1), std::move(f2)),  futures::Just()) | futures::Detach();
 
-//     ASSERT_EQ(manual.Drain(), 2);
-//   }
+    ASSERT_EQ(manual.Drain(), 2);
+  }
 
-//   SIMPLE_TEST(BothShortCircuit){
-//     auto [f, p] = futures::Contract<int>();
+  // SIMPLE_TEST(BothShortCircuit){
+  //   auto [f, p] = futures::Contract<int>();
 
-//     auto deadly_signal = std::move(f) | futures::Map([](int){
-//       WHEELS_PANIC("deadly_signal : Test failed!");
-//     });
+  //   auto deadly_signal = std::move(f) | futures::Map([](int){
+  //     WHEELS_PANIC("deadly_signal : Test failed!");
+  //   });
 
-//     futures::All(std::move(deadly_signal), futures::Failure<int>(TimeoutError())) | futures::Detach();
+  //   futures::All(std::move(deadly_signal), futures::Failure<int>(TimeoutError())) | futures::Detach();
 
-//     std::move(p).SetValue(42);
-//   }
+  //   std::move(p).SetValue(42);
+  // }
 
-//   SIMPLE_TEST(CancelBoth){
-//     auto f1 = futures::Just() | futures::Map([](Unit){
-//       WHEELS_PANIC("f1 : Test failed!");
-//     });
+  // SIMPLE_TEST(CancelBoth){
+  //   auto f1 = futures::Just() | futures::Map([](Unit){
+  //     WHEELS_PANIC("f1 : Test failed!");
+  //   });
 
-//     auto f2 = futures::Just() | futures::Map([](Unit){
-//       WHEELS_PANIC("f2 : Test failed!");
-//     });
+  //   auto f2 = futures::Just() | futures::Map([](Unit){
+  //     WHEELS_PANIC("f2 : Test failed!");
+  //   });
 
-//     futures::All(std::move(f1), std::move(f2)) | futures::AndThen([](std::tuple<Unit, Unit>){
-//       WHEELS_PANIC("Both : Test failed!");
-//     }) | futures::Discard();
-//   }
+  //   futures::All(std::move(f1), std::move(f2)) | futures::AndThen([](std::tuple<Unit, Unit>){
+  //     WHEELS_PANIC("Both : Test failed!");
+  //   }) | futures::Discard();
+  // }
 
-//   SIMPLE_TEST(BothAndBoth){
-//     executors::ManualExecutor manual;
+  // SIMPLE_TEST(BothAndBoth){
+  //   executors::ManualExecutor manual;
 
-//     auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-//       WHEELS_PANIC("f1 : Test failed!");
-//     });
+  //   auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+  //     WHEELS_PANIC("f1 : Test failed!");
+  //   });
 
-//     auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-//       WHEELS_PANIC("f2 : Test failed!");
-//     });
+  //   auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+  //     WHEELS_PANIC("f2 : Test failed!");
+  //   });
 
-//     futures::All(futures::All(std::move(f1), std::move(f2)),  futures::Failure<int>(IoError())) | futures::Detach();
+  //   futures::All(futures::All(std::move(f1), std::move(f2)),  futures::Failure<int>(IoError())) | futures::Detach();
 
-//     ASSERT_EQ(manual.Drain(), 2);
-//   }
+  //   ASSERT_EQ(manual.Drain(), 2);
+  // }
 
-//   SIMPLE_TEST(QuorumShortCiruit){
-//     auto f1 = futures::Just();
+  // SIMPLE_TEST(QuorumShortCiruit){
+  //   auto f1 = futures::Just();
 
-//     auto f2 = futures::Just() | futures::AndThen([](Unit) -> Unit {
-//       WHEELS_PANIC("f2 : Test failed!");
-//       return {};
-//     });
+  //   auto f2 = futures::Just() | futures::AndThen([](Unit) -> Unit {
+  //     WHEELS_PANIC("f2 : Test failed!");
+  //     return {};
+  //   });
 
-//     futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Detach();   
-//   }
+  //   futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Detach();   
+  // }
 
-//   SIMPLE_TEST(CancelQuorum){
-//     executors::ManualExecutor manual;
+  // SIMPLE_TEST(CancelQuorum){
+  //   executors::ManualExecutor manual;
 
-//     auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-//       WHEELS_PANIC("f1 : Test failed!");
-//     });
+  //   auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+  //     WHEELS_PANIC("f1 : Test failed!");
+  //   });
 
-//     auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-//       WHEELS_PANIC("f2 : Test failed!");
-//     }); 
+  //   auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+  //     WHEELS_PANIC("f2 : Test failed!");
+  //   }); 
 
-//     futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
-//   }
+  //   futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
+  // }
 
-//   SIMPLE_TEST(FirstFork){
-//     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+  // SIMPLE_TEST(FirstFork){
+  //   auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-//     auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
-//       WHEELS_PANIC("f2 : Test failed!");
-//       return 84;
-//     })) | futures::Get();
+  //   auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
+  //     WHEELS_PANIC("f2 : Test failed!");
+  //     return 84;
+  //   })) | futures::Get();
 
-//     ASSERT_TRUE(res);
+  //   ASSERT_TRUE(res);
     
-//     ASSERT_EQ(*res, 42);
-//   }
-// }
+  //   ASSERT_EQ(*res, 42);
+  // }
+}
 
 // TEST_SUITE(Fibers){
 //   SIMPLE_TEST(CancelYield1){

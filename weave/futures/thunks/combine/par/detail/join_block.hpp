@@ -2,7 +2,9 @@
 
 #include <weave/cancel/sources/join.hpp>
 
-#include <weave/futures/old_types/future.hpp>
+#include <weave/futures/types/future.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 #include <weave/threads/lockfree/count_and_flags.hpp>
 
@@ -24,58 +26,41 @@ concept SyncStrategy = std::is_default_constructible_v<T> &&
   { t.SetProducerCount(val) } -> std::same_as<void>;
 };
 
+///////////////////////////////////////////////////////////////////////////////////
+
 // Ref count >= Producer count
-template <bool OnHeap, typename ValType, typename Combinator,
-          SyncStrategy Strategy, template <typename...> typename StorageType,
-          SomeFuture... Futures>
+template <bool OnHeap, typename Combinator, SyncStrategy Strategy, typename V,
+          typename Cons, template <typename...> typename StorageType,
+          Thunk... Futures>
 class JoinBlock : public cancel::sources::JoinSource<OnHeap> {
- public:
-  using Storage = StorageType<Combinator, Futures...>;
   using CancelBase = cancel::sources::JoinSource<OnHeap>;
+  using Storage = StorageType<Combinator, Futures...>;
+  using ValueType = V;
 
-  using ValueType = ValType;
-
+ public:
   template <typename... Args>
-  requires std::is_constructible<Storage, Args...>::value explicit JoinBlock(
-      size_t capacity, Args&&... args)
-      : CancelBase(capacity),
+  requires std::is_constructible_v<Storage, Args...>
+  explicit JoinBlock(size_t cap, Cons& cons, Args... args)
+      : CancelBase(cap),
+        cons_(cons),
         storage_(std::forward<Args>(args)...) {
   }
 
-  // Non-copyable
-  JoinBlock(const JoinBlock&) = delete;
-  JoinBlock& operator=(const JoinBlock&) = delete;
+  ~JoinBlock() override = default;
 
-  // Movable
-  JoinBlock(JoinBlock&&) = default;
-  JoinBlock& operator=(JoinBlock&&) = default;
-
-  ~JoinBlock() override {
-    delayed_state_.Destroy();
-  }
-
-  void Start(IConsumer<ValueType>* consumer) {
-    static_assert(StorageFor<Storage, Combinator>);
-
+  void Start() {
     const size_t num_producers = storage_.Size();
 
-    // Initialize self
-    static_cast<Combinator*>(this)->Create();
-
-    // Initialize CancelBase
+    // Prepare producers
     CancelBase::Create(num_producers);
     CancelBase::AddRef(num_producers);
+    state_.SetProducerCount(num_producers);
 
-    // Initialize sync algorithm
-    delayed_state_.Create();
-    StratRef().SetProducerCount(num_producers);
-
-    consumer_ = consumer;
-
-    // Add ref for cancel source
+    // Subscribe to cancellation
     CancelBase::AddRef(1);
-    consumer->CancelToken().Attach(this);
+    cons_.CancelToken().Attach(this);
 
+    // Start futures
     storage_.BootUpFutures(static_cast<Combinator*>(this));
   }
 
@@ -86,57 +71,51 @@ class JoinBlock : public cancel::sources::JoinSource<OnHeap> {
   template <typename T = int, std::enable_if_t<OnHeap, T> = 0>
   void CompleteConsumer(Result<ValueType> r) {
     if (CancelBase::CancelRequested()) {
-      consumer_->Cancel(Context{});
+      cons_.Cancel(Context{});
     } else {
-      consumer_->CancelToken().Detach(this);
+      cons_.CancelToken().Detach(this);
 
       // Become the cancel source
       CancelBase::AddRef(1);
       CancelBase::Forward(cancel::Signal::Cancel());
 
-      consumer_->Complete(std::move(r));
+      Complete(cons_, std::move(r));
     }
   }
 
   template <typename T = int, std::enable_if_t<!OnHeap, T> = 0>
   void CompleteConsumer(Result<ValueType> r) {
-    if (consumer_->CancelToken().CancelRequested()) {
-      consumer_->Cancel(Context{});
+    if (cons_.CancelToken().CancelRequested()) {
+      cons_.Cancel(Context{});
     } else {
-      consumer_->CancelToken().Detach(this);
+      cons_.CancelToken().Detach(this);
 
       // Cancel was already propagated
       // before the result emplacement
 
-      consumer_->Complete(std::move(r));
+      Complete(cons_, std::move(r));
     }
   }
 
   void CancelConsumer() {
-    consumer_->Cancel(Context{});
+    cons_.Cancel(Context{});
   }
 
   // true if first to ask
   bool MarkFulfilled() {
-    return StratRef().TryFulfill();
+    return state_.TryFulfill();
   }
 
   // true if need to fulfill consumer
   bool ProducerDone() {
-    return StratRef().ProducerDone();
+    return state_.ProducerDone();
   }
 
  private:
-  Strategy& StratRef() {
-    return delayed_state_.Refer();
-  }
-
- private:
-  IConsumer<ValueType>* consumer_;
+  Cons& cons_;
   Storage storage_;
 
-  // sync
-  support::MaybeDelayed<!OnHeap, Strategy> delayed_state_;
+  Strategy state_{};
 };
 
 }  // namespace weave::futures::thunks::detail

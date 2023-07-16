@@ -4,7 +4,8 @@
 
 namespace weave::futures::thunks::detail {
 
-class JoinAllOnHeap {
+template <bool OnHeap>
+class JoinAll {
  public:
   using State = threads::lockfree::CountAndFlags<1>;
 
@@ -26,7 +27,8 @@ class JoinAllOnHeap {
   State state_{};
 };
 
-class JoinAllOnStack {
+template <>
+class JoinAll<false> {
  public:
   using State = threads::lockfree::CountAndFlags<1>;
 

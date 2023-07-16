@@ -22,11 +22,12 @@ class [[nodiscard]] Just final : public support::NonCopyableBase {
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
    public:
-    EvaluationFor(Just, Cons& consumer) : consumer_(consumer) {
+    EvaluationFor(Just, Cons& consumer)
+        : consumer_(consumer) {
     }
 
-    void Start(){
-      if(consumer_.CancelToken().CancelRequested()){
+    void Start() {
+      if (consumer_.CancelToken().CancelRequested()) {
         consumer_.Cancel(Context{});
       } else {
         Complete(consumer_, result::Ok());

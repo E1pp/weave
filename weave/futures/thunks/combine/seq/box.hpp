@@ -6,7 +6,7 @@
 
 namespace weave::futures::thunks {
 
-template<typename T>
+template <typename T>
 class Boxed;
 
 namespace detail {
@@ -19,12 +19,13 @@ struct IErasedFuture {
 };
 
 template <Thunk Future>
-class TemplateSender final: public IErasedFuture<typename Future::ValueType>,
-                            public support::PinnedBase {
+class TemplateSender final : public IErasedFuture<typename Future::ValueType>,
+                             public support::PinnedBase {
  public:
   using T = typename Future::ValueType;
 
-  explicit TemplateSender(Future fut) : eval_(std::move(fut).Force(*this)) {
+  explicit TemplateSender(Future fut)
+      : eval_(std::move(fut).Force(*this)) {
   }
 
   ~TemplateSender() override final = default;
@@ -54,8 +55,9 @@ class TemplateSender final: public IErasedFuture<typename Future::ValueType>,
   EvaluationType<TemplateSender, Future> eval_;
 };
 
-template<typename F, typename T>
-concept NotBoxed = !std::is_same_v<F, Boxed<T>> && Thunk<F> && std::is_same_v<typename F::ValueType, T>;
+template <typename F, typename T>
+concept NotBoxed = !std::is_same_v<F, Boxed<T>> && Thunk<F> &&
+                   std::is_same_v<typename F::ValueType, T>;
 
 }  // namespace detail
 
@@ -66,28 +68,32 @@ class [[nodiscard]] Boxed final : public support::NonCopyableBase {
 
   // Auto-boxing
   template <detail::NotBoxed<T> Future>
-  Boxed(Future fut) { // NOLINT
+  Boxed(Future fut) {  // NOLINT
     erased_ = new detail::TemplateSender<Future>(std::move(fut));
   }
 
   // Movable
-  Boxed(Boxed&& that) noexcept: erased_(std::exchange(that.erased_, nullptr)) {
+  Boxed(Boxed&& that) noexcept
+      : erased_(std::exchange(that.erased_, nullptr)) {
   }
   Boxed& operator=(Boxed&&) = delete;
- 
+
  private:
   template <Consumer<ValueType> Cons>
-  class EvaluationFor final: public support::PinnedBase, public AbstractConsumer<ValueType> {
+  class EvaluationFor final : public support::PinnedBase,
+                              public AbstractConsumer<ValueType> {
    public:
-    EvaluationFor(Boxed fut, Cons& cons) : sender_(std::exchange(fut.erased_, nullptr)), cons_(cons) {
+    EvaluationFor(Boxed fut, Cons& cons)
+        : sender_(std::exchange(fut.erased_, nullptr)),
+          cons_(cons) {
     }
 
-    void Start(){
+    void Start() {
       sender_->RequestOutput(this);
     }
 
     ~EvaluationFor() override final {
-      if(sender_ == nullptr){
+      if (sender_ == nullptr) {
         return;
       }
 
@@ -106,7 +112,7 @@ class [[nodiscard]] Boxed final : public support::NonCopyableBase {
     cancel::Token CancelToken() override final {
       return cons_.CancelToken();
     }
-   
+
    private:
     detail::IErasedFuture<T>* sender_;
     Cons& cons_;
@@ -114,7 +120,7 @@ class [[nodiscard]] Boxed final : public support::NonCopyableBase {
 
  public:
   template <Consumer<ValueType> Cons>
-  Evaluation<Boxed, Cons> auto Force(Cons& cons){
+  Evaluation<Boxed, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 

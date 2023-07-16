@@ -30,6 +30,10 @@ Concurrency for C++
       - [Fork] – Not Done
     - [combine/par]
       - [default/tuple] – Not Done
+        - [First] – Done
+        - [All] – Not Done
+        - [Select] – Not Done
+        - [Quorum] – Not Done
       - [default/vector] – Not Done
       - [no_alloc/tuple] – Not Done
       - [no_alloc/vector] – Not Done
@@ -41,10 +45,11 @@ Concurrency for C++
     - [syntax]
       - [pipe] – Done
       - [bang] – Done
-      - [or]/[and] – Not Done
+      - [or] – Done
+      - [and] – Not Done
     - [types]
       - [eager] – Done
-      - [boxed] – Not Done
+      - [boxed] – Done
     - [traits]
       - [cancellable] – Not Done
 

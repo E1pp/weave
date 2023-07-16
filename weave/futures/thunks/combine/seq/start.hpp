@@ -16,25 +16,29 @@ template <Thunk Future>
 class [[nodiscard]] StartFuture final : public support::NonCopyableBase {
  public:
   using ValueType = typename Future::ValueType;
-  using SharedState = detail::SharedState<ValueType>; // Not Implemented
+  using SharedState = detail::SharedState<ValueType>;  // Not Implemented
 
-  explicit StartFuture(Future fut) : state_(new detail::StartState(std::move(fut))) {
+  explicit StartFuture(Future fut)
+      : state_(new detail::StartState(std::move(fut))) {
   }
 
   // Movable
-  StartFuture(StartFuture&& that) noexcept: state_(that.Release()){
+  StartFuture(StartFuture&& that) noexcept
+      : state_(that.Release()) {
   }
   StartFuture& operator=(StartFuture&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
-                                public AbstractConsumer<ValueType> {
+                              public AbstractConsumer<ValueType> {
    public:
-    EvaluationFor(StartFuture fut, Cons& cons) : state_(fut.Release()), cons_(cons) {
+    EvaluationFor(StartFuture fut, Cons& cons)
+        : state_(fut.Release()),
+          cons_(cons) {
     }
 
-    void Start(){
+    void Start() {
       std::exchange(state_, nullptr)->Consume(this);
     }
 
@@ -62,7 +66,7 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase {
 
  public:
   template <Consumer<ValueType> Cons>
-  Evaluation<StartFuture, Cons> auto Force(Cons& cons){
+  Evaluation<StartFuture, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
@@ -70,12 +74,12 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase {
     Release()->Forward(cancel::Signal::Cancel());
   }
 
-  ~StartFuture(){
+  ~StartFuture() {
     WHEELS_VERIFY(state_ == nullptr, "Unfulfilled future!");
   }
 
  private:
-  SharedState* Release(){
+  SharedState* Release() {
     return std::exchange(state_, nullptr);
   }
 
@@ -83,4 +87,4 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase {
   SharedState* state_;
 };
 
-} // namespace weave::futures::thunks
+}  // namespace weave::futures::thunks

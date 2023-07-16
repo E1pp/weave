@@ -25,17 +25,20 @@ class Flattenned final : public support::NonCopyableBase {
   }
 
   // Movable
-  Flattenned(Flattenned&& that) noexcept : future_(std::move(that.future_)){
+  Flattenned(Flattenned&& that) noexcept
+      : future_(std::move(that.future_)) {
   }
 
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
    public:
-    EvaluationFor(Flattenned fut, Cons& cons) : consumer_(cons), outer_eval_(std::move(fut.future_).Force(*this)) {
+    EvaluationFor(Flattenned fut, Cons& cons)
+        : consumer_(cons),
+          outer_eval_(std::move(fut.future_).Force(*this)) {
     }
 
-    void Start(){
+    void Start() {
       outer_eval_.Start();
     }
 
@@ -45,14 +48,16 @@ class Flattenned final : public support::NonCopyableBase {
     void Consume(Output<InnerType> out) noexcept {
       auto inner = std::move(out.result);
 
-      if(inner){
+      if (inner) {
         need_delete_ = true;
-        auto future = std::move(*inner) | futures::Via(*out.context.executor_, out.context.hint_);
+        auto future = std::move(*inner) |
+                      futures::Via(*out.context.executor_, out.context.hint_);
 
         new (&inner_eval_) auto(std::move(future).Force(consumer_));
         inner_eval_.Start();
       } else {
-        Complete<ValueType>(consumer_, {result::Err(std::move(inner.error())), out.context});
+        Complete<ValueType>(
+            consumer_, {result::Err(std::move(inner.error())), out.context});
       }
     }
 
@@ -63,17 +68,17 @@ class Flattenned final : public support::NonCopyableBase {
 
     cancel::Token CancelToken() {
       return consumer_.CancelToken();
-    }   
+    }
 
-    ~EvaluationFor(){
-      if(need_delete_){
+    ~EvaluationFor() {
+      if (need_delete_) {
         std::destroy_at(&inner_eval_);
       }
-    } 
+    }
 
    private:
     Cons& consumer_;
-    union{
+    union {
       EvaluationType<Cons, thunks::Via<InnerType>> inner_eval_;
     };
     bool need_delete_{false};
@@ -83,7 +88,7 @@ class Flattenned final : public support::NonCopyableBase {
 
  public:
   template <Consumer<ValueType> Cons>
-  Evaluation<Flattenned, Cons> auto Force(Cons& cons){
+  Evaluation<Flattenned, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 

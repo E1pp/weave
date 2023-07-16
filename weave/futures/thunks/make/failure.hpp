@@ -18,7 +18,8 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
   }
 
   // Movable
-  Failure(Failure&& that) noexcept: error_(std::move(that.error_)) {
+  Failure(Failure&& that) noexcept
+      : error_(std::move(that.error_)) {
   }
   Failure& operator=(Failure&&) = default;
 
@@ -26,11 +27,13 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
    public:
-    EvaluationFor(Failure fut, Cons& consumer) : err_(std::move(fut.error_)), consumer_(consumer) {
+    EvaluationFor(Failure fut, Cons& consumer)
+        : err_(std::move(fut.error_)),
+          consumer_(consumer) {
     }
 
-    void Start(){
-      if(consumer_.CancelToken().CancelRequested()){
+    void Start() {
+      if (consumer_.CancelToken().CancelRequested()) {
         consumer_.Cancel(Context{});
       } else {
         Complete<ValueType>(consumer_, result::Err(std::move(err_)));

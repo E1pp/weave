@@ -3,7 +3,7 @@
 #include <weave/futures/thunks/combine/par/join.hpp>
 
 #include <weave/futures/thunks/combine/par/first/tuple.hpp>
-#include <weave/futures/thunks/combine/par/first/vector.hpp>
+// #include <weave/futures/thunks/combine/par/first/vector.hpp>
 
 namespace weave::futures {
 
@@ -11,28 +11,34 @@ namespace weave::futures {
 
 //////////////////////////////////////////////////////////////////////////////
 
-template <SomeFuture InputFuture>
-Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec) {
-  WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
+// template <SomeFuture InputFuture>
+// Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec)
+// {
+//   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
 
-  auto* block =
-      new thunks::FirstControlBlock<true, thunks::detail::Vector, InputFuture>(
-          vec.size(), std::move(vec));
+//   auto* block =
+//       new thunks::FirstControlBlock<true, thunks::detail::Vector,
+//       InputFuture>(
+//           vec.size(), std::move(vec));
 
-  return futures::thunks::Join(block);
-}
+//   return futures::thunks::Join(block);
+// }
 
-template <SomeFuture FirstFuture, typename... Futures>
-Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1, Futures... fs) {
+template <SomeFuture FirstF, typename... Fs>
+Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
   static_assert(
-      (std::is_same_v<traits::ValueOf<FirstFuture>, traits::ValueOf<Futures>> &&
-       ...));
+      (std::is_same_v<traits::ValueOf<FirstF>, traits::ValueOf<Fs>> && ...));
 
-  auto* block = new thunks::FirstControlBlock<true, thunks::detail::Tuple,
-                                              FirstFuture, Futures...>(
-      1 + sizeof...(Futures), std::move(f1), std::move(fs)...);
+  using Storage = thunks::detail::Tuple<FirstF, Fs...>;
 
-  return futures::thunks::Join(block);
+  using FirstFuture =
+      futures::thunks::Join<true, traits::ValueOf<FirstF>,
+                            thunks::FirstControlBlock, Storage,
+                            thunks::detail::TaggedTuple, FirstF, Fs...>;
+
+  const size_t size = 1 + sizeof...(Fs);
+
+  return FirstFuture(size, std::move(f1), std::move(fs)...);
 }
 
 template <SomeFuture FirstFuture>
@@ -47,7 +53,8 @@ Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1) {
 // namespace no_alloc {
 
 // template <traits::Cancellable InputFuture>
-// Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec) {
+// Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec)
+// {
 //   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
 
 //   auto block =
@@ -58,9 +65,11 @@ Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1) {
 // }
 
 // template <traits::Cancellable FirstFuture, traits::Cancellable... Futures>
-// Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1, Futures... fs) {
+// Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1, Futures...
+// fs) {
 //   static_assert(
-//       (std::is_same_v<traits::ValueOf<FirstFuture>, traits::ValueOf<Futures>> &&
+//       (std::is_same_v<traits::ValueOf<FirstFuture>, traits::ValueOf<Futures>>
+//       &&
 //        ...));
 
 //   thunks::FirstControlBlock<false, thunks::detail::Tuple, FirstFuture,

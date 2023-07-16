@@ -17,7 +17,7 @@ class JoinSource
  public:
   using Base = threads::lockfree::RefCounter<JoinSource<OnHeap>, OnHeap>;
 
-  explicit JoinSource(size_t capacity)
+  explicit JoinSource(size_t capacity) noexcept
       : buffer_(capacity) {
   }
 

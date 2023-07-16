@@ -6,12 +6,14 @@
 #include <weave/futures/thunks/combine/par/detail/storage_types/tuple.hpp>
 #include <weave/futures/thunks/combine/par/detail/join_block.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/traits/value_of.hpp>
 
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
+#include <weave/support/constructor_bases.hpp>
+
+// #include <weave/futures/thunks/detail/cancel_base.hpp>
 
 #include <optional>
 
@@ -28,34 +30,31 @@ requires(std::same_as<T, Ts>&&...) struct FirstTypeImpl<T, Ts...> {
 template <typename... Ts>
 using FirstType = typename FirstTypeImpl<Ts...>::Type;
 
-///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
 
 // Default is OnHeap == true
-template <bool OnHeap, SomeFuture... Futures>
-struct FirstControlBlock<OnHeap, detail::Tuple, Futures...>
+template <bool OnHeap, typename Cons, SomeFuture... Futures>
+class FirstControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
     : public detail::JoinBlock<
-          true, FirstType<traits::ValueOf<Futures>...>,
-          FirstControlBlock<OnHeap, detail::Tuple, Futures...>,
-          detail::JoinAllOnHeap, detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
+          true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+          detail::JoinAll<true>, FirstType<traits::ValueOf<Futures>...>, Cons,
+          detail::TaggedTuple, Futures...> {
  public:
   using ValueType = FirstType<traits::ValueOf<Futures>...>;
-  using Base =
-      detail::JoinBlock<true, ValueType,
-                        FirstControlBlock<OnHeap, detail::Tuple, Futures...>,
-                        detail::JoinAllOnHeap, detail::Tuple, Futures...>;
+  using Base = detail::JoinBlock<
+      true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+      detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
-
-  void Create() {
-    // No-Op
+  template <typename... Args>
+  requires std::is_constructible_v<Base, size_t, Cons&, Args...>
+  explicit FirstControlBlock(size_t cap, Cons& cons, Args... args)
+      : Base(cap, cons, std::move(args)...) {
   }
 
   ~FirstControlBlock() override = default;
 
   template <size_t Index>
-  void Consume(
-      Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
+  void Consume(Output<ValueType> out) {
     auto result = std::move(out.result);
 
     // CompleteConsumer may throw
@@ -87,78 +86,67 @@ struct FirstControlBlock<OnHeap, detail::Tuple, Futures...>
 
 ///////////////////////////////////////////////////////////////////////
 
-// OnStack spec which waits for the last future to cancel
-template <SomeFuture... Futures>
-struct FirstControlBlock<false, detail::Tuple, Futures...>
-    : public detail::JoinBlock<
-          false, FirstType<traits::ValueOf<Futures>...>,
-          FirstControlBlock<false, detail::Tuple, Futures...>,
-          detail::JoinAllOnStack, detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
- public:
-  using ValueType = FirstType<traits::ValueOf<Futures>...>;
-  using Base =
-      detail::JoinBlock<false, ValueType,
-                        FirstControlBlock<false, detail::Tuple, Futures...>,
-                        detail::JoinAllOnStack, detail::Tuple, Futures...>;
+// // OnStack spec which waits for the last future to cancel
+// template <typename Cons, SomeFuture... Futures>
+// class FirstControlBlock<false, Cons, detail::TaggedTuple, Futures...> final:
+// public detail::JoinBlock<false, FirstControlBlock<false, Cons,
+// detail::TaggedTuple, Futures...>, detail::JoinAll<false>,
+// FirstType<traits::ValueOf<Futures>...>, Cons, detail::TaggedTuple,
+// Futures...> {
+//  public:
+//   using ValueType = FirstType<traits::ValueOf<Futures>...>;
+//   using Base = detail::JoinBlock<false, FirstControlBlock<false, Cons,
+//   detail::TaggedTuple, Futures...>, detail::JoinAll<false>, ValueType, Cons,
+//   detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
+//   using Base::Base;
 
-  // Non-copyable
-  FirstControlBlock(const FirstControlBlock&) = delete;
-  FirstControlBlock& operator=(const FirstControlBlock&) = delete;
+//   ~FirstControlBlock() override = default;
 
-  // Movable
-  FirstControlBlock(FirstControlBlock&&) = default;
-  FirstControlBlock& operator=(FirstControlBlock&&) = default;
+//   void Create() {
+//     // No-Op
+//   }
 
-  ~FirstControlBlock() override = default;
+//   template <size_t Index>
+//   void Consume(Output<ValueType> out) {
+//     auto result = std::move(out.result);
 
-  void Create() {
-    // No-Op
-  }
+//     if (result && Base::MarkFulfilled()) {
+//       // we are the first result
+//       EmplaceResult(std::move(result));
+//     }
 
-  template <size_t Index>
-  void Consume(
-      Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
-    auto result = std::move(out.result);
+//     if (bool is_the_last = Base::ProducerDone()) {
+//       // we are the last one
+//       if (res_) {
+//         Base::CompleteConsumer(std::move(*res_));
+//       } else {
+//         Base::CompleteConsumer(std::move(result));
+//       }
+//     }
+//   }
 
-    if (result && Base::MarkFulfilled()) {
-      // we are the first result
-      EmplaceResult(std::move(result));
-    }
+//   void Cancel() {
+//     if (bool is_the_last = Base::ProducerDone()) {
+//       if (res_) {
+//         Base::CompleteConsumer(std::move(*res_));
+//       } else {
+//         Base::CancelConsumer();
+//       }
+//     }
+//   }
 
-    if (bool is_the_last = Base::ProducerDone()) {
-      // we are the last one
-      if (res_) {
-        Base::CompleteConsumer(std::move(*res_));
-      } else {
-        Base::CompleteConsumer(std::move(result));
-      }
-    }
-  }
+//  private:
+//   void EmplaceResult(Result<ValueType> res) {
+//     // Emplace the result
+//     res_.emplace(std::move(res));
 
-  void Cancel() {
-    if (bool is_the_last = Base::ProducerDone()) {
-      if (res_) {
-        Base::CompleteConsumer(std::move(*res_));
-      } else {
-        Base::CancelConsumer();
-      }
-    }
-  }
+//     // Cancel the rest
+//     Base::Forward(cancel::Signal::Cancel());
+//   }
 
- private:
-  void EmplaceResult(Result<ValueType> res) {
-    // Emplace the result
-    res_.emplace(std::move(res));
-
-    // Cancel the rest
-    Base::Forward(cancel::Signal::Cancel());
-  }
-
- private:
-  std::optional<Result<ValueType>> res_;
-};
+//  private:
+//   std::optional<Result<ValueType>> res_;
+// };
 
 }  // namespace weave::futures::thunks

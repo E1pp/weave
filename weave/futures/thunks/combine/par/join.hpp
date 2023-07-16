@@ -1,67 +1,118 @@
 #pragma once
 
-#include <weave/futures/old_types/future.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
+#include <weave/support/constructor_bases.hpp>
+
+// #include <weave/futures/thunks/detail/cancel_base.hpp>
 
 namespace weave::futures::thunks {
 
-template <typename Block>
-struct [[nodiscard]] Join : public detail::JustCancellableBase<Block> {
+// OnHeap == true
+template <
+    bool OnHeap, typename ValType,
+    template <bool, typename, template <typename...> typename, typename...>
+    typename Block,
+    typename Storage, template <typename...> typename EvalStorage,
+    Thunk... Futures>
+struct [[nodiscard]] Join final : public support::NonCopyableBase {
  public:
-  using ValueType = typename Block::ValueType;
+  using ValueType = ValType;
 
-  explicit Join(Block* block)
-      : block_(block) {
+  explicit Join(size_t size, Futures... fs)
+      : size_(size),
+        futures_(std::move(fs)...) {
   }
 
-  // Non-copyable
-  Join(const Join&) = delete;
-  Join& operator=(const Join&) = delete;
-
   // Movable
-  Join(Join&& that)
-      : block_(that.block_){};
-  Join& operator=(Join&&) = default;
+  Join(Join&& that) noexcept
+      : size_(that.size_),
+        futures_(std::move(that.futures_)) {
+  }
+  Join& operator=(Join&&) = delete;
 
-  void Start(IConsumer<ValueType>* consumer) {
-    block_->Start(consumer);
+ private:
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final : public support::PinnedBase {
+   public:
+    using ControlBlock = Block<OnHeap, Cons, EvalStorage, Futures...>;
+
+    explicit EvaluationFor(Join fut, Cons& cons)
+        : block_(new ControlBlock(fut.size_, cons, std::move(fut.futures_))) {
+    }
+
+    void Start() {
+      block_->Start();
+    }
+
+   private:
+    ControlBlock* block_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Join, Cons> auto Force(Cons& cons) {
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:
-  Block* block_;
+  size_t size_;
+  Storage futures_;
 };
 
 ////////////////////////////////////////////////////////////////////////
 
-template <typename Block>
-struct [[nodiscard]] JoinOnStack {
+template <
+    typename ValType,
+    template <bool, typename, template <typename...> typename, typename...>
+    typename Block,
+    typename Storage, template <typename...> typename EvalStorage,
+    Thunk... Futures>
+struct [[nodiscard]] Join<false, ValType, Block, Storage, EvalStorage,
+                          Futures...>
+    final : public support::NonCopyableBase {
  public:
-  using ValueType = typename Block::ValueType;
+  using ValueType = ValType;
 
-  explicit JoinOnStack(Block&& block)
-      : block_(std::move(block)) {
+  explicit Join(size_t size, Futures... fs)
+      : size_(size),
+        futures_(std::move(fs)...) {
   }
-
-  // Non-copyable
-  JoinOnStack(const JoinOnStack&) = delete;
-  JoinOnStack& operator=(const JoinOnStack&) = delete;
 
   // Movable
-  JoinOnStack(JoinOnStack&& that)
-      : block_(std::move(that.block_)){};
-  JoinOnStack& operator=(JoinOnStack&&) = default;
-
-  void Start(IConsumer<ValueType>* consumer) {
-    block_.Start(consumer);
+  Join(Join&& that) noexcept
+      : size_(that.size_),
+        futures_(std::move(that.futures_)) {
   }
+  Join& operator=(Join&&) = delete;
 
-  void Cancellable() {
-    // No-Op
+ private:
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final : public support::PinnedBase {
+   public:
+    using ControlBlock = Block<false, Cons, EvalStorage, Futures...>;
+
+    explicit EvaluationFor(Join fut, Cons& cons)
+        : block_(fut.size_, cons, std::move(fut.futures_)) {
+    }
+
+    void Start() {
+      block_.Start();
+    }
+
+   private:
+    ControlBlock block_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Join, Cons> auto Force(Cons& cons) {
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:
-  Block block_;
+  size_t size_;
+  Storage futures_;
 };
 
 }  // namespace weave::futures::thunks

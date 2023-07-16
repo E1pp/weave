@@ -1,6 +1,8 @@
 #pragma once
 
-#include <weave/futures/old_types/future.hpp>
+#include <weave/futures/model/evaluation.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks::detail {
 
@@ -19,92 +21,101 @@ using NthType = typename NthTypeImpl<N, Pack...>::Type;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-template <SomeFuture Future, size_t Index, typename Block>
-class ProducerForTuple final : public IConsumer<typename Future::ValueType> {
-  using InputType = typename Future::ValueType;
-
+template <Thunk... Future>
+class Tuple final : public support::NonCopyableBase {
  public:
-  explicit ProducerForTuple(Future future)
-      : future_(std::move(future)) {
+  explicit Tuple(Future... fs)
+      : futures_(std::make_tuple(std::move(fs)...)) {
   }
-
-  // Non-copyable
-  ProducerForTuple(const ProducerForTuple&) = delete;
-  ProducerForTuple& operator=(const ProducerForTuple&) = delete;
 
   // Movable
-  ProducerForTuple(ProducerForTuple&& that)
-      : future_(std::move(that.future_)),
-        block_(that.block_) {
+  Tuple(Tuple&& that) noexcept
+      : futures_(std::move(that.futures_)) {
   }
-  ProducerForTuple& operator=(ProducerForTuple&&) = default;
+  Tuple& operator=(Tuple&&) = delete;
 
-  void StartAt(Block* block) {
-    block_ = block;
-    future_.Start(this);
+  std::tuple<Future...>& Peek() {
+    return futures_;
   }
 
  private:
-  void Consume(Output<InputType> out) noexcept override final {
-    block_->template Consume<Index>(std::move(out));
-  }
-
-  void Cancel(Context) noexcept override final {
-    block_->Cancel();
-  }
-
-  cancel::Token CancelToken() override final {
-    return block_->CancelToken();
-  }
-
- private:
-  Future future_;
-  Block* block_;
+  std::tuple<Future...> futures_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T, SomeFuture... Futures>
-class Tuple {
+template <Thunk Future, size_t Index, typename ControlBlock>
+class ProducerForTuple : public support::PinnedBase {
+  using InputType = typename Future::ValueType;
+
  public:
-  explicit Tuple(Futures... futures)
-      : tagged_futures_(MakeTuple(std::move(futures)...)) {
+  explicit ProducerForTuple(Future future)
+      : eval_(std::move(future).Force(*this)) {
   }
 
-  template <SomeFuture... Ts>
-  static auto MakeTuple(Ts... args) {
-    return [&]<size_t... Is>(std::index_sequence<Is...>) {
-      return std::make_tuple(ProducerForTuple<Ts, Is, T>(std::move(args))...);
+  void Start(ControlBlock* block) {
+    block_ = block;
+    eval_.Start();
+  }
+
+  // Completable
+  void Consume(Output<InputType> out) noexcept {
+    block_->template Consume<Index>(std::move(out));
+  }
+
+  // CancelSource
+  void Cancel(Context) noexcept {
+    block_->Cancel();
+  }
+
+  cancel::Token CancelToken() {
+    return block_->CancelToken();
+  }
+
+ private:
+  EvaluationType<ProducerForTuple, Future> eval_;
+  ControlBlock* block_;
+};
+
+template <typename Block, typename Seq, Thunk... Future>
+struct TaggedBase {};
+
+template <typename Block, size_t... Index, Thunk... Future>
+struct TaggedBase<Block, std::index_sequence<Index...>, Future...>
+    : public ProducerForTuple<Future, Index, Block>... {
+ public:
+  explicit TaggedBase(Tuple<Future...> tupl)
+      : ProducerForTuple<Future, Index, Block>(
+            std::move(std::get<Index>(tupl.Peek())))... {
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+template <typename ControlBlock, Thunk... Futures>
+class TaggedTuple final
+    : public TaggedBase<ControlBlock,
+                        std::make_index_sequence<sizeof...(Futures)>,
+                        Futures...> {
+ public:
+  using Base =
+      TaggedBase<ControlBlock, std::make_index_sequence<sizeof...(Futures)>,
+                 Futures...>;
+
+  using Base::Base;
+
+  void BootUpFutures(ControlBlock* block) {
+    [&]<size_t... Index>(std::index_sequence<Index...>) {
+      (static_cast<ProducerForTuple<Futures, Index, ControlBlock>*>(this)
+           ->Start(block),
+       ...);
     }
-    (std::index_sequence_for<Ts...>());
-  }
-
-  // Non-copyable
-  Tuple(const Tuple&) = delete;
-  Tuple& operator=(const Tuple&) = delete;
-
-  // Movable
-  Tuple(Tuple&& that)
-      : tagged_futures_(std::move(that.tagged_futures_)) {
-  }
-  Tuple& operator=(Tuple&&) = default;
-
-  using TupleType = decltype(MakeTuple(std::declval<Futures>()...));
-
-  void BootUpFutures(T* block) {
-    std::apply(
-        [&](auto&... tagged) {
-          (tagged.StartAt(block), ...);
-        },
-        tagged_futures_);
+    (std::index_sequence_for<Futures...>());
   }
 
   size_t Size() const {
     return sizeof...(Futures);
   }
-
- private:
-  TupleType tagged_futures_;
 };
 
 }  // namespace weave::futures::thunks::detail

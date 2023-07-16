@@ -15,7 +15,9 @@ concept Evaluation =
   eval.Start();
 };
 
-template <typename C, typename F> // ProducerFor<F, C> == true
-using EvaluationType = decltype(std::declval<std::add_rvalue_reference_t<F>>().Force(std::declval<std::add_lvalue_reference_t<C>>()));
+template <typename C, typename F>  // ProducerFor<F, C> == true
+using EvaluationType =
+    decltype(std::declval<std::add_rvalue_reference_t<F>>().Force(
+        std::declval<std::add_lvalue_reference_t<C>>()));
 
 }  // namespace weave::futures

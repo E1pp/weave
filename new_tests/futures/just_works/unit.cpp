@@ -19,7 +19,7 @@
 #include <weave/futures/combine/seq/start.hpp>
 
 // #include <weave/futures/combine/par/all.hpp>
-// #include <weave/futures/combine/par/first.hpp>
+#include <weave/futures/combine/par/first.hpp>
 // #include <weave/futures/combine/par/quorum.hpp>
 // #include <weave/futures/combine/par/select.hpp>
 
@@ -583,94 +583,94 @@ TEST_SUITE(Futures) {
     }
   }
 
-//   SIMPLE_TEST(FirstOk1) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(FirstOk1) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::First(std::move(f1), std::move(f2));
+    auto first = futures::First(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](int v) {
-//             ASSERT_EQ(v, 2);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::Map([&ok](int v) {
+            ASSERT_EQ(v, 2);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetValue(2);
+    std::move(p2).SetValue(2);
 
-//     ASSERT_TRUE(ok);
+    ASSERT_TRUE(ok);
 
-//     std::move(p1).SetValue(1);
-//   }
+    std::move(p1).SetValue(1);
+  }
 
-//   SIMPLE_TEST(FirstOk2) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(FirstOk2) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::First(std::move(f1), std::move(f2));
+    auto first = futures::First(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](int v) {
-//             ASSERT_EQ(v, 29);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::Map([&ok](int v) {
+            ASSERT_EQ(v, 29);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p1).SetError(TimeoutError());
-//     std::move(p2).SetValue(29);
+    std::move(p1).SetError(TimeoutError());
+    std::move(p2).SetValue(29);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(FirstOk3) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(FirstOk3) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::First(std::move(f1), std::move(f2));
+    auto first = futures::First(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](int v) {
-//             ASSERT_EQ(v, 31);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::Map([&ok](int v) {
+            ASSERT_EQ(v, 31);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(IoError());
-//     std::move(p1).SetValue(31);
+    std::move(p2).SetError(IoError());
+    std::move(p1).SetValue(31);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(FirstFailure) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(FirstFailure) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::First(std::move(f1), std::move(f2));
+    auto first = futures::First(std::move(f1), std::move(f2));
 
-//     bool fail = false;
+    bool fail = false;
 
-//     std::move(first)
-//         | futures::OrElse([&](Error e) -> Result<int> {
-//             ASSERT_EQ(e, TimeoutError());
-//             fail = true;
-//             return result::Err(e);
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::OrElse([&](Error e) -> Result<int> {
+            ASSERT_EQ(e, TimeoutError());
+            fail = true;
+            return result::Err(e);
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p1).SetError(TimeoutError());
+    std::move(p2).SetError(TimeoutError());
+    std::move(p1).SetError(TimeoutError());
 
-//     ASSERT_TRUE(fail);
-//   }
+    ASSERT_TRUE(fail);
+  }
 
 //   SIMPLE_TEST(BothOk) {
 //     auto [f1, p1] = futures::Contract<int>();
@@ -1179,34 +1179,34 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(tasks, 2);
   }
 
-//   SIMPLE_TEST(Inline5) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(Inline5) {
+    executors::ManualExecutor manual;
 
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::First(
-//         std::move(f1) | futures::Via(manual),
-//         std::move(f2) | futures::Via(manual));
+    auto first = futures::First(
+        std::move(f1) | futures::Via(manual),
+        std::move(f2) | futures::Via(manual));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](int v) {
-//             ASSERT_EQ(v, 31);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::Map([&ok](int v) {
+            ASSERT_EQ(v, 31);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(IoError());
-//     std::move(p1).SetValue(31);
+    std::move(p2).SetError(IoError());
+    std::move(p1).SetValue(31);
 
-//     size_t tasks = manual.Drain();
-//     ASSERT_EQ(tasks, 0);
+    size_t tasks = manual.Drain();
+    ASSERT_EQ(tasks, 0);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
 //   SIMPLE_TEST(VectorFirstOk1) {
 //     auto [f1, p1] = futures::Contract<int>();
@@ -1798,29 +1798,29 @@ TEST_SUITE(LazyFutures) {
     ASSERT_TRUE(manual.Drain() > 0);
   }
 
-//   SIMPLE_TEST(First) {
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(First) {
+    executors::ManualExecutor manual;
 
-//     auto f = futures::Just()
-//              | futures::Via(manual)
-//              | futures::Map([](Unit) {
-//                  return 1;
-//                });
+    auto f = futures::Just()
+             | futures::Via(manual)
+             | futures::Map([](Unit) {
+                 return 1;
+               });
 
-//     auto g = futures::Just()
-//              | futures::Via(manual)
-//              | futures::Map([](Unit) {
-//                  return 2;
-//                });
+    auto g = futures::Just()
+             | futures::Via(manual)
+             | futures::Map([](Unit) {
+                 return 2;
+               });
 
-//     auto first = futures::First(std::move(f), std::move(g));
+    auto first = futures::First(std::move(f), std::move(g));
 
-//     ASSERT_TRUE(manual.IsEmpty());
+    ASSERT_TRUE(manual.IsEmpty());
 
-//     std::move(first) | futures::Detach();
+    std::move(first) | futures::Detach();
 
-//     ASSERT_EQ(manual.Drain(), 2);
-//   }
+    ASSERT_EQ(manual.Drain(), 2);
+  }
 
   SIMPLE_TEST(Start) {
     executors::ManualExecutor manual;

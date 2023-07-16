@@ -46,14 +46,16 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase {
   }
 
   // Movable
-  Apply(Apply&& that) noexcept: future_(std::move(that.future_)), mapper_(std::move(that.mapper_)) {
+  Apply(Apply&& that) noexcept
+      : future_(std::move(that.future_)),
+        mapper_(std::move(that.mapper_)) {
   }
   Apply& operator=(Apply&&) = default;
 
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
-                                public executors::Task {
+                              public executors::Task {
    public:
     EvaluationFor(Apply fut, Cons& consumer)
         : map_(std::move(fut.mapper_)),
@@ -61,13 +63,13 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase {
           evaluation_(std::move(fut.future_).Force(*this)) {
     }
 
-    void Start(){
+    void Start() {
       evaluation_.Start();
     }
 
     // Completable<InputValueType>
     void Consume(Output<InputValueType> input) noexcept {
-      if(CancelToken().CancelRequested()) {
+      if (CancelToken().CancelRequested()) {
         Cancel(std::move(input.context));
         return;
       }
@@ -78,7 +80,8 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase {
 
       } else {
         Result<ValueType> forwarded_result = map_.Forward(std::move(input));
-        Complete<ValueType>(consumer_, {std::move(forwarded_result), input.context});
+        Complete<ValueType>(consumer_,
+                            {std::move(forwarded_result), input.context});
       }
     }
 
@@ -93,20 +96,21 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase {
 
    private:
     void Run() noexcept override final {
-    try {
-      Result<ValueType> output = RunMapper();
+      try {
+        Result<ValueType> output = RunMapper();
 
-      Complete<ValueType>(consumer_, {std::move(output), std::move(input_->context)});
-    } catch (cancel::CancelledException) {
-      consumer_.Cancel(
-          Context{satellite::GetExecutor(), executors::SchedulerHint::UpToYou});
-    }
+        Complete<ValueType>(consumer_,
+                            {std::move(output), std::move(input_->context)});
+      } catch (cancel::CancelledException) {
+        consumer_.Cancel(Context{satellite::GetExecutor(),
+                                 executors::SchedulerHint::UpToYou});
+      }
     }
 
     Result<ValueType> RunMapper() {
       // Setup satellite context
-      satellite::MetaData old =
-      satellite::SetContext(input_->context.executor_, consumer_.CancelToken());
+      satellite::MetaData old = satellite::SetContext(input_->context.executor_,
+                                                      consumer_.CancelToken());
 
       // Map() may throw
       wheels::Defer cleanup([old] {

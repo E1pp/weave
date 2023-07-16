@@ -13,12 +13,14 @@ class [[nodiscard]] Value final : public support::NonCopyableBase {
  public:
   using ValueType = T;
 
-  explicit Value(T&& val) noexcept: value_(std::move(val)) {
+  explicit Value(T&& val) noexcept
+      : value_(std::move(val)) {
   }
 
   // Movable
   // Construction is non-trivial because tl::expected is broken
-  Value(Value&& rhs) noexcept: value_(std::move(rhs.value_)) {
+  Value(Value&& rhs) noexcept
+      : value_(std::move(rhs.value_)) {
   }
   Value& operator=(Value&&) = default;
 
@@ -26,11 +28,13 @@ class [[nodiscard]] Value final : public support::NonCopyableBase {
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
    public:
-    EvaluationFor(Value fut, Cons& consumer) : val_(std::move(fut.value_)), consumer_(consumer){
+    EvaluationFor(Value fut, Cons& consumer)
+        : val_(std::move(fut.value_)),
+          consumer_(consumer) {
     }
 
     void Start() {
-      if(consumer_.CancelToken().CancelRequested()){
+      if (consumer_.CancelToken().CancelRequested()) {
         consumer_.Cancel(Context{});
       } else {
         Complete(consumer_, result::Ok(std::move(val_)));

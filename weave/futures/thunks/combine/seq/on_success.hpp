@@ -17,7 +17,7 @@
 namespace weave::futures::thunks {
 
 template <Thunk Future, typename F>
-class [[nodiscard]] OnSuccess final: public support::NonCopyableBase {
+class [[nodiscard]] OnSuccess final : public support::NonCopyableBase {
  public:
   using ValueType = typename Future::ValueType;
 
@@ -27,20 +27,24 @@ class [[nodiscard]] OnSuccess final: public support::NonCopyableBase {
   }
 
   // Movable
-  OnSuccess(OnSuccess&& that)
+  OnSuccess(OnSuccess&& that) noexcept
       : future_(std::move(that.future_)),
-        fun_(std::move(that.fun_)){
+        fun_(std::move(that.fun_)) {
   }
   OnSuccess& operator=(OnSuccess&&) = default;
 
  private:
   template <Consumer<ValueType> Cons>
-  class EvaluationFor final: public support::PinnedBase, public executors::Task {
+  class EvaluationFor final : public support::PinnedBase,
+                              public executors::Task {
    public:
-    EvaluationFor(OnSuccess fut, Cons& cons) : eval_(std::move(fut.future_).Force(*this)), fun_(std::move(fut.fun_)), cons_(cons) {
+    EvaluationFor(OnSuccess fut, Cons& cons)
+        : eval_(std::move(fut.future_).Force(*this)),
+          fun_(std::move(fut.fun_)),
+          cons_(cons) {
     }
 
-    void Start(){
+    void Start() {
       eval_.Start();
     }
 
@@ -70,17 +74,17 @@ class [[nodiscard]] OnSuccess final: public support::NonCopyableBase {
       Complete(cons_, std::move(*out_));
     }
 
-  void RunSideEffect() {
-    // We prevent instant cancellation within side effect scope
-    satellite::MetaData old =
-        satellite::SetContext(out_->context.executor_, cancel::Never());
+    void RunSideEffect() {
+      // We prevent instant cancellation within side effect scope
+      satellite::MetaData old =
+          satellite::SetContext(out_->context.executor_, cancel::Never());
 
-    wheels::Defer cleanup([&] {
-      satellite::RestoreContext(std::move(old));
-    });
+      wheels::Defer cleanup([&] {
+        satellite::RestoreContext(std::move(old));
+      });
 
-    std::move(fun_)();
-  }
+      std::move(fun_)();
+    }
 
    private:
     EvaluationType<EvaluationFor, Future> eval_;
@@ -90,8 +94,8 @@ class [[nodiscard]] OnSuccess final: public support::NonCopyableBase {
   };
 
  public:
-  template<Consumer<ValueType> Cons>
-  Evaluation<OnSuccess, Cons> auto Force(Cons& cons){
+  template <Consumer<ValueType> Cons>
+  Evaluation<OnSuccess, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 

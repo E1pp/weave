@@ -7,7 +7,7 @@
 #include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
-//public cancel::SignalReceiver
+// public cancel::SignalReceiver
 class [[nodiscard]] Never final : support::NonCopyableBase {
  public:
   using ValueType = Unit;
@@ -19,13 +19,15 @@ class [[nodiscard]] Never final : support::NonCopyableBase {
   Never& operator=(Never&&) = default;
 
  private:
-  template<Consumer<Unit> Cons>
-  class EvaluationFor final: public support::PinnedBase, public cancel::SignalReceiver {
+  template <Consumer<Unit> Cons>
+  class EvaluationFor final : public support::PinnedBase,
+                              public cancel::SignalReceiver {
    public:
-    EvaluationFor(Never, Cons& cons) : cons_(cons) {
+    EvaluationFor(Never, Cons& cons)
+        : cons_(cons) {
     }
 
-    void Start(){
+    void Start() {
       cons_.CancelToken().Attach(this);
     }
 
@@ -45,8 +47,8 @@ class [[nodiscard]] Never final : support::NonCopyableBase {
   };
 
  public:
-  template<Consumer<Unit> Cons>
-  Evaluation<Never, Cons> auto Force(Cons& cons){
+  template <Consumer<Unit> Cons>
+  Evaluation<Never, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 };

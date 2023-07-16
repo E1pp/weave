@@ -32,7 +32,7 @@ struct [[nodiscard]] Discard {
     cancel::Token CancelToken() {
       return cancel::Token::Fabricate(this);
     }
-    
+
    private:
     // SignalSender
     bool CancelRequested() override final {

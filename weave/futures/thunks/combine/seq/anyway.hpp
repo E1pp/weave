@@ -19,7 +19,7 @@
 namespace weave::futures::thunks {
 
 template <Thunk Future, typename F>
-class [[nodiscard]] Anyway final: public support::NonCopyableBase {
+class [[nodiscard]] Anyway final : public support::NonCopyableBase {
  public:
   using ValueType = typename Future::ValueType;
 
@@ -29,25 +29,29 @@ class [[nodiscard]] Anyway final: public support::NonCopyableBase {
   }
 
   // Movable
-  Anyway(Anyway&& that)
+  Anyway(Anyway&& that) noexcept
       : future_(std::move(that.future_)),
-        fun_(std::move(that.fun_)){
+        fun_(std::move(that.fun_)) {
   }
   Anyway& operator=(Anyway&&) = default;
 
  private:
   template <Consumer<ValueType> Cons>
-  class EvaluationFor final: public support::PinnedBase, public executors::Task {
+  class EvaluationFor final : public support::PinnedBase,
+                              public executors::Task {
    private:
     std::error_code PlaceholderError() {
       return std::make_error_code(static_cast<std::errc>(1337));
     }
 
    public:
-    EvaluationFor(Anyway fut, Cons& cons) : eval_(std::move(fut.future_).Force(*this)), fun_(std::move(fut.fun_)), cons_(cons) {
+    EvaluationFor(Anyway fut, Cons& cons)
+        : eval_(std::move(fut.future_).Force(*this)),
+          fun_(std::move(fut.fun_)),
+          cons_(cons) {
     }
 
-    void Start(){
+    void Start() {
       eval_.Start();
     }
 
@@ -60,7 +64,8 @@ class [[nodiscard]] Anyway final: public support::NonCopyableBase {
 
     // CancelSource
     void Cancel(Context ctx) noexcept {
-      out_.emplace(Output<ValueType>({result::Err(PlaceholderError()), std::move(ctx)}));
+      out_.emplace(
+          Output<ValueType>({result::Err(PlaceholderError()), std::move(ctx)}));
 
       out_->context.executor_->Submit(this, executors::SchedulerHint::Next);
     }
@@ -76,24 +81,24 @@ class [[nodiscard]] Anyway final: public support::NonCopyableBase {
     void Run() noexcept override final {
       RunSideEffect();
 
-      if(cons_.CancelToken().CancelRequested()){
+      if (cons_.CancelToken().CancelRequested()) {
         cons_.Cancel(std::move(out_->context));
       } else {
         Complete(cons_, std::move(*out_));
       }
     }
 
-  void RunSideEffect() {
-    // We prevent instant cancellation within side effect scope
-    satellite::MetaData old =
-        satellite::SetContext(out_->context.executor_, cancel::Never());
+    void RunSideEffect() {
+      // We prevent instant cancellation within side effect scope
+      satellite::MetaData old =
+          satellite::SetContext(out_->context.executor_, cancel::Never());
 
-    wheels::Defer cleanup([&] {
-      satellite::RestoreContext(std::move(old));
-    });
+      wheels::Defer cleanup([&] {
+        satellite::RestoreContext(std::move(old));
+      });
 
-    std::move(fun_)();
-  }
+      std::move(fun_)();
+    }
 
    private:
     EvaluationType<EvaluationFor, Future> eval_;
@@ -103,8 +108,8 @@ class [[nodiscard]] Anyway final: public support::NonCopyableBase {
   };
 
  public:
-  template<Consumer<ValueType> Cons>
-  Evaluation<Anyway, Cons> auto Force(Cons& cons){
+  template <Consumer<ValueType> Cons>
+  Evaluation<Anyway, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 

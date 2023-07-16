@@ -30,7 +30,7 @@ struct [[nodiscard]] Detach {
       delete this;
     }
 
-    cancel::Token CancelToken(){
+    cancel::Token CancelToken() {
       return cancel::Never();
     }
 

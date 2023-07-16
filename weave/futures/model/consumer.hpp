@@ -6,7 +6,7 @@
 namespace weave::futures {
 
 template <typename C, typename T>
-concept Completable = requires(C& consumer, Output<T> o){
+concept Completable = requires(C& consumer, Output<T> o) {
   consumer.Consume(std::move(o));
 };
 
@@ -31,11 +31,11 @@ struct AbstractConsumer {
 
   virtual void Consume(Output<T>) noexcept = 0;
 
-  void Complete(Output<T> o){
+  void Complete(Output<T> o) {
     Consume(std::move(o));
   }
 
-  void Complete(Result<T> r){
+  void Complete(Result<T> r) {
     Consume({std::move(r), Context{}});
   }
 

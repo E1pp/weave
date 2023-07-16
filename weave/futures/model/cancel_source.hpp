@@ -7,11 +7,11 @@
 namespace weave::futures {
 
 template <typename S>
-concept CancelSource = requires(S& source, Context ctx){
+concept CancelSource = requires(S& source, Context ctx) {
   source.Cancel(std::move(ctx));
   requires noexcept(source.Cancel(std::move(ctx)));
 
-  {source.CancelToken()} -> std::same_as<cancel::Token>;
+  { source.CancelToken() } -> std::same_as<cancel::Token>;
 };
 
-} // namespace weave::futures
+}  // namespace weave::futures
