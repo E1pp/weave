@@ -1,6 +1,8 @@
 #pragma once
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/model/evaluation.hpp>
+
+#include <weave/futures/syntax/pipe.hpp>
 
 namespace weave::futures {
 
@@ -8,32 +10,31 @@ namespace pipe {
 
 struct [[nodiscard]] Discard {
   template <SomeFuture Future>
-  class Runner final : public IConsumer<typename Future::ValueType>,
-                       public cancel::SignalSender {
+  class Runner final : public cancel::SignalSender {
    public:
     using ValueType = typename Future::ValueType;
 
     explicit Runner(Future f)
-        : future_(std::move(f)) {
+        : eval_(std::move(f).Force(*this)) {
+      eval_.Start();
     }
 
-    void Start() {
-      future_.Start(this);
-    }
-
-   private:
-    void Consume(Output<ValueType>) noexcept override final {
+    // Completable<ValueType>
+    void Consume(Output<ValueType>) noexcept {
       WHEELS_PANIC("Consume on Discard!");
     }
 
-    void Cancel(Context) noexcept override final {
+    // CancelSource
+    void Cancel(Context) noexcept {
       delete this;
     }
 
-    cancel::Token CancelToken() override final {
+    cancel::Token CancelToken() {
       return cancel::Token::Fabricate(this);
     }
-
+    
+   private:
+    // SignalSender
     bool CancelRequested() override final {
       return true;
     }
@@ -51,13 +52,12 @@ struct [[nodiscard]] Discard {
     }
 
    private:
-    Future future_;
+    EvaluationType<Runner, Future> eval_;
   };
 
   template <SomeFuture Future>
   void Pipe(Future f) {
-    auto* runner = new Runner(std::move(f));
-    runner->Start();
+    [[maybe_unused]] auto* runner = new Runner(std::move(f));
   }
 };
 

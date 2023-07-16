@@ -14,7 +14,7 @@ namespace weave::futures::thunks {
 
 // Via is seemless thus no need for lookup of CancelRequested inside to be
 // Cancellable
-template <SomeFuture Future>
+template <Thunk Future>
 class [[nodiscard]] Via final : public support::NonCopyableBase {
  public:
   using ValueType = typename Future::ValueType;

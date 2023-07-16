@@ -14,7 +14,7 @@ namespace weave::futures::thunks {
 
 // Cancellable if both are Cancellable
 // is seemless thus no need for CancelRequested lookups
-template <SomeFuture Future>
+template <Thunk Future>
 class Flattenned final : public support::NonCopyableBase {
  public:
   using InnerType = typename Future::ValueType;

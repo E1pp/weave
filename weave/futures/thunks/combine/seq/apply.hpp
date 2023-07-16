@@ -34,7 +34,7 @@ concept Mapper = SomeFuture<InputFuture> &&
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <SomeFuture Future, Mapper<Future> Mapper>
+template <Thunk Future, Mapper<Future> Mapper>
 class [[nodiscard]] Apply final : public support::NonCopyableBase {
  public:
   using InputValueType = typename Future::ValueType;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/syntax/pipe.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/traits/value_of.hpp>
 
-#include <weave/futures/old_types/eager.hpp>
+#include <weave/futures/types/eager.hpp>
 
 namespace weave::futures {
 
@@ -12,8 +12,8 @@ namespace pipe {
 
 struct [[nodiscard]] Start {
   template <SomeFuture InputFuture>
-  StartedFuture<InputFuture> Pipe(InputFuture f) {
-    return futures::thunks::StartedFuture(std::move(f));
+  StartFuture<InputFuture> Pipe(InputFuture f) {
+    return futures::thunks::StartFuture(std::move(f));
   }
 };
 

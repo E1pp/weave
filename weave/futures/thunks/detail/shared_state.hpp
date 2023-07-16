@@ -2,7 +2,7 @@
 
 #include <weave/cancel/sources/strand.hpp>
 
-#include <weave/futures/old_model/thunk.hpp>
+#include <weave/futures/model/thunk.hpp>
 
 #include <weave/result/make/err.hpp>
 
@@ -31,7 +31,6 @@ class SharedState : public cancel::sources::StrandSource {
   void Produce(Result<T> result, Context context = Context{}) {
     res_.emplace(Output<T>{std::move(result), context});
 
-    // consumer->Cancel() may throw
     wheels::Defer cleanup([&] {
       // Release producer ref
       ReleaseRef();
@@ -45,7 +44,6 @@ class SharedState : public cancel::sources::StrandSource {
   void ProducerCancel(Context ctx) {
     res_.emplace(Output<T>({result::Err(PlaceholderError()), std::move(ctx)}));
 
-    // consumer->Cancel() may throw
     wheels::Defer cleanup([&] {
       // Release producer ref
       ReleaseRef();
@@ -58,7 +56,7 @@ class SharedState : public cancel::sources::StrandSource {
   }
 
   // When we add consumer, we Attach our token to theirs
-  void Consume(IConsumer<T>* consumer) {
+  void Consume(AbstractConsumer<T>* consumer) {
     consumer_ = consumer;
 
     // add cancel source ref
@@ -91,7 +89,7 @@ class SharedState : public cancel::sources::StrandSource {
  private:
   // Producer-Consumer protocol
   std::optional<Output<T>> res_{};
-  IConsumer<T>* consumer_{};
+  AbstractConsumer<T>* consumer_{};
   threads::lockfree::RendezvousStateMachine rendezvous_{};
 };
 

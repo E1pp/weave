@@ -1,42 +1,40 @@
 #pragma once
 
-#include <weave/cancel/never.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
 #include <weave/futures/thunks/detail/shared_state.hpp>
 
-#include <weave/futures/old_types/future.hpp>
-
 namespace weave::futures::thunks::detail {
 
-template <SomeFuture Future>
-class StartState final : public SharedState<typename Future::ValueType>,
-                         public IConsumer<typename Future::ValueType> {
+template <Thunk Future>
+class StartState final : public SharedState<typename Future::ValueType> {
  public:
   using T = typename Future::ValueType;
   using Base = SharedState<T>;
 
   explicit StartState(Future future)
-      : future_(std::move(future)) {
-    future_.Start(this);
+      : eval_(std::move(future).Force(*this)) {
+    eval_.Start();
   }
 
   virtual ~StartState() override final = default;
 
- private:
-  void Consume(Output<T> out) noexcept override final {
+  // Completable
+  void Consume(Output<T> out) noexcept {
     Base::Produce(std::move(out.result), out.context);
   }
 
-  void Cancel(Context ctx) noexcept override final {
+  // CancelSource
+  void Cancel(Context ctx) noexcept {
     Base::ProducerCancel(std::move(ctx));
   }
 
-  cancel::Token CancelToken() override final {
+  cancel::Token CancelToken() {
     return cancel::Token::Fabricate(this);
   }
 
  private:
-  Future future_;
+  EvaluationType<StartState, Future> eval_;
 };
 
 }  // namespace weave::futures::thunks::detail

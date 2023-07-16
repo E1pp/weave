@@ -17,7 +17,7 @@ Concurrency for C++
       - [Value] – Done
       - [Failure] – Done
       - [Submit] – Done
-      - [Contract] – Not Done
+      - [Contract] – Done
       - [Never] – Not Done
       - [After] – Not Done
     - [combine/seq]
@@ -25,7 +25,7 @@ Concurrency for C++
       - [Via] – Done
       - [Flatten/FlatMap] – Done
       - [OnCancel]/[OnSuccess]/[Anyway] – Not Done
-      - [Start] – Not Done
+      - [Start] – Done
       - [Box] – Not Done
       - [WithTimeout] – Not Done
       - [Fork] – Not Done
@@ -38,13 +38,13 @@ Concurrency for C++
       - [Get] – Done
       - [Detach] – Done
       - [Await] – Not Done
-      - [Discard] – Not Done
+      - [Discard] – Done
     - [syntax]
       - [pipe] – Done
-      - [bang] – Not Done
+      - [bang] – Done
       - [or]/[and] – Not Done
     - [types]
-      - [eager] – Not Done
+      - [eager] – Done
       - [boxed] – Not Done
     - [traits]
       - [cancellable] – Not Done

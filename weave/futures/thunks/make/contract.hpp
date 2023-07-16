@@ -1,14 +1,16 @@
 #pragma once
 
-#include <weave/futures/old_model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
 #include <weave/futures/thunks/detail/shared_state.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
 
 // Always Cancellable
 template <typename T>
-class [[nodiscard]] ContractFuture {
+class [[nodiscard]] ContractFuture final : public support::NonCopyableBase{
  public:
   using ValueType = T;
   using SharedState = detail::SharedState<T>;
@@ -17,17 +19,53 @@ class [[nodiscard]] ContractFuture {
       : state_(state) {
   }
 
-  // Non-copyable
-  ContractFuture(const ContractFuture&) = delete;
-  ContractFuture& operator=(const ContractFuture&) = delete;
-
   // Movable
-  ContractFuture(ContractFuture&& that)
-      : state_(that.Release()) {
+  ContractFuture(ContractFuture&& that) noexcept: state_(that.Release()) {
   }
+  ContractFuture& operator=(ContractFuture&&) = delete;
 
-  void Start(IConsumer<T>* consumer) {
-    Release()->Consume(consumer);
+ private:
+  template<Consumer<ValueType> Cons>
+  class ContractEvaluation final: public support::PinnedBase,
+                             public AbstractConsumer<ValueType> {
+   public:
+    using U = ValueType;
+
+    // Evaluation
+    ContractEvaluation(ContractFuture fut, Cons& cons) : state_(fut.Release()), cons_(cons){
+    }
+
+    void Start(){
+      std::exchange(state_, nullptr)->Consume(this);
+    }
+
+    ~ContractEvaluation() override final {
+      WHEELS_VERIFY(state_ == nullptr, "You must call Start on this evaluation!");
+    }
+
+   private:
+    // AbstractConsumer<ValueType>
+    void Consume(Output<U> o) noexcept override final {
+      Complete(cons_, std::move(o));
+    }
+
+    void Cancel(Context ctx) noexcept override final {
+      cons_.Cancel(std::move(ctx));
+    }
+
+    cancel::Token CancelToken() override final {
+      return cons_.CancelToken();
+    }
+    
+   private:
+    SharedState* state_;
+    Cons& cons_;
+  };
+
+ public:
+  template<Consumer<ValueType> Cons>
+  Evaluation<ContractFuture, Cons> auto Force(Cons& cons){
+    return ContractEvaluation<Cons>(std::move(*this), cons);
   }
 
   void RequestCancel() && {
@@ -38,12 +76,8 @@ class [[nodiscard]] ContractFuture {
     // No-Op
   }
 
-  void Cancellable() {
-    // No-Op
-  }
-
   ~ContractFuture() {
-    assert(state_ == nullptr);
+    WHEELS_VERIFY(state_ == nullptr, "Unfulfilled Eager future!");
   }
 
  private:
