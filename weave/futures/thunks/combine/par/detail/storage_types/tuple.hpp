@@ -4,6 +4,8 @@
 
 #include <weave/support/constructor_bases.hpp>
 
+#include <tuple>
+
 namespace weave::futures::thunks::detail {
 
 template <size_t N, typename First, typename... Pack>
@@ -45,7 +47,7 @@ class Tuple final : public support::NonCopyableBase {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <Thunk Future, size_t Index, typename ControlBlock>
-class ProducerForTuple : public support::PinnedBase {
+class ProducerForTuple {
   using InputType = typename Future::ValueType;
 
  public:
@@ -94,9 +96,8 @@ struct TaggedBase<Block, std::index_sequence<Index...>, Future...>
 
 template <typename ControlBlock, Thunk... Futures>
 class TaggedTuple final
-    : public TaggedBase<ControlBlock,
-                        std::make_index_sequence<sizeof...(Futures)>,
-                        Futures...> {
+    : public TaggedBase<ControlBlock, std::make_index_sequence<sizeof...(Futures)>, Futures...>,
+      public support::PinnedBase {
  public:
   using Base =
       TaggedBase<ControlBlock, std::make_index_sequence<sizeof...(Futures)>,

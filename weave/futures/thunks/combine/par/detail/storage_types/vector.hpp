@@ -1,97 +1,143 @@
 #pragma once
 
-#include <weave/futures/old_types/future.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
-#include <optional>
+#include <weave/support/constructor_bases.hpp>
+
+#include <weave/result/types/unit.hpp>
+
+#include <vector>
 
 namespace weave::futures::thunks::detail {
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-template <SomeFuture Future, typename Block>
-class ProducerForVector final : public IConsumer<typename Future::ValueType> {
-  using InputType = typename Future::ValueType;
-
+template <Thunk Future>
+class Vector final: public support::NonCopyableBase {
  public:
-  explicit ProducerForVector(Future future)
-      : future_(std::move(future)) {
+  explicit Vector(std::vector<Future> vec) : futures_(std::move(vec)){
   }
-
-  // Non-copyable
-  ProducerForVector(const ProducerForVector&) = delete;
-  ProducerForVector& operator=(const ProducerForVector&) = delete;
-
+  
   // Movable
-  ProducerForVector(ProducerForVector&& that)
-      : future_(std::move(that.future_)),
-        block_(that.block_) {
+  Vector(Vector&& that) noexcept: futures_(std::move(that.futures_)){
   }
-  ProducerForVector& operator=(ProducerForVector&&) = default;
+  Vector& operator=(Vector&&) = delete;
 
-  void StartAt(Block* block, size_t index) {
-    block_ = block;
-    index_ = index;
-    future_.Start(this);
+  std::vector<Future>& Peek(){
+    return futures_;
   }
 
  private:
-  void Consume(Output<InputType> out) noexcept override final {
-    block_->Consume(std::move(out), index_);
+  std::vector<Future> futures_;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+template <Thunk Future, typename Block>
+class ProducerForVector final : public support::PinnedBase {
+  using InputType = typename Future::ValueType;
+
+ public:
+  explicit ProducerForVector(Future future): eval_(std::move(future).Force(*this)) {
   }
 
-  void Cancel(Context) noexcept override final {
+  void Start(Block* block, size_t index) {
+    block_ = block;
+    index_ = index;
+    eval_.Start();
+  }
+
+  // Completable
+  void Consume(Output<InputType> o) noexcept {
+    block_->Consume(std::move(o), index_);
+  }
+
+  // CancelSource
+  void Cancel(Context) noexcept {
     block_->Cancel();
   }
 
-  cancel::Token CancelToken() override final {
+  cancel::Token CancelToken(){
     return block_->CancelToken();
   }
 
  private:
-  Future future_;
+  EvaluationType<ProducerForVector, Future> eval_;
   Block* block_{nullptr};
   size_t index_{0};
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T, SomeFuture Future>
-class Vector {
+template <typename T>
+class PinnedStorage final: public support::PinnedBase {
+ private:
+  union PinnedSlot {
+    PinnedSlot() : dummy_{}{
+    }
+
+    ~PinnedSlot(){
+      // You must manually delete obj_!!!
+    };
+
+    Unit dummy_;
+    T obj_;
+  };
+
  public:
-  explicit Vector(std::vector<Future> vec)
-      : futures_{} {
-    for (auto& future : vec) {
-      ProducerForVector<Future, T> instance(std::move(future));
-      futures_.push_back(std::move(instance));
+  template <typename U>
+  requires std::is_constructible_v<T, U>
+  explicit PinnedStorage(std::vector<U> vec) : impl_(vec.size()){
+    const size_t size = vec.size();
+
+    for(size_t i = 0; i < size; i++){
+      new (&(impl_[i].obj_)) T(std::move(vec[i]));
     }
   }
 
-  // Non-copyable
-  Vector(const Vector&) = delete;
-  Vector& operator=(const Vector&) = delete;
-
-  // Movable
-  Vector(Vector&& that)
-      : futures_(std::move(that.futures_)) {
+  T& operator[](size_t ind){
+    return impl_[ind].obj_;
   }
-  Vector& operator=(Vector&&) = default;
+
+  size_t Size() const {
+    return impl_.size();
+  }
+
+  ~PinnedSlot(){
+    const size_t size = impl_.size();
+
+    for(size_t i = 0; i < size; i++){
+      std::destroy_at(&(impl_[i].obj_));
+    }
+  }
+
+ private:
+  std::vector<PinnedSlot> impl_;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+template <typename T, Thunk Future>
+class TaggedVector final: public support::PinnedBase {
+ public:
+  explicit TaggedVector(Vector<Future> vec) : tagged_producers_(std::move(vec.Peek())) {
+  }
 
   void BootUpFutures(T* block) {
     // Last StartAt may delete this so that .size() would be invalid to call
-    const size_t size = futures_.size();
+    const size_t size = tagged_producers_.Size();
 
     for (size_t i = 0; i < size; i++) {
-      futures_[i].StartAt(block, i);
+      tagged_producers_[i].Start(block, i);
     }
   }
 
   size_t Size() const {
-    size_t size = futures_.size();
-    return size;
+    return tagged_producers_.Size();
   }
 
  private:
-  std::vector<ProducerForVector<Future, T>> futures_;
+  PinnedStorage<ProducerForVector<Future, T>> tagged_producers_;
 };
 
 }  // namespace weave::futures::thunks::detail

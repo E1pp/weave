@@ -1208,110 +1208,110 @@ TEST_SUITE(Futures) {
     ASSERT_TRUE(ok);
   }
 
-//   SIMPLE_TEST(VectorFirstOk1) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorFirstOk1) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
 
-//     auto first = futures::First(std::move(vec));
+    auto first = futures::First(std::move(vec));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](int v) {
-//             ASSERT_EQ(v, 2);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::Map([&ok](int v) {
+            ASSERT_EQ(v, 2);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetValue(2);
+    std::move(p2).SetValue(2);
 
-//     ASSERT_TRUE(ok);
+    ASSERT_TRUE(ok);
 
-//     std::move(p1).SetValue(1);
-//   }
+    std::move(p1).SetValue(1);
+  }
 
-//   SIMPLE_TEST(VectorFirstOk2) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorFirstOk2) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
 
-//     auto first = futures::First(std::move(vec));
+    auto first = futures::First(std::move(vec));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](int v) {
-//             ASSERT_EQ(v, 29);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::Map([&ok](int v) {
+            ASSERT_EQ(v, 29);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p1).SetError(TimeoutError());
-//     std::move(p2).SetValue(29);
+    std::move(p1).SetError(TimeoutError());
+    std::move(p2).SetValue(29);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(VectorFirstOk3) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorFirstOk3) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
 
-//     auto first = futures::First(std::move(vec));
+    auto first = futures::First(std::move(vec));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](int v) {
-//             ASSERT_EQ(v, 31);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::Map([&ok](int v) {
+            ASSERT_EQ(v, 31);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(IoError());
-//     std::move(p1).SetValue(31);
+    std::move(p2).SetError(IoError());
+    std::move(p1).SetValue(31);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(VectorFirstFailure) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorFirstFailure) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
 
-//     auto first = futures::First(std::move(vec));
+    auto first = futures::First(std::move(vec));
 
-//     bool fail = false;
+    bool fail = false;
 
-//     std::move(first)
-//         | futures::OrElse([&](Error e) -> Result<int> {
-//             ASSERT_EQ(e, TimeoutError());
-//             fail = true;
-//             return result::Err(e);
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::OrElse([&](Error e) -> Result<int> {
+            ASSERT_EQ(e, TimeoutError());
+            fail = true;
+            return result::Err(e);
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p1).SetError(TimeoutError());
+    std::move(p2).SetError(TimeoutError());
+    std::move(p1).SetError(TimeoutError());
 
-//     ASSERT_TRUE(fail);
-//   }
+    ASSERT_TRUE(fail);
+  }
 
 //   SIMPLE_TEST(VectorBothOk) {
 //     auto [f1, p1] = futures::Contract<int>();

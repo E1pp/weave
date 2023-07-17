@@ -3,7 +3,7 @@
 #include <weave/futures/thunks/combine/par/join.hpp>
 
 #include <weave/futures/thunks/combine/par/first/tuple.hpp>
-// #include <weave/futures/thunks/combine/par/first/vector.hpp>
+#include <weave/futures/thunks/combine/par/first/vector.hpp>
 
 namespace weave::futures {
 
@@ -11,18 +11,19 @@ namespace weave::futures {
 
 //////////////////////////////////////////////////////////////////////////////
 
-// template <SomeFuture InputFuture>
-// Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec)
-// {
-//   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
+template <SomeFuture InputFuture>
+Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec){
+  const size_t size = vec.size();
 
-//   auto* block =
-//       new thunks::FirstControlBlock<true, thunks::detail::Vector,
-//       InputFuture>(
-//           vec.size(), std::move(vec));
+  WHEELS_VERIFY(size != 0, "Sending empty vector!");
 
-//   return futures::thunks::Join(block);
-// }
+  using Storage = thunks::detail::Vector<InputFuture>;
+  using ValueType = traits::ValueOf<InputFuture>;
+
+  using FirstFuture = futures::thunks::Join<true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+
+  return FirstFuture(size, std::move(vec));
+}
 
 template <SomeFuture FirstF, typename... Fs>
 Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
@@ -30,11 +31,9 @@ Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
       (std::is_same_v<traits::ValueOf<FirstF>, traits::ValueOf<Fs>> && ...));
 
   using Storage = thunks::detail::Tuple<FirstF, Fs...>;
+  using ValueType = traits::ValueOf<FirstF>;
 
-  using FirstFuture =
-      futures::thunks::Join<true, traits::ValueOf<FirstF>,
-                            thunks::FirstControlBlock, Storage,
-                            thunks::detail::TaggedTuple, FirstF, Fs...>;
+  using FirstFuture = futures::thunks::Join<true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
 
   const size_t size = 1 + sizeof...(Fs);
 

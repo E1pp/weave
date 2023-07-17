@@ -19,9 +19,11 @@ struct [[nodiscard]] Join final : public support::NonCopyableBase {
  public:
   using ValueType = ValType;
 
-  explicit Join(size_t size, Futures... fs)
+  template <typename... Args>
+  requires std::is_constructible_v<Storage, Args...>
+  explicit Join(size_t size, Args&&... args)
       : size_(size),
-        futures_(std::move(fs)...) {
+        futures_(std::forward<Args>(args)...) {
   }
 
   // Movable

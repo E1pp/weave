@@ -45,11 +45,7 @@ class FirstControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
       true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
       detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
-  template <typename... Args>
-  requires std::is_constructible_v<Base, size_t, Cons&, Args...>
-  explicit FirstControlBlock(size_t cap, Cons& cons, Args... args)
-      : Base(cap, cons, std::move(args)...) {
-  }
+  using Base::Base;
 
   ~FirstControlBlock() override = default;
 
