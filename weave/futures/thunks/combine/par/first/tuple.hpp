@@ -41,7 +41,10 @@ class FirstControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final: pu
       true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
       detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
+  template<typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  FirstControlBlock(size_t, Cons& cons, InterStorage storage) : Base(cons, std::move(storage)){
+  }
 
   ~FirstControlBlock() override = default;
 

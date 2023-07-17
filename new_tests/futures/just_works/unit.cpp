@@ -20,7 +20,7 @@
 
 // #include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
-// #include <weave/futures/combine/par/quorum.hpp>
+#include <weave/futures/combine/par/quorum.hpp>
 #include <weave/futures/combine/par/select.hpp>
 
 #include <weave/futures/run/get.hpp>
@@ -672,6 +672,30 @@ TEST_SUITE(Futures) {
     ASSERT_TRUE(fail);
   }
 
+  SIMPLE_TEST(FirstMoveOnly){
+    auto f1 = futures::Value<MoveOnly>({});
+
+    auto [f, p] = futures::Contract<MoveOnly>();
+
+    auto first = futures::First(std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::Get();
+  };
+
+  SIMPLE_TEST(FirstNonDefaultContructible){
+    auto f1 = futures::Value<NonDefaultConstructible>(5);
+
+    auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+    auto first = futures::First(std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::Get();   
+  }
+
 //   SIMPLE_TEST(BothOk) {
 //     auto [f1, p1] = futures::Contract<int>();
 //     auto [f2, p2] = futures::Contract<int>();
@@ -770,166 +794,190 @@ TEST_SUITE(Futures) {
 //     ASSERT_TRUE(ok);
 //   }
 
-//   SIMPLE_TEST(QuorumOk1){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(QuorumOk1){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     bool flag = false;
+    bool flag = false;
 
-//     auto quorum = futures::Quorum(1, std::move(f1), std::move(f2) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
+    auto quorum = futures::Quorum(1, std::move(f1), std::move(f2) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
 
-//     std::move(quorum) | futures::AndThen([&](auto vector){
-//       ASSERT_EQ(vector.size(), 1);
-//       ASSERT_EQ(vector[0], 42);
-//       flag = true;
-//     }) | futures::Detach();
+    std::move(quorum) | futures::AndThen([&](auto vector){
+      ASSERT_EQ(vector.size(), 1);
+      ASSERT_EQ(vector[0], 42);
+      flag = true;
+    }) | futures::Detach();
 
-//     std::move(p1).SetValue(42);
+    std::move(p1).SetValue(42);
 
-//     ASSERT_TRUE(flag);
+    ASSERT_TRUE(flag);
 
-//     std::move(p2).SetValue(47);
-//   }
+    std::move(p2).SetValue(47);
+  }
 
-//   SIMPLE_TEST(QuorumOk2){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(QuorumOk2){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     auto quorum = futures::Quorum(2, std::move(f1) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }), std::move(f2), std::move(f3));
+    auto quorum = futures::Quorum(2, std::move(f1) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }), std::move(f2), std::move(f3));
 
-//     std::move(p2).SetValue(42);
-//     std::move(p3).SetValue(37);
+    std::move(p2).SetValue(42);
+    std::move(p3).SetValue(37);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     ASSERT_TRUE(ans);
+    ASSERT_TRUE(ans);
 
-//     ASSERT_EQ(ans->size(), 2);
+    ASSERT_EQ(ans->size(), 2);
 
-//     ASSERT_EQ((*ans)[0], 42);
+    ASSERT_EQ((*ans)[0], 42);
 
-//     ASSERT_EQ((*ans)[1], 37);
+    ASSERT_EQ((*ans)[1], 37);
 
-//     std::move(p1).SetValue(3);
-//   }
+    std::move(p1).SetValue(3);
+  }
 
-//   SIMPLE_TEST(QuorumOk3){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(QuorumOk3){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     auto quorum = futures::Quorum(2, std::move(f1), std::move(f2), std::move(f3));
-//     std::move(p1).SetValue(42);
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetValue(37);
+    auto quorum = futures::Quorum(2, std::move(f1), std::move(f2), std::move(f3));
+    std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetValue(37);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     ASSERT_TRUE(ans);
+    ASSERT_TRUE(ans);
 
-//     ASSERT_EQ(ans->size(), 2);
+    ASSERT_EQ(ans->size(), 2);
 
-//     ASSERT_EQ((*ans)[0], 42);
+    ASSERT_EQ((*ans)[0], 42);
 
-//     ASSERT_EQ((*ans)[1], 37);
-//   }
+    ASSERT_EQ((*ans)[1], 37);
+  }
 
-//   SIMPLE_TEST(QuorumOk4){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(QuorumOk4){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     auto quorum = futures::Quorum(2, std::move(f1) | futures::OrElse([](Error){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }), std::move(f2), std::move(f3));
+    auto quorum = futures::Quorum(2, std::move(f1) | futures::OrElse([](Error){
+      ASSERT_TRUE(false);
+      return 5;
+    }), std::move(f2), std::move(f3));
 
 
-//     std::move(p2).SetValue(42);
-//     std::move(p3).SetValue(37);
+    std::move(p2).SetValue(42);
+    std::move(p3).SetValue(37);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     std::move(p1).SetError(TimeoutError());
+    std::move(p1).SetError(TimeoutError());
 
-//     ASSERT_TRUE(ans);
+    ASSERT_TRUE(ans);
 
-//     ASSERT_EQ(ans->size(), 2);
+    ASSERT_EQ(ans->size(), 2);
 
-//     ASSERT_EQ((*ans)[0], 42);
+    ASSERT_EQ((*ans)[0], 42);
 
-//     ASSERT_EQ((*ans)[1], 37);
-//   }
+    ASSERT_EQ((*ans)[1], 37);
+  }
 
-//   SIMPLE_TEST(QuorumFailure1){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(QuorumFailure1){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     auto quorum = futures::Quorum(2, std::move(f1), std::move(f2), std::move(f3));
-//     std::move(p1).SetValue(42);
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetError(IoError());
+    auto quorum = futures::Quorum(2, std::move(f1), std::move(f2), std::move(f3));
+    std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetError(IoError());
 
-//     auto ans = std::move(quorum) | futures::Get();
-//     ASSERT_TRUE(!ans);
+    auto ans = std::move(quorum) | futures::Get();
+    ASSERT_TRUE(!ans);
 
-//     ASSERT_EQ(ans.error(), IoError());
-//   }
+    ASSERT_EQ(ans.error(), IoError());
+  }
 
-//   SIMPLE_TEST(QuorumFailure2){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
-//     auto [f4, p4] = futures::Contract<int>();
+  SIMPLE_TEST(QuorumFailure2){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
+    auto [f4, p4] = futures::Contract<int>();
 
-//     auto quorum = futures::Quorum(3, std::move(f1), std::move(f2), std::move(f3), std::move(f4) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
+    auto quorum = futures::Quorum(3, std::move(f1), std::move(f2), std::move(f3), std::move(f4) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
 
-//     std::move(p1).SetValue(42);
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetError(IoError());
+    std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetError(IoError());
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     std::move(p4).SetValue(38);
+    std::move(p4).SetValue(38);
 
-//     ASSERT_TRUE(!ans);
+    ASSERT_TRUE(!ans);
 
-//     ASSERT_EQ(ans.error(), IoError());
-//   }
+    ASSERT_EQ(ans.error(), IoError());
+  }
 
-//   SIMPLE_TEST(QuorumFailure3){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
-//     auto [f4, p4] = futures::Contract<int>();
+  SIMPLE_TEST(QuorumFailure3){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
+    auto [f4, p4] = futures::Contract<int>();
 
-//     auto quorum = futures::Quorum(3, std::move(f1), std::move(f2), std::move(f3), std::move(f4) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
+    auto quorum = futures::Quorum(3, std::move(f1), std::move(f2), std::move(f3), std::move(f4) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
 
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetError(IoError());
-//     std::move(p4).SetValue(38);
-//     std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetError(IoError());
+    std::move(p4).SetValue(38);
+    std::move(p1).SetValue(42);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     ASSERT_TRUE(!ans);
+    ASSERT_TRUE(!ans);
 
-//     ASSERT_EQ(ans.error(), IoError());
-//   }
+    ASSERT_EQ(ans.error(), IoError());
+  }
+
+  SIMPLE_TEST(QuorumMoveOnly){
+    auto f1 = futures::Value<MoveOnly>({});
+
+    auto [f, p] = futures::Contract<MoveOnly>();
+
+    auto first = futures::Quorum(1, std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::Get();
+  };
+
+  SIMPLE_TEST(QuorumNonDefaultContructible){
+    auto f1 = futures::Value<NonDefaultConstructible>(5);
+
+    auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+    auto first = futures::Quorum(1, std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::Get();   
+  }
 
   SIMPLE_TEST(MimicFirstOk1) {
     auto [f1, p1] = futures::Contract<int>();
@@ -1313,6 +1361,44 @@ TEST_SUITE(Futures) {
     ASSERT_TRUE(fail);
   }
 
+  SIMPLE_TEST(VectorFirstMoveOnly){
+    futures::BoxedFuture<MoveOnly> f1 = futures::Value<MoveOnly>({});
+
+    auto [f, p] = futures::Contract<MoveOnly>();
+
+    futures::BoxedFuture<MoveOnly> f2 = std::move(f);
+
+    std::vector<decltype(f1)> vec{};
+
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+
+    auto first = futures::First(std::move(vec));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::Get();
+  };
+
+  SIMPLE_TEST(VectorFirstNonDefaultContructible){
+    futures::BoxedFuture<NonDefaultConstructible> f1 = futures::Value<NonDefaultConstructible>(5);
+
+    auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+    futures::BoxedFuture<NonDefaultConstructible> f2 = std::move(f);
+
+    std::vector<decltype(f1)> vec{};
+
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+
+    auto first = futures::First(std::move(vec));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::Get(); 
+  }
+
 //   SIMPLE_TEST(VectorBothOk) {
 //     auto [f1, p1] = futures::Contract<int>();
 //     auto [f2, p2] = futures::Contract<int>();
@@ -1396,201 +1482,201 @@ TEST_SUITE(Futures) {
 //     std::move(p1).SetValue(4);
 //   }
 
-//   SIMPLE_TEST(VectorQuorumOk1){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorQuorumOk1){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     bool flag = false;
+    bool flag = false;
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
 
-//     auto quorum = futures::Quorum(1, std::move(vec));
+    auto quorum = futures::Quorum(1, std::move(vec));
 
-//     std::move(quorum) | futures::AndThen([&](auto vector){
-//       ASSERT_EQ(vector.size(), 1);
-//       ASSERT_EQ(vector[0], 42);
-//       flag = true;
-//     }) | futures::Detach();
+    std::move(quorum) | futures::AndThen([&](auto vector){
+      ASSERT_EQ(vector.size(), 1);
+      ASSERT_EQ(vector[0], 42);
+      flag = true;
+    }) | futures::Detach();
 
-//     std::move(p1).SetValue(42);
+    std::move(p1).SetValue(42);
 
-//     ASSERT_TRUE(flag);
+    ASSERT_TRUE(flag);
 
-//     std::move(p2).SetValue(47);
-//   }
+    std::move(p2).SetValue(47);
+  }
 
-//   SIMPLE_TEST(VectorQuorumOk2){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(VectorQuorumOk2){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
-//     vec.push_back(std::move(f2));
-//     vec.push_back(std::move(f3));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
+    vec.push_back(std::move(f2));
+    vec.push_back(std::move(f3));
 
-//     auto quorum = futures::Quorum(2, std::move(vec));
+    auto quorum = futures::Quorum(2, std::move(vec));
 
-//     std::move(p2).SetValue(42);
-//     std::move(p3).SetValue(37);
+    std::move(p2).SetValue(42);
+    std::move(p3).SetValue(37);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     ASSERT_TRUE(ans);
+    ASSERT_TRUE(ans);
 
-//     ASSERT_EQ(ans->size(), 2);
+    ASSERT_EQ(ans->size(), 2);
 
-//     ASSERT_EQ((*ans)[0], 42);
+    ASSERT_EQ((*ans)[0], 42);
 
-//     ASSERT_EQ((*ans)[1], 37);
+    ASSERT_EQ((*ans)[1], 37);
 
-//     std::move(p1).SetValue(3);
-//   }
+    std::move(p1).SetValue(3);
+  }
 
-//   SIMPLE_TEST(VectorQuorumOk3){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(VectorQuorumOk3){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     std::vector<decltype(f1)> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
-//     vec.push_back(std::move(f3));
+    std::vector<decltype(f1)> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+    vec.push_back(std::move(f3));
 
-//     auto quorum = futures::Quorum(2, std::move(vec));
-//     std::move(p1).SetValue(42);
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetValue(37);
+    auto quorum = futures::Quorum(2, std::move(vec));
+    std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetValue(37);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     ASSERT_TRUE(ans);
+    ASSERT_TRUE(ans);
 
-//     ASSERT_EQ(ans->size(), 2);
+    ASSERT_EQ(ans->size(), 2);
 
-//     ASSERT_EQ((*ans)[0], 42);
+    ASSERT_EQ((*ans)[0], 42);
 
-//     ASSERT_EQ((*ans)[1], 37);
-//   }
+    ASSERT_EQ((*ans)[1], 37);
+  }
 
-//   SIMPLE_TEST(VectorQuorumOk4){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(VectorQuorumOk4){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1) | futures::OrElse([](Error){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
-//     vec.push_back(std::move(f2));
-//     vec.push_back(std::move(f3));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1) | futures::OrElse([](Error){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
+    vec.push_back(std::move(f2));
+    vec.push_back(std::move(f3));
 
-//     auto quorum = futures::Quorum(2, std::move(vec));
+    auto quorum = futures::Quorum(2, std::move(vec));
 
-//     std::move(p2).SetValue(42);
-//     std::move(p3).SetValue(37);
+    std::move(p2).SetValue(42);
+    std::move(p3).SetValue(37);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     std::move(p1).SetError(TimeoutError());
+    std::move(p1).SetError(TimeoutError());
 
-//     ASSERT_TRUE(ans);
+    ASSERT_TRUE(ans);
 
-//     ASSERT_EQ(ans->size(), 2);
+    ASSERT_EQ(ans->size(), 2);
 
-//     ASSERT_EQ((*ans)[0], 42);
+    ASSERT_EQ((*ans)[0], 42);
 
-//     ASSERT_EQ((*ans)[1], 37);
-//   }
+    ASSERT_EQ((*ans)[1], 37);
+  }
 
-//   SIMPLE_TEST(VectorQuorumFailure1){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
+  SIMPLE_TEST(VectorQuorumFailure1){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
 
-//     std::vector<decltype(f1)> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
-//     vec.push_back(std::move(f3));
+    std::vector<decltype(f1)> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+    vec.push_back(std::move(f3));
 
-//     auto quorum = futures::Quorum(2, std::move(vec));
-//     std::move(p1).SetValue(42);
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetError(IoError());
+    auto quorum = futures::Quorum(2, std::move(vec));
+    std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetError(IoError());
 
-//     auto ans = std::move(quorum) | futures::Get();
-//     ASSERT_TRUE(!ans);
+    auto ans = std::move(quorum) | futures::Get();
+    ASSERT_TRUE(!ans);
 
-//     ASSERT_EQ(ans.error(), IoError());
-//   }
+    ASSERT_EQ(ans.error(), IoError());
+  }
 
-//   SIMPLE_TEST(VectorQuorumFailure2){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
-//     auto [f4, p4] = futures::Contract<int>();
+  SIMPLE_TEST(VectorQuorumFailure2){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
+    auto [f4, p4] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
-//     vec.push_back(std::move(f3));
-//     vec.push_back(std::move(f4) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+    vec.push_back(std::move(f3));
+    vec.push_back(std::move(f4) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
 
-//     auto quorum = futures::Quorum(3, std::move(vec));
+    auto quorum = futures::Quorum(3, std::move(vec));
 
-//     std::move(p1).SetValue(42);
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetError(IoError());
+    std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetError(IoError());
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     std::move(p4).SetValue(38);
+    std::move(p4).SetValue(38);
 
-//     ASSERT_TRUE(!ans);
+    ASSERT_TRUE(!ans);
 
-//     ASSERT_EQ(ans.error(), IoError());
-//   }
+    ASSERT_EQ(ans.error(), IoError());
+  }
 
-//   SIMPLE_TEST(VectorQuorumFailure3){
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
-//     auto [f3, p3] = futures::Contract<int>();
-//     auto [f4, p4] = futures::Contract<int>();
+  SIMPLE_TEST(VectorQuorumFailure3){
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
+    auto [f3, p3] = futures::Contract<int>();
+    auto [f4, p4] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
-//     vec.push_back(std::move(f3));
-//     vec.push_back(std::move(f4) | futures::AndThen([](int){
-//       ASSERT_TRUE(false);
-//       return 5;
-//     }));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+    vec.push_back(std::move(f3));
+    vec.push_back(std::move(f4) | futures::AndThen([](int){
+      ASSERT_TRUE(false);
+      return 5;
+    }));
 
-//     auto quorum = futures::Quorum(3, std::move(vec));
+    auto quorum = futures::Quorum(3, std::move(vec));
 
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p3).SetError(IoError());
-//     std::move(p4).SetValue(38);
-//     std::move(p1).SetValue(42);
+    std::move(p2).SetError(TimeoutError());
+    std::move(p3).SetError(IoError());
+    std::move(p4).SetValue(38);
+    std::move(p1).SetValue(42);
 
-//     auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::Get();
 
-//     ASSERT_TRUE(!ans);
+    ASSERT_TRUE(!ans);
 
-//     ASSERT_EQ(ans.error(), IoError());
-//   }
+    ASSERT_EQ(ans.error(), IoError());
+  }
 
 //   SIMPLE_TEST(ForkOk){
 //     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();

@@ -33,11 +33,11 @@ Concurrency for C++
         - [First] – Done
         - [All] – Not Done
         - [Select] – Done
-        - [Quorum] – Not Done
+        - [Quorum] – Done
       - [default/vector] – Not Done
         - [First] – Done
         - [All] – Not Done
-        - [Quorum] – Not Done
+        - [Quorum] – Done
       - [no_alloc/tuple] – Not Done
       - [no_alloc/vector] – Not Done
     - [run]

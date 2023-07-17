@@ -13,16 +13,14 @@ namespace weave::futures {
 
 template <SomeFuture InputFuture>
 Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec){
-  const size_t size = vec.size();
-
-  WHEELS_VERIFY(size != 0, "Sending empty vector!");
+  WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
 
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = traits::ValueOf<InputFuture>;
 
   using FirstFuture = futures::thunks::Join<true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
-  return FirstFuture(size, std::move(vec));
+  return FirstFuture(0, std::move(vec));
 }
 
 template <SomeFuture FirstF, typename... Fs>
@@ -35,9 +33,7 @@ Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
 
   using FirstFuture = futures::thunks::Join<true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
 
-  const size_t size = 1 + sizeof...(Fs);
-
-  return FirstFuture(size, std::move(f1), std::move(fs)...);
+  return FirstFuture(0, std::move(f1), std::move(fs)...);
 }
 
 template <SomeFuture FirstFuture>

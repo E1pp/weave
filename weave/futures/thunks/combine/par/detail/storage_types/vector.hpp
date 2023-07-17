@@ -15,11 +15,11 @@ namespace weave::futures::thunks::detail {
 template <Thunk Future>
 class Vector final: public support::NonCopyableBase {
  public:
-  explicit Vector(std::vector<Future> vec) : futures_(std::move(vec)){
+  explicit Vector(std::vector<Future> vec) : cached_size_(vec.size()), futures_(std::move(vec)){
   }
   
   // Movable
-  Vector(Vector&& that) noexcept: futures_(std::move(that.futures_)){
+  Vector(Vector&& that) noexcept: cached_size_(that.Size()), futures_(std::move(that.futures_)){
   }
   Vector& operator=(Vector&&) = delete;
 
@@ -27,7 +27,12 @@ class Vector final: public support::NonCopyableBase {
     return futures_;
   }
 
+  size_t Size() const {
+    return cached_size_;
+  }
+
  private:
+  const size_t cached_size_;
   std::vector<Future> futures_;
 };
 

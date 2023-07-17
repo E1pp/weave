@@ -40,6 +40,10 @@ class Tuple final : public support::NonCopyableBase {
     return futures_;
   }
 
+  size_t Size() const {
+    return sizeof...(Future);
+  }
+
  private:
   std::tuple<Future...> futures_;
 };

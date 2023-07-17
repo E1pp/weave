@@ -30,7 +30,10 @@ class SelectControlBlock<OnHeap ,Cons, detail::TaggedTuple, Futures...> final: p
   using ValueType = SelectedValue<Futures...>;
   using Base = detail::JoinBlock<true, SelectControlBlock<OnHeap ,Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
+  template<typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  SelectControlBlock(size_t, Cons& cons, InterStorage storage) : Base(cons, std::move(storage)){
+  }
 
   ~SelectControlBlock() override = default;
 

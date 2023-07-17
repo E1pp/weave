@@ -30,8 +30,7 @@
 
 // #include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
-// #include <weave/futures/combine/par/quorum.hpp>
-// #include <weave/futures/combine/par/select.hpp>
+#include <weave/futures/combine/par/quorum.hpp>
 
 // #include <weave/futures/run/await.hpp>
 #include <weave/futures/run/discard.hpp>
@@ -490,30 +489,30 @@ TEST_SUITE(Parallel){
   //   ASSERT_EQ(manual.Drain(), 2);
   // }
 
-  // SIMPLE_TEST(QuorumShortCiruit){
-  //   auto f1 = futures::Just();
+  SIMPLE_TEST(QuorumShortCiruit){
+    auto f1 = futures::Just();
 
-  //   auto f2 = futures::Just() | futures::AndThen([](Unit) -> Unit {
-  //     WHEELS_PANIC("f2 : Test failed!");
-  //     return {};
-  //   });
+    auto f2 = futures::Just() | futures::AndThen([](Unit) -> Unit {
+      WHEELS_PANIC("f2 : Test failed!");
+      return {};
+    });
 
-  //   futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Detach();   
-  // }
+    futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Detach();   
+  }
 
-  // SIMPLE_TEST(CancelQuorum){
-  //   executors::ManualExecutor manual;
+  SIMPLE_TEST(CancelQuorum){
+    executors::ManualExecutor manual;
 
-  //   auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-  //     WHEELS_PANIC("f1 : Test failed!");
-  //   });
+    auto f1 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f1 : Test failed!");
+    });
 
-  //   auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-  //     WHEELS_PANIC("f2 : Test failed!");
-  //   }); 
+    auto f2 = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("f2 : Test failed!");
+    }); 
 
-  //   futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
-  // }
+    futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
+  }
 
   // SIMPLE_TEST(FirstFork){
   //   auto [f1, f2] = futures::Value(42) | futures::Fork<2>();

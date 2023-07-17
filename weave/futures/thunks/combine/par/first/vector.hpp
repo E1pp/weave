@@ -23,8 +23,11 @@ class FirstControlBlock<OnHeap, Cons, detail::TaggedVector, Future> final: publi
  public:
   using ValueType = traits::ValueOf<Future>;
   using Base = detail::JoinBlock<true,  FirstControlBlock<true, Cons, detail::TaggedVector, Future>, detail::JoinAll<true>, ValueType, Cons, detail::TaggedVector, Future>;
-
-  using Base::Base;
+ 
+  template<typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  FirstControlBlock(size_t, Cons& cons, InterStorage storage) : Base(cons, std::move(storage)){
+  }
 
   ~FirstControlBlock() override = default;
 

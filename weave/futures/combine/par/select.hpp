@@ -19,9 +19,7 @@ Future<thunks::SelectedValue<FirstFuture, Futures...>> auto Select(
 
   using SelectFuture = futures::thunks::Join<true, ValueType, thunks::SelectControlBlock, Storage, thunks::detail::TaggedTuple, FirstFuture, Futures...>;
 
-  const size_t size = 1 + sizeof...(Futures);
-
-  return SelectFuture(size, std::move(f1), std::move(fs)...); 
+  return SelectFuture(0, std::move(f1), std::move(fs)...); 
 }
 
 template <SomeFuture FirstFuture>

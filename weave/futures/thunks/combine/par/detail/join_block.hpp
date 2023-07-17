@@ -38,12 +38,12 @@ class JoinBlock : public cancel::sources::JoinSource<OnHeap> {
   using ValueType = V;
 
  public:
-  template <typename... Args>
-  requires std::is_constructible_v<Storage, Args...>
-  explicit JoinBlock(size_t cap, Cons& cons, Args... args)
-      : CancelBase(cap),
+  template <typename InterStorage>
+  requires std::is_constructible_v<Storage, InterStorage>
+  explicit JoinBlock(Cons& cons, InterStorage storage)
+      : CancelBase(storage.Size()),
         cons_(cons),
-        storage_(std::forward<Args>(args)...) {
+        storage_(std::move(storage)) {
   }
 
   ~JoinBlock() override = default;
