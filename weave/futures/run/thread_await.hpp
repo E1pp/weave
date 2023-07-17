@@ -16,7 +16,7 @@ namespace weave::futures {
 
 namespace pipe {
 
-struct [[nodiscard]] Get {
+struct [[nodiscard]] ThreadAwait {
   template <Thunk Future>
   class Waiter {
    public:
@@ -27,7 +27,7 @@ struct [[nodiscard]] Get {
       eval_.Start();
     }
 
-    Result<ValueType> Get() {
+    Result<ValueType> ThreadAwait() {
       event_.Wait();
 
       return std::move(*res_);
@@ -41,7 +41,7 @@ struct [[nodiscard]] Get {
     void Cancel(Context) noexcept {
       event_.Set();
 
-      WHEELS_PANIC("futures::Get got cancelled!");
+      WHEELS_PANIC("futures::ThreadAwait got cancelled!");
     }
 
     cancel::Token CancelToken() {
@@ -56,14 +56,14 @@ struct [[nodiscard]] Get {
 
   template <SomeFuture InputFuture>
   Result<traits::ValueOf<InputFuture>> Pipe(InputFuture f) {
-    return Waiter(std::move(f)).Get();
+    return Waiter(std::move(f)).ThreadAwait();
   }
 };
 
 }  // namespace pipe
 
-inline auto Get() {
-  return pipe::Get{};
+inline auto ThreadAwait() {
+  return pipe::ThreadAwait{};
 }
 
 }  // namespace weave::futures

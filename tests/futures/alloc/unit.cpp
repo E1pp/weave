@@ -14,7 +14,7 @@
 #include <weave/futures/combine/seq/via.hpp>
 
 #include <weave/futures/run/detach.hpp>
-#include <weave/futures/run/get.hpp>
+#include <weave/futures/run/thread_await.hpp>
 
 #include <weave/satellite/satellite.hpp>
 
@@ -67,7 +67,7 @@ TEST_SUITE(AllocFreeFutures) {
     {
       AllocationGuard do_not_alloc;
 
-      auto r = futures::Value(1) | futures::Get();
+      auto r = futures::Value(1) | futures::ThreadAwait();
 
       ASSERT_TRUE(r);
       ASSERT_EQ(*r, 1);
@@ -87,7 +87,7 @@ TEST_SUITE(AllocFreeFutures) {
         return result::Ok(17);
       });
 
-      auto r = std::move(f) | futures::Get();
+      auto r = std::move(f) | futures::ThreadAwait();
 
       ASSERT_TRUE(r);
       ASSERT_EQ(*r, 17);
@@ -116,7 +116,7 @@ TEST_SUITE(AllocFreeFutures) {
                    return result::Ok(13);
                  });
 
-      auto r = std::move(f) | futures::Get();
+      auto r = std::move(f) | futures::ThreadAwait();
 
       ASSERT_TRUE(r);
       ASSERT_EQ(*r, 2);
@@ -154,7 +154,7 @@ TEST_SUITE(AllocFreeFutures) {
                    return v + 1;
                  });
 
-      auto r = std::move(f) | futures::Get();
+      auto r = std::move(f) | futures::ThreadAwait();
 
       ASSERT_TRUE(r);
       ASSERT_EQ(*r, 4);

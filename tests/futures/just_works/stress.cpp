@@ -20,7 +20,7 @@
 #include <weave/futures/combine/par/first.hpp>
 #include <weave/futures/combine/par/quorum.hpp>
 
-#include <weave/futures/run/get.hpp>
+#include <weave/futures/run/thread_await.hpp>
 #include <weave/futures/run/detach.hpp>
 
 #include <twist/ed/stdlike/thread.hpp>
@@ -56,7 +56,7 @@ void StressTestContract() {
     });
 
     twist::ed::stdlike::thread consumer([f = std::move(f), iter]() mutable {
-      auto r = std::move(f) | futures::Get();
+      auto r = std::move(f) | futures::ThreadAwait();
       ASSERT_TRUE(r);
       ASSERT_EQ(*r, iter);
     });
@@ -106,7 +106,7 @@ void StressTestPipeline() {
     }
 
     for (auto&& f : futs) {
-      std::move(f) | futures::Get();
+      std::move(f) | futures::ThreadAwait();
     }
 
     ASSERT_EQ(counter1.load(), pipelines);
@@ -148,7 +148,7 @@ void StressTestFirst() {
 
     auto first = futures::no_alloc::First(std::move(f), std::move(g));
 
-    auto r = std::move(first) | futures::Get();
+    auto r = std::move(first) | futures::ThreadAwait();
 
     if (i % 12 != 0) {
       ASSERT_TRUE(r);
@@ -194,7 +194,7 @@ void StressTestAll() {
 
     auto both = futures::no_alloc::All(std::move(f), std::move(g));
 
-    auto r = std::move(both) | futures::Get();
+    auto r = std::move(both) | futures::ThreadAwait();
 
     if (i % 7 < 5) {
       auto [x, y] = *r;
@@ -239,7 +239,7 @@ void StressTestQuorumFirst() {
 
     auto first = futures::no_alloc::Quorum(1, std::move(f), std::move(g));
 
-    auto r = std::move(first) | futures::Get();
+    auto r = std::move(first) | futures::ThreadAwait();
 
     if (i % 12 != 0) {
       ASSERT_TRUE(r);
@@ -285,7 +285,7 @@ void StressTestQuorumAll() {
 
     auto both = futures::no_alloc::Quorum(2, std::move(f), std::move(g));
 
-    auto r = std::move(both) | futures::Get();
+    auto r = std::move(both) | futures::ThreadAwait();
 
     if (i % 7 < 5) {
       int x = (*r)[0];

@@ -15,7 +15,7 @@
 
 #include <weave/futures/run/await.hpp>
 #include <weave/futures/run/detach.hpp>
-#include <weave/futures/run/get.hpp>
+#include <weave/futures/run/thread_await.hpp>
 
 #include <weave/threads/blocking/wait_group.hpp>
 
@@ -906,7 +906,7 @@ TEST_SUITE(Futures){
       }
 
       return result::Ok();
-    }) | futures::Get();
+    }) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_TRUE(num_iter == iter);

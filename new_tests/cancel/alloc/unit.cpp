@@ -35,7 +35,7 @@
 #include <weave/futures/run/await.hpp>
 #include <weave/futures/run/discard.hpp>
 #include <weave/futures/run/detach.hpp>
-#include <weave/futures/run/get.hpp>
+#include <weave/futures/run/thread_await.hpp>
 
 #include <weave/threads/blocking/stdlike/mutex.hpp>
 #include <weave/threads/blocking/wait_group.hpp>
@@ -271,7 +271,7 @@ TEST_SUITE(Futures) {
     std::move(p3).SetValue(37);
     std::move(p1).SetValue(3);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -293,7 +293,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -318,7 +318,7 @@ TEST_SUITE(Futures) {
     std::move(p3).SetValue(37);
     std::move(p1).SetError(TimeoutError());
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -340,7 +340,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetError(IoError());
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
     ASSERT_TRUE(!ans);
 
     ASSERT_EQ(ans.error(), IoError());
@@ -362,7 +362,7 @@ TEST_SUITE(Futures) {
     std::move(p3).SetError(IoError());
     std::move(p4).SetValue(38);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(!ans);
 
@@ -385,7 +385,7 @@ TEST_SUITE(Futures) {
     std::move(p4).SetValue(38);
     std::move(p1).SetValue(42);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(!ans);
 
@@ -407,7 +407,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -433,7 +433,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetError(IoError());
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
     ASSERT_TRUE(!ans);
 
     ASSERT_EQ(ans.error(), IoError());

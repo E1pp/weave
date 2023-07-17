@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weave/futures/old_types/future.hpp>
+#include <weave/futures/types/future.hpp>
 
 #include <weave/futures/thunks/make/after.hpp>
 

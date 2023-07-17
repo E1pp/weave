@@ -23,7 +23,7 @@
 #include <weave/futures/combine/par/quorum.hpp>
 #include <weave/futures/combine/par/select.hpp>
 
-#include <weave/futures/run/get.hpp>
+#include <weave/futures/run/thread_await.hpp>
 #include <weave/futures/run/detach.hpp>
 
 #include <wheels/test/framework.hpp>
@@ -64,7 +64,7 @@ TEST_SUITE(Futures) {
   SIMPLE_TEST(Value) {
     futures::Future<int> auto f = futures::Value(111);
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 111);
@@ -73,7 +73,7 @@ TEST_SUITE(Futures) {
   SIMPLE_TEST(Just) {
     futures::Future<Unit> auto f = futures::Just();
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, Unit{});
   }
@@ -83,7 +83,7 @@ TEST_SUITE(Futures) {
 
     futures::Future<int> auto f = futures::Failure<int>(timeout);
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_FALSE(r);
     ASSERT_EQ(r.error(), timeout);
@@ -95,7 +95,7 @@ TEST_SUITE(Futures) {
                  return v + 1;
                });
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 2);
@@ -108,7 +108,7 @@ TEST_SUITE(Futures) {
                  return Unit{};
                });
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_FALSE(r);
     ASSERT_EQ(r.error(), TimeoutError());
@@ -123,7 +123,7 @@ TEST_SUITE(Futures) {
                  return result::Ok(s + "!");
                });
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, "ok!!");
@@ -136,7 +136,7 @@ TEST_SUITE(Futures) {
                  return result::Ok(std::string("fallback"));
                });
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, "fallback");
@@ -150,7 +150,7 @@ TEST_SUITE(Futures) {
       return result::Ok(11);
     });
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 11);
@@ -185,7 +185,7 @@ TEST_SUITE(Futures) {
       return result::Err(IoError());
     });
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(!r);
     ASSERT_EQ(r.error(), IoError());
@@ -204,7 +204,7 @@ TEST_SUITE(Futures) {
 
     wheels::ProcessCPUTimer timer;
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(timer.Spent() < 100ms);
 
@@ -217,7 +217,7 @@ TEST_SUITE(Futures) {
   SIMPLE_TEST(Flatten0){
     auto ff = futures::Value(futures::Value(42)) | futures::Flatten();
 
-    auto res = std::move(ff) | futures::Get();
+    auto res = std::move(ff) | futures::ThreadAwait();
 
     ASSERT_EQ(*res, 42);
   }
@@ -252,7 +252,7 @@ TEST_SUITE(Futures) {
   SIMPLE_TEST(Flatten2) {
     auto ff = futures::Failure<decltype(futures::Value(42))>(IoError());
 
-    Result<int> r = std::move(ff) | futures::Flatten() | futures::Get();
+    Result<int> r = std::move(ff) | futures::Flatten() | futures::ThreadAwait();
 
     ASSERT_FALSE(r);
   }
@@ -361,7 +361,7 @@ TEST_SUITE(Futures) {
     auto [f, p] = futures::Contract<std::string>();
 
     std::move(p).SetValue("Hi");
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r.has_value());
     ASSERT_EQ(*r, "Hi");
@@ -373,7 +373,7 @@ TEST_SUITE(Futures) {
     auto timeout = TimeoutError();
 
     std::move(p).SetError(timeout);
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(!r);
     ASSERT_EQ(r.error(), timeout);
@@ -399,7 +399,7 @@ TEST_SUITE(Futures) {
     auto [f, p] = futures::Contract<MoveOnly>();
 
     std::move(p).SetValue(MoveOnly{});
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
   }
@@ -408,7 +408,7 @@ TEST_SUITE(Futures) {
     auto [f, p] = futures::Contract<NonDefaultConstructible>();
 
     std::move(p).SetValue({128});
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
   }
@@ -439,7 +439,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).Set(3);
 
-    auto r = std::move(g) | futures::Get();
+    auto r = std::move(g) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 18);
@@ -452,7 +452,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).SetValue(35);
 
-    auto r = std::move(g) | futures::Get();
+    auto r = std::move(g) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 36);
@@ -476,7 +476,7 @@ TEST_SUITE(Futures) {
 
     ASSERT_FALSE(submit);
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(submit);
 
@@ -506,7 +506,7 @@ TEST_SUITE(Futures) {
 
     ASSERT_FALSE(submit);
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(submit);
 
@@ -528,7 +528,7 @@ TEST_SUITE(Futures) {
 
     ASSERT_TRUE(done);
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 7);
@@ -537,7 +537,7 @@ TEST_SUITE(Futures) {
   SIMPLE_TEST(BoxValue) {
     futures::BoxedFuture<int> f = futures::Value(1) | futures::Box();
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 1);
@@ -576,7 +576,7 @@ TEST_SUITE(Futures) {
     {
       futures::BoxedFuture<int> f = futures::Value(2) | futures::Map([](int v) { return v + 1; });
 
-      auto r = std::move(f) | futures::Get();
+      auto r = std::move(f) | futures::ThreadAwait();
 
       ASSERT_TRUE(r);
       ASSERT_EQ(*r, 3);
@@ -681,7 +681,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).SetError(TimeoutError());
 
-    std::move(first) | futures::Get();
+    std::move(first) | futures::ThreadAwait();
   };
 
   SIMPLE_TEST(FirstNonDefaultContructible){
@@ -693,7 +693,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).SetError(TimeoutError());
 
-    std::move(first) | futures::Get();   
+    std::move(first) | futures::ThreadAwait();   
   }
 
   SIMPLE_TEST(BothOk) {
@@ -831,7 +831,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetValue(42);
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -854,7 +854,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -879,7 +879,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetValue(42);
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     std::move(p1).SetError(TimeoutError());
 
@@ -902,7 +902,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetError(IoError());
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
     ASSERT_TRUE(!ans);
 
     ASSERT_EQ(ans.error(), IoError());
@@ -923,7 +923,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetError(IoError());
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     std::move(p4).SetValue(38);
 
@@ -948,7 +948,7 @@ TEST_SUITE(Futures) {
     std::move(p4).SetValue(38);
     std::move(p1).SetValue(42);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(!ans);
 
@@ -964,7 +964,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).SetError(TimeoutError());
 
-    std::move(first) | futures::Get();
+    std::move(first) | futures::ThreadAwait();
   };
 
   SIMPLE_TEST(QuorumNonDefaultContructible){
@@ -976,7 +976,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).SetError(TimeoutError());
 
-    std::move(first) | futures::Get();   
+    std::move(first) | futures::ThreadAwait();   
   }
 
   SIMPLE_TEST(MimicFirstOk1) {
@@ -1172,7 +1172,7 @@ TEST_SUITE(Futures) {
 
     auto r = futures::Value(1)
              | futures::Via(manual)
-             | futures::Get();
+             | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 1);
@@ -1377,7 +1377,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).SetError(TimeoutError());
 
-    std::move(first) | futures::Get();
+    std::move(first) | futures::ThreadAwait();
   };
 
   SIMPLE_TEST(VectorFirstNonDefaultContructible){
@@ -1396,7 +1396,7 @@ TEST_SUITE(Futures) {
 
     std::move(p).SetError(TimeoutError());
 
-    std::move(first) | futures::Get(); 
+    std::move(first) | futures::ThreadAwait(); 
   }
 
   SIMPLE_TEST(VectorBothOk) {
@@ -1528,7 +1528,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetValue(42);
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -1556,7 +1556,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(ans);
 
@@ -1585,7 +1585,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetValue(42);
     std::move(p3).SetValue(37);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     std::move(p1).SetError(TimeoutError());
 
@@ -1613,7 +1613,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetError(IoError());
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
     ASSERT_TRUE(!ans);
 
     ASSERT_EQ(ans.error(), IoError());
@@ -1640,7 +1640,7 @@ TEST_SUITE(Futures) {
     std::move(p2).SetError(TimeoutError());
     std::move(p3).SetError(IoError());
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     std::move(p4).SetValue(38);
 
@@ -1671,7 +1671,7 @@ TEST_SUITE(Futures) {
     std::move(p4).SetValue(38);
     std::move(p1).SetValue(42);
 
-    auto ans = std::move(quorum) | futures::Get();
+    auto ans = std::move(quorum) | futures::ThreadAwait();
 
     ASSERT_TRUE(!ans);
 
@@ -1681,8 +1681,8 @@ TEST_SUITE(Futures) {
 //   SIMPLE_TEST(ForkOk){
 //     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-//     auto r1 = std::move(f1) | futures::Get();
-//     auto r2 = std::move(f2) | futures::Get();
+//     auto r1 = std::move(f1) | futures::ThreadAwait();
+//     auto r2 = std::move(f2) | futures::ThreadAwait();
 
 //     ASSERT_TRUE(r1);
 //     ASSERT_TRUE(r2);
@@ -1694,8 +1694,8 @@ TEST_SUITE(Futures) {
 //   SIMPLE_TEST(ForkFailure){
 //     auto [f1, f2] = futures::Failure<int>(TimeoutError()) | futures::Fork<2>();
 
-//     auto r1 = std::move(f1) | futures::Get();
-//     auto r2 = std::move(f2) | futures::Get();
+//     auto r1 = std::move(f1) | futures::ThreadAwait();
+//     auto r2 = std::move(f2) | futures::ThreadAwait();
 
 //     ASSERT_FALSE(r1);
 //     ASSERT_FALSE(r2);
@@ -1706,7 +1706,7 @@ TEST_SUITE(Futures) {
 
 //   SIMPLE_TEST(ForkFirst){
 //     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
-//     auto res = futures::First(std::move(f1), std::move(f2)) | futures::Get();
+//     auto res = futures::First(std::move(f1), std::move(f2)) | futures::ThreadAwait();
 
 //     ASSERT_TRUE(res);
 //     ASSERT_EQ(*res, 42);
@@ -1715,7 +1715,7 @@ TEST_SUITE(Futures) {
 //   SIMPLE_TEST(ForkAll){
 //     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-//     auto res = futures::All(std::move(f1), std::move(f2)) | futures::Get();
+//     auto res = futures::All(std::move(f1), std::move(f2)) | futures::ThreadAwait();
 
 //     ASSERT_TRUE(res);
 
@@ -1771,7 +1771,7 @@ TEST_SUITE(LazyFutures) {
 
     ASSERT_FALSE(run);
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
     ASSERT_TRUE(r);
   }
 
@@ -1921,7 +1921,7 @@ TEST_SUITE(LazyFutures) {
     ASSERT_TRUE(manual.NonEmpty());
     manual.Drain();
 
-    auto r = std::move(f) | futures::Get();
+    auto r = std::move(f) | futures::ThreadAwait();
 
     ASSERT_TRUE(r);
     ASSERT_EQ(*r, 7);

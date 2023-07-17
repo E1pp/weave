@@ -4,9 +4,12 @@
 namespace weave::fibers {
 
 void Suspend(Awaiter awaiter) {
-  Fiber::Self()->SetAwaiter(awaiter);
+  auto* fiber = Fiber::Self();
+  WHEELS_VERIFY(fiber != nullptr, "You must be a fiber!");
 
-  Fiber::Self()->Suspend();
+  fiber->SetAwaiter(awaiter);
+
+  fiber->Suspend();
 }
 
 }  // namespace weave::fibers

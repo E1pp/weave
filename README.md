@@ -7,14 +7,7 @@ Concurrency for C++
 
  - [futures]:
     - [model] – Final
-    - [make]:
-      - [Just] – Done
-      - [Value] – Done
-      - [Failure] – Done
-      - [Submit] – Done
-      - [Contract] – Done
-      - [Never] – Done
-      - [After] – Not Done
+    - [make] – Done
     - [combine/seq]:
       - [AndThen]/[Map]/[OrElse] – Done
       - [Via] – Done
@@ -25,15 +18,10 @@ Concurrency for C++
       - [WithTimeout] – Not Done
       - [Fork] – Not Done
     - [combine/par]:
-      - [default/tuple] – Done
-      - [default/vector] – Done
+      - [Allocating] – Done
       - [no_alloc/tuple] – Not Done
       - [no_alloc/vector] – Not Done
-    - [run]:
-      - [Get] – Done
-      - [Detach] – Done
-      - [Await] – Not Done
-      - [Discard] – Done
+    - [run] – Done 
     - [syntax] – Done
     - [types] – Done
     - [traits]
@@ -91,7 +79,7 @@ Concurrency for C++
       - `Select` (`std::variant` alternative to `First`)
       - `Quorum` (blocking)
   - Terminators (`run`)
-    - `Await` – synchronously unwraps `Result` from future
+    - `Await`/`ThreadAwait` – synchronously unwraps `Result` from future
     - `Detach` – moves future on the stack and starts it without cancelling it
     - `Discard` – moves future on the stack, starts it and cancels it
   - Operators (`syntax`)

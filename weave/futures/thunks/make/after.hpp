@@ -1,8 +1,10 @@
 #pragma once
 
-#include <weave/futures/old_model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
 #include <weave/result/make/ok.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 #include <weave/timers/delay.hpp>
 #include <weave/timers/processor.hpp>
@@ -10,65 +12,72 @@
 
 namespace weave::futures::thunks {
 
-class [[nodiscard]] After final : public timers::ITimer,
-                                  public cancel::SignalReceiver {
+class [[nodiscard]] After final : public support::NonCopyableBase {
  public:
   using ValueType = Unit;
 
   explicit After(timers::Delay delay)
-      : delay_(delay) {
+      : delay_(std::move(delay)) {
   }
-
-  // Non-Copyable
-  After(const After&) = delete;
-  After& operator=(const After&) = delete;
 
   // Movable
-  After(After&& that)
-      : delay_(std::move(that.delay_)) {
+  After(After&& that) noexcept: delay_(std::move(that.delay_)) {
   }
-
-  After& operator=(After&&) = default;
-
-  ~After() override final = default;
-
-  void Start(IConsumer<Unit>* consumer) {
-    consumer_ = consumer;
-    consumer->CancelToken().Attach(this);
-
-    delay_.processor_->AddTimer(this);
-  }
-
-  void Cancellable() {
-    // No-Op
-  }
+  After& operator=(After&&) = delete;
 
  private:
-  timers::Millis GetDelay() override final {
-    return delay_.time_;
-  }
-
-  void Run() noexcept override final {
-    if (consumer_->CancelToken().CancelRequested()) {
-      consumer_->Cancel(Context{});
-    } else {
-      consumer_->Complete(result::Ok());
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final: public support::PinnedBase, public cancel::SignalReceiver, public timers::ITimer {
+   public:
+    EvaluationFor(After fut, Cons& cons) : cons_(cons), delay_(std::move(fut.delay_)){
     }
-  }
 
-  bool WasCancelled() override final {
-    return consumer_->CancelToken().CancelRequested();
-  }
+    ~EvaluationFor() override final = default;
 
-  void Forward(cancel::Signal signal) override final {
-    if (signal.CancelRequested()) {
-      delay_.processor_->CancelTimer(this);
+    void Start(){
+      cons_.CancelToken().Attach(this);
+
+      delay_.processor_->AddTimer(this);
     }
+
+   private:
+    // ITimer
+    timers::Millis GetDelay() override final {
+      return delay_.time_;
+    }  
+
+    void Run() noexcept override final {
+      if (cons_.CancelToken().CancelRequested()) {
+        cons_.Cancel(Context{});
+      } else {
+        Complete(cons_, result::Ok());
+      }
+    }
+
+    bool WasCancelled() override final {
+      return cons_.CancelToken().CancelRequested();
+    }
+
+    // SignalReceiver
+    void Forward(cancel::Signal signal) override final {
+      if (signal.CancelRequested()) {
+        delay_.processor_->CancelTimer(this);
+      }
+    }
+
+   private:
+    Cons& cons_;
+    timers::Delay delay_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<After, Cons> auto Force(Cons& cons){
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:
   timers::Delay delay_;
-  IConsumer<Unit>* consumer_;
 };
 
 }  // namespace weave::futures::thunks

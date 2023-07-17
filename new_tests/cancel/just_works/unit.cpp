@@ -4,8 +4,8 @@
 #include <weave/executors/thread_pool.hpp>
 #include <weave/executors/manual.hpp>
 
-// #include <weave/fibers/sched/sleep_for.hpp>
-// #include <weave/fibers/sched/yield.hpp>
+#include <weave/fibers/sched/sleep_for.hpp>
+#include <weave/fibers/sched/yield.hpp>
 
 #include <weave/fibers/sync/mutex.hpp>
 
@@ -32,10 +32,10 @@
 #include <weave/futures/combine/par/first.hpp>
 #include <weave/futures/combine/par/quorum.hpp>
 
-// #include <weave/futures/run/await.hpp>
+#include <weave/futures/run/await.hpp>
 #include <weave/futures/run/discard.hpp>
 #include <weave/futures/run/detach.hpp>
-#include <weave/futures/run/get.hpp>
+#include <weave/futures/run/thread_await.hpp>
 
 #include <weave/threads/blocking/stdlike/mutex.hpp>
 #include <weave/threads/blocking/wait_group.hpp>
@@ -371,7 +371,7 @@ TEST_SUITE(Sequential){
 
   //   std::move(ff2) | futures::Discard();
 
-  //   auto res = std::move(f1) | futures::Get();
+  //   auto res = std::move(f1) | futures::ThreadAwait();
 
   //   ASSERT_TRUE(res);
 
@@ -520,7 +520,7 @@ TEST_SUITE(Parallel){
   //   auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
   //     WHEELS_PANIC("f2 : Test failed!");
   //     return 84;
-  //   })) | futures::Get();
+  //   })) | futures::ThreadAwait();
 
   //   ASSERT_TRUE(res);
     
@@ -528,369 +528,435 @@ TEST_SUITE(Parallel){
   // }
 }
 
-// TEST_SUITE(Fibers){
-//   SIMPLE_TEST(CancelYield1){
-//     executors::fibers::ManualExecutor manual;
+TEST_SUITE(Fibers){
+  SIMPLE_TEST(CancelYield1){
+    executors::fibers::ManualExecutor manual;
 
-//     futures::Submit(manual, []{
-//       fibers::Yield();
-//       WHEELS_PANIC("Test failed!");
-//     }) | futures::Start() | futures::Discard();
+    futures::Submit(manual, []{
+      fibers::Yield();
+      WHEELS_PANIC("Test failed!");
+    }) | futures::Start() | futures::Discard();
 
-//     ASSERT_EQ(manual.Drain(), 1);
+    ASSERT_EQ(manual.Drain(), 1);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(CancelYield2){
-//     executors::fibers::ManualExecutor manual;
+  SIMPLE_TEST(CancelYield2){
+    executors::fibers::ManualExecutor manual;
 
-//     auto f1 = futures::Submit(manual, []{
-//       fibers::Yield();
-//       WHEELS_PANIC("f1 : Test failed!");
-//     });
+    auto f1 = futures::Submit(manual, []{
+      fibers::Yield();
+      WHEELS_PANIC("f1 : Test failed!");
+    });
 
-//     auto f2 = futures::Submit(manual, []{
-//       fibers::Yield();
-//       WHEELS_PANIC("f2 : Test failed!");
-//     });
+    auto f2 = futures::Submit(manual, []{
+      fibers::Yield();
+      WHEELS_PANIC("f2 : Test failed!");
+    });
 
-//     auto f = futures::no_alloc::First(std::move(f1), std::move(f2)) | futures::Start();
+    auto f = futures::First(std::move(f1), std::move(f2)) | futures::Start();
 
-//     std::move(f) | futures::Discard();
+    std::move(f) | futures::Discard();
 
-//     ASSERT_EQ(manual.Drain(), 2);
+    ASSERT_EQ(manual.Drain(), 2);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(Interference){
-//     executors::fibers::ManualExecutor manual;
-//     bool flag{false};
+  SIMPLE_TEST(Interference){
+    executors::fibers::ManualExecutor manual;
+    bool flag{false};
 
-//     auto f = futures::Submit(manual, [&]{
+    auto f = futures::Submit(manual, [&]{
 
-//       futures::Submit(manual, []{}) | futures::Await();
+      futures::Submit(manual, []{}) | futures::Await();
 
-//       flag = true;
-//       fibers::Yield();
+      flag = true;
+      fibers::Yield();
 
-//       WHEELS_PANIC("Test failed!");
-//     }) | futures::Start();
+      WHEELS_PANIC("Test failed!");
+    }) | futures::Start();
 
-//     manual.RunAtMost(3);
-//     ASSERT_TRUE(flag);
+    manual.RunAtMost(3);
+    ASSERT_TRUE(flag);
 
-//     std::move(f).RequestCancel();
+    std::move(f).RequestCancel();
 
-//     ASSERT_EQ(manual.Drain(), 1);
+    ASSERT_EQ(manual.Drain(), 1);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(CancelSleep) {
-//     executors::fibers::ManualExecutor manual;
-//     bool flag{false};
+  SIMPLE_TEST(CancelSleep) {
+    executors::fibers::ManualExecutor manual;
+    bool flag{false};
 
-//     auto f = futures::Submit(manual, [&]{
-//       ASSERT_THROW(fibers::Yield(), cancel::CancelledException);
+    auto f = futures::Submit(manual, [&]{
+      ASSERT_THROW(fibers::Yield(), cancel::CancelledException);
 
-//       flag = true;
+      flag = true;
 
-//       fibers::SleepFor(1ms);
+      fibers::SleepFor(1ms);
 
-//       WHEELS_PANIC("Test failed!");
+      WHEELS_PANIC("Test failed!");
 
-//     }) | futures::Start();
+    }) | futures::Start();
 
-//     manual.RunAtMost(1);
+    manual.RunAtMost(1);
 
-//     std::move(f).RequestCancel();
+    std::move(f).RequestCancel();
 
-//     ASSERT_EQ(manual.Drain(), 1);
+    ASSERT_EQ(manual.Drain(), 1);
 
-//     ASSERT_TRUE(flag);
+    ASSERT_TRUE(flag);
 
-//     manual.Stop();    
-//   }
+    manual.Stop();    
+  }
 
-//   SIMPLE_TEST(Propagate1){
-//     executors::fibers::ManualExecutor manual;
+  SIMPLE_TEST(Propagate1){
+    executors::fibers::ManualExecutor manual;
 
-//     auto f = futures::Submit(manual, [&]{
+    auto f = futures::Submit(manual, [&]{
 
-//       futures::Submit(manual, []{}) | futures::Await();
+      futures::Submit(manual, []{}) | futures::Await();
 
-//       WHEELS_PANIC("Test failed!");
-//     }) | futures::Start();
+      WHEELS_PANIC("Test failed!");
+    }) | futures::Start();
 
-//     std::move(f).RequestCancel();
+    std::move(f).RequestCancel();
 
-//     manual.Drain();
+    manual.Drain();
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(Propagate2){
-//     executors::fibers::ManualExecutor manual;
-//     bool flag = false;
+  SIMPLE_TEST(Propagate2){
+    executors::fibers::ManualExecutor manual;
+    bool flag = false;
 
-//     auto f = futures::Submit(manual, [&]{
+    auto f = futures::Submit(manual, [&]{
 
-//       futures::Submit(manual, []{}) | futures::OnCancel([&]{
-//         flag = true;
-//       }) | futures::Await();
+      futures::Submit(manual, []{}) | futures::OnCancel([&]{
+        flag = true;
+      }) | futures::Await();
 
-//       WHEELS_PANIC("Test failed!");
-//     }) | futures::Start();
+      WHEELS_PANIC("Test failed!");
+    }) | futures::Start();
 
-//     std::move(f).RequestCancel();
+    std::move(f).RequestCancel();
 
-//     manual.Drain();
+    manual.Drain();
 
-//     ASSERT_TRUE(flag);
+    ASSERT_TRUE(flag);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(Propagate3){
-//     executors::fibers::ManualExecutor manual;
+  SIMPLE_TEST(Propagate3){
+    executors::fibers::ManualExecutor manual;
 
-//     bool flag = false;
+    bool flag = false;
 
-//     auto f = futures::Submit(manual, [&]{
-//       wheels::Defer log([&]{
-//         flag = true;
-//       });
+    auto f = futures::Submit(manual, [&]{
+      wheels::Defer log([&]{
+        flag = true;
+      });
 
-//       try {
-//         fibers::Yield();
-//       } catch(...){
-//         // do nothing
-//       }
+      try {
+        fibers::Yield();
+      } catch(...){
+        // do nothing
+      }
 
-//       futures::Never() | futures::Await();
+      futures::Never() | futures::Await();
       
-//       WHEELS_PANIC("Unreachable!");
-//     }) | futures::Start();
+      WHEELS_PANIC("Unreachable!");
+    }) | futures::Start();
 
-//     std::move(f).RequestCancel();
+    std::move(f).RequestCancel();
 
-//     manual.Drain();
+    manual.Drain();
 
-//     ASSERT_TRUE(flag);
+    ASSERT_TRUE(flag);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(Propagate4){
-//     executors::fibers::ManualExecutor manual;
+  SIMPLE_TEST(Propagate4){
+    executors::fibers::ManualExecutor manual;
 
-//     bool flag = false;
+    bool flag = false;
 
-//     auto f = futures::Submit(manual, [&]{
-//       wheels::Defer log([&]{
-//         flag = true;
-//       });
+    auto f = futures::Submit(manual, [&]{
+      wheels::Defer log([&]{
+        flag = true;
+      });
 
-//       try {
-//         fibers::Yield();
-//       } catch(...){
-//         // do nothing
-//       }
+      try {
+        fibers::Yield();
+      } catch(...){
+        // do nothing
+      }
 
-//       futures::Never() | futures::Await();
+      futures::Never() | futures::Await();
       
-//       WHEELS_PANIC("Unreachable!");
-//     });
+      WHEELS_PANIC("Unreachable!");
+    });
 
-//     futures::First(std::move(f), futures::Just()) | futures::Await();
+    futures::First(std::move(f), futures::Just()) | futures::ThreadAwait();
 
-//     manual.Drain();
+    manual.Drain();
 
-//     ASSERT_TRUE(flag);
+    ASSERT_TRUE(flag);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(Propagate5){
-//     executors::fibers::ManualExecutor manual;
+  SIMPLE_TEST(Propagate5){
+    executors::fibers::ManualExecutor manual;
 
-//     bool flag = false;
+    bool flag = false;
 
-//     auto f = futures::Submit(manual, [&]{
-//       wheels::Defer log([&]{
-//         flag = true;
-//       });
+    auto f = futures::Submit(manual, [&]{
+      wheels::Defer log([&]{
+        flag = true;
+      });
 
-//       try {
-//         fibers::Yield();
-//       } catch(...){
-//         // do nothing
-//       }
+      try {
+        fibers::Yield();
+      } catch(...){
+        // do nothing
+      }
 
-//       futures::Never() | futures::Await();
+      futures::Never() | futures::Await();
       
-//       WHEELS_PANIC("Unreachable!");
-//     });
+      WHEELS_PANIC("Unreachable!");
+    });
 
-//     auto g = futures::Just() | futures::Start();
+    auto g = futures::Just() | futures::Start();
 
-//     futures::First(std::move(f), std::move(g)) | futures::Await();
+    futures::First(std::move(f), std::move(g)) | futures::ThreadAwait();
 
-//     manual.Drain();
+    manual.Drain();
 
-//     ASSERT_TRUE(flag);
+    ASSERT_TRUE(flag);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(DontPropagate1) {
-//     executors::fibers::ManualExecutor manual;
-//     bool flag = false;
+  SIMPLE_TEST(DontPropagate1) {
+    executors::fibers::ManualExecutor manual;
+    bool flag = false;
 
-//     futures::Just() | futures::Via(manual) | futures::OnCancel([&]{
+    futures::Just() | futures::Via(manual) | futures::OnCancel([&]{
 
-//       futures::Submit(manual, [&]{
-//         flag = true;
-//       }) | futures::Await();
+      futures::Submit(manual, [&]{
+        flag = true;
+      }) | futures::Await();
 
-//       ASSERT_TRUE(flag);
+      ASSERT_TRUE(flag);
 
-//     }) | futures::Discard();
+    }) | futures::Discard();
 
-//     ASSERT_FALSE(flag);
+    ASSERT_FALSE(flag);
 
-//     ASSERT_EQ(manual.Drain(), 3);
+    ASSERT_EQ(manual.Drain(), 3);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(DontPropagate2) {
-//     executors::fibers::ManualExecutor manual;
-//     bool flag = false;
+  SIMPLE_TEST(DontPropagate2) {
+    executors::fibers::ManualExecutor manual;
+    bool flag = false;
 
-//     futures::Just() | futures::Via(manual) | futures::Anyway([&]{
+    futures::Just() | futures::Via(manual) | futures::Anyway([&]{
 
-//       futures::Submit(manual, [&]{
-//         flag = true;
-//       }) | futures::Await();
+      futures::Submit(manual, [&]{
+        flag = true;
+      }) | futures::Await();
 
-//       ASSERT_TRUE(flag);
+      ASSERT_TRUE(flag);
 
-//     }) | futures::Discard();
+    }) | futures::Discard();
 
-//     ASSERT_FALSE(flag);
+    ASSERT_FALSE(flag);
 
-//     ASSERT_EQ(manual.Drain(), 3);
+    ASSERT_EQ(manual.Drain(), 3);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(DontPropagate3) {
-//     executors::fibers::ManualExecutor manual;
-//     bool flag = false;
+  SIMPLE_TEST(DontPropagate3) {
+    executors::fibers::ManualExecutor manual;
+    bool flag = false;
 
-//     auto f = futures::Submit(manual, []{}) | futures::Anyway([&]{
+    auto f = futures::Submit(manual, []{}) | futures::Anyway([&]{
 
-//       futures::Submit(manual, [&]{
-//         flag = true;
-//       }) | futures::Await();
+      futures::Submit(manual, [&]{
+        flag = true;
+      }) | futures::Await();
 
-//       ASSERT_TRUE(flag);
+      ASSERT_TRUE(flag);
 
-//     }) | futures::Start();
+    }) | futures::Start();
 
-//     ASSERT_FALSE(flag);
+    ASSERT_FALSE(flag);
 
-//     std::move(f).RequestCancel();
+    std::move(f).RequestCancel();
 
-//     ASSERT_EQ(manual.Drain(), 4);
+    ASSERT_EQ(manual.Drain(), 4);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(DontPropagate4) {
-//     executors::fibers::ManualExecutor manual;
-//     bool flag = false;
+  SIMPLE_TEST(DontPropagate4) {
+    executors::fibers::ManualExecutor manual;
+    bool flag = false;
 
-//     auto f = futures::Submit(manual, []{}) | futures::OnSuccess([&]{
+    auto f = futures::Submit(manual, []{}) | futures::OnSuccess([&]{
 
-//       futures::Submit(manual, [&]{
-//         flag = true;
-//       }) | futures::Await();
+      futures::Submit(manual, [&]{
+        flag = true;
+      }) | futures::Await();
 
-//       ASSERT_TRUE(flag);
+      ASSERT_TRUE(flag);
 
-//     }) | futures::Start();
+    }) | futures::Start();
 
-//     ASSERT_FALSE(flag);
+    ASSERT_FALSE(flag);
 
-//     std::move(f).RequestCancel();
+    std::move(f).RequestCancel();
 
-//     ASSERT_EQ(manual.Drain(), 4);
+    ASSERT_EQ(manual.Drain(), 4);
 
-//     manual.Stop();
-//   }
+    manual.Stop();
+  }
 
-//   SIMPLE_TEST(TwoLevelDeep){
-//     executors::ThreadPool pool{4};
-//     threads::blocking::WaitGroup wg{};
+  SIMPLE_TEST(TwoLevelDeep){
+    executors::ThreadPool pool{4};
+    threads::blocking::WaitGroup wg{};
 
-//     std::atomic<int> cancelled{0};
+    std::atomic<int> cancelled{0};
 
-//     pool.Start();
+    pool.Start();
 
-//     wg.Add(1);
+    wg.Add(1);
 
-//     auto grandparent = futures::Submit(pool, [&]{
-//       wheels::Defer([&]{
-//         cancelled++;
-//       });
+    auto grandparent = futures::Submit(pool, [&]{
+      wheels::Defer([&]{
+        cancelled++;
+      });
 
-//       auto parent = futures::Submit(pool, [&]{
-//         wheels::Defer([&]{
-//           cancelled++;
-//         });
+      auto parent = futures::Submit(pool, [&]{
+        wheels::Defer([&]{
+          cancelled++;
+        });
         
-//         auto child = futures::Submit(pool, [&]{
-//           wheels::Defer([&]{
-//             cancelled++;
-//           });  
+        auto child = futures::Submit(pool, [&]{
+          wheels::Defer([&]{
+            cancelled++;
+          });  
 
-//           while(true){
-//             fibers::Yield();
-//           }
+          while(true){
+            fibers::Yield();
+          }
 
-//           ASSERT_TRUE(false);
+          ASSERT_TRUE(false);
 
-//         }) | futures::Start();
+        }) | futures::Start();
 
-//         std::move(child) | futures::Await();
+        std::move(child) | futures::Await();
 
-//         ASSERT_TRUE(false);
+        ASSERT_TRUE(false);
 
-//       }) | futures::Start();
+      }) | futures::Start();
 
-//       wg.Done();
+      wg.Done();
 
-//       std::move(parent) | futures::Await();
+      std::move(parent) | futures::Await();
 
-//       ASSERT_TRUE(false);
+      ASSERT_TRUE(false);
 
-//     }) | futures::Start();
+    }) | futures::Start();
 
-//     wg.Wait();
+    wg.Wait();
 
-//     std::move(grandparent).RequestCancel();
+    std::move(grandparent).RequestCancel();
 
-//     pool.WaitIdle();
+    pool.WaitIdle();
 
-//     ASSERT_EQ(cancelled.load(), 3);
+    ASSERT_EQ(cancelled.load(), 3);
 
-//     pool.Stop();
-//   }
-// }
+    pool.Stop();
+  }
+
+  SIMPLE_TEST(DdosEager1){
+    executors::fibers::ManualExecutor manual;
+
+    auto f = futures::Submit(manual, [&]{
+    }) | futures::Start() | futures::AndThen([]{
+
+      ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
+    }) | futures::Start();
+
+    ASSERT_EQ(manual.RunAtMost(2), 2);
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(f).RequestCancel();
+
+    ASSERT_TRUE(manual.NonEmpty());
+
+    ASSERT_EQ(manual.Drain(), 1);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(DdosEager2){
+    executors::fibers::ManualExecutor manual;
+
+    auto f = futures::Submit(manual, [&]{
+    }) | futures::Start() | futures::AndThen([]{
+      futures::Just() | futures::Start() | futures::Await();
+    }) | futures::Start();
+
+    ASSERT_EQ(manual.RunAtMost(1), 1);
+
+    std::move(f) | futures::Detach();
+
+    ASSERT_TRUE(manual.NonEmpty());
+
+    ASSERT_EQ(manual.Drain(), 2);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(DdosEager3){
+    executors::fibers::ManualExecutor manual;
+
+    const size_t num_attacks = 15;
+
+    auto f = futures::Submit(manual, [&]{
+    }) | futures::Start() | futures::AndThen([]{
+      for(size_t i = 0; i < num_attacks; ++i){
+        futures::Just() | futures::Start() | futures::AndThen([]{
+        }) | futures::Await();
+      }
+
+    }) | futures::Start();
+
+    ASSERT_EQ(manual.RunAtMost(1), 1);
+
+    std::move(f) | futures::Detach();
+
+    ASSERT_TRUE(manual.NonEmpty());
+
+    ASSERT_EQ(manual.Drain(), num_attacks + 1);
+
+    manual.Stop();
+  }
+}
 
 #endif
 

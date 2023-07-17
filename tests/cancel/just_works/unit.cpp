@@ -36,7 +36,7 @@
 #include <weave/futures/run/await.hpp>
 #include <weave/futures/run/discard.hpp>
 #include <weave/futures/run/detach.hpp>
-#include <weave/futures/run/get.hpp>
+#include <weave/futures/run/thread_await.hpp>
 
 #include <weave/threads/blocking/stdlike/mutex.hpp>
 #include <weave/threads/blocking/wait_group.hpp>
@@ -368,7 +368,7 @@ TEST_SUITE(Sequential){
 
     std::move(ff2) | futures::Discard();
 
-    auto res = std::move(f1) | futures::Get();
+    auto res = std::move(f1) | futures::ThreadAwait();
 
     ASSERT_TRUE(res);
 
@@ -517,7 +517,7 @@ TEST_SUITE(Parallel){
     auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
       WHEELS_PANIC("f2 : Test failed!");
       return 84;
-    })) | futures::Get();
+    })) | futures::ThreadAwait();
 
     ASSERT_TRUE(res);
     
