@@ -18,7 +18,7 @@
 #include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/start.hpp>
 
-// #include <weave/futures/combine/par/all.hpp>
+#include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
 #include <weave/futures/combine/par/quorum.hpp>
 #include <weave/futures/combine/par/select.hpp>
@@ -696,103 +696,103 @@ TEST_SUITE(Futures) {
     std::move(first) | futures::Get();   
   }
 
-//   SIMPLE_TEST(BothOk) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(BothOk) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto both = futures::Both(std::move(f1), std::move(f2));
+    auto both = futures::Both(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(both)
-//         | futures::Map([&ok](auto tuple) {
-//             auto [x, y] = tuple;
-//             ASSERT_EQ(x, 2);
-//             ASSERT_EQ(y, 1);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(both)
+        | futures::Map([&ok](auto tuple) {
+            auto [x, y] = tuple;
+            ASSERT_EQ(x, 2);
+            ASSERT_EQ(y, 1);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetValue(1);
-//     std::move(p1).SetValue(2);
+    std::move(p2).SetValue(1);
+    std::move(p1).SetValue(2);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(BothFailure1) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(BothFailure1) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto both = futures::Both(std::move(f1), std::move(f2));
+    auto both = futures::Both(std::move(f1), std::move(f2));
 
-//     bool fail = false;
+    bool fail = false;
 
-//     std::move(both)
-//         | futures::OrElse([&fail](Error e) -> Result<std::tuple<int, int>> {
-//             ASSERT_EQ(e, TimeoutError());
-//             fail = true;
-//             return result::Err(e);
-//           })
-//         | futures::Detach();
+    std::move(both)
+        | futures::OrElse([&fail](Error e) -> Result<std::tuple<int, int>> {
+            ASSERT_EQ(e, TimeoutError());
+            fail = true;
+            return result::Err(e);
+          })
+        | futures::Detach();
 
-//     std::move(p1).SetError(TimeoutError());
+    std::move(p1).SetError(TimeoutError());
 
-//     ASSERT_TRUE(fail);
+    ASSERT_TRUE(fail);
 
-//     std::move(p2).SetValue(7);
-//   }
+    std::move(p2).SetValue(7);
+  }
 
-//   SIMPLE_TEST(BothFailure2) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(BothFailure2) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto both = futures::Both(std::move(f1), std::move(f2));
+    auto both = futures::Both(std::move(f1), std::move(f2));
 
-//     bool fail = false;
+    bool fail = false;
 
-//     std::move(both)
-//         | futures::OrElse([&fail](Error e) -> Result<std::tuple<int, int>> {
-//             ASSERT_EQ(e, IoError());
-//             fail = true;
-//             return result::Err(e);
-//           })
-//         | futures::Detach();
+    std::move(both)
+        | futures::OrElse([&fail](Error e) -> Result<std::tuple<int, int>> {
+            ASSERT_EQ(e, IoError());
+            fail = true;
+            return result::Err(e);
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(IoError());
+    std::move(p2).SetError(IoError());
 
-//     ASSERT_TRUE(fail);
+    ASSERT_TRUE(fail);
 
-//     std::move(p1).SetValue(4);
-//   }
+    std::move(p1).SetValue(4);
+  }
 
-//   SIMPLE_TEST(BothTypes) {
-//     auto [f1, p1] = futures::Contract<std::string>();
-//     auto [f2, p2] = futures::Contract<std::tuple<int, int>>();
+  SIMPLE_TEST(BothTypes) {
+    auto [f1, p1] = futures::Contract<std::string>();
+    auto [f2, p2] = futures::Contract<std::tuple<int, int>>();
 
-//     auto both = futures::Both(std::move(f1), std::move(f2));
+    auto both = futures::Both(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(both)
-//         | futures::Map([&ok](auto tuple) {
-//             auto [x, y] = tuple;
+    std::move(both)
+        | futures::Map([&ok](auto tuple) {
+            auto [x, y] = tuple;
 
-//             ASSERT_EQ(x, "3");
+            ASSERT_EQ(x, "3");
 
-//             std::tuple<int, int> t = {1, 2};
-//             ASSERT_EQ(y, t);
+            std::tuple<int, int> t = {1, 2};
+            ASSERT_EQ(y, t);
 
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetValue({1, 2});
-//     std::move(p1).SetValue("3");
+    std::move(p2).SetValue({1, 2});
+    std::move(p1).SetValue("3");
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
   SIMPLE_TEST(QuorumOk1){
     auto [f1, p1] = futures::Contract<int>();
@@ -1399,88 +1399,88 @@ TEST_SUITE(Futures) {
     std::move(first) | futures::Get(); 
   }
 
-//   SIMPLE_TEST(VectorBothOk) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorBothOk) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
 
-//     auto both = futures::All(std::move(vec));
+    auto both = futures::All(std::move(vec));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(both)
-//         | futures::Map([&ok](auto vector) {
-//             int x = vector[0];
-//             int y = vector[1];
-//             ASSERT_EQ(x, 2);
-//             ASSERT_EQ(y, 1);
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+    std::move(both)
+        | futures::Map([&ok](auto vector) {
+            int x = vector[0];
+            int y = vector[1];
+            ASSERT_EQ(x, 2);
+            ASSERT_EQ(y, 1);
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetValue(1);
-//     std::move(p1).SetValue(2);
+    std::move(p2).SetValue(1);
+    std::move(p1).SetValue(2);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(VectorBothFailure1) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorBothFailure1) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
 
-//     auto both = futures::All(std::move(vec));
+    auto both = futures::All(std::move(vec));
 
-//     bool fail = false;
+    bool fail = false;
 
-//     std::move(both)
-//         | futures::OrElse([&fail](Error e) -> Result<std::vector<int>> {
-//             ASSERT_EQ(e, TimeoutError());
-//             fail = true;
-//             return result::Err(e);
-//           })
-//         | futures::Detach();
+    std::move(both)
+        | futures::OrElse([&fail](Error e) -> Result<std::vector<int>> {
+            ASSERT_EQ(e, TimeoutError());
+            fail = true;
+            return result::Err(e);
+          })
+        | futures::Detach();
 
-//     std::move(p1).SetError(TimeoutError());
+    std::move(p1).SetError(TimeoutError());
 
-//     ASSERT_TRUE(fail);
+    ASSERT_TRUE(fail);
 
-//     std::move(p2).SetValue(7);
-//   }
+    std::move(p2).SetValue(7);
+  }
 
-//   SIMPLE_TEST(VectorBothFailure2) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(VectorBothFailure2) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     std::vector<futures::BoxedFuture<int>> vec{};
-//     vec.push_back(std::move(f1));
-//     vec.push_back(std::move(f2));
+    std::vector<futures::BoxedFuture<int>> vec{};
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
 
-//     auto both = futures::All(std::move(vec));
+    auto both = futures::All(std::move(vec));
 
-//     bool fail = false;
+    bool fail = false;
 
-//     std::move(both)
-//         | futures::OrElse([&fail](Error e) -> Result<std::vector<int>> {
-//             ASSERT_EQ(e, IoError());
-//             fail = true;
-//             return result::Err(e);
-//           })
-//         | futures::Detach();
+    std::move(both)
+        | futures::OrElse([&fail](Error e) -> Result<std::vector<int>> {
+            ASSERT_EQ(e, IoError());
+            fail = true;
+            return result::Err(e);
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(IoError());
+    std::move(p2).SetError(IoError());
 
-//     ASSERT_TRUE(fail);
+    ASSERT_TRUE(fail);
 
-//     std::move(p1).SetValue(4);
-//   }
+    std::move(p1).SetValue(4);
+  }
 
   SIMPLE_TEST(VectorQuorumOk1){
     auto [f1, p1] = futures::Contract<int>();

@@ -24,12 +24,12 @@ namespace weave::futures::thunks {
 
 // Default is OnHeap == true
 template <bool OnHeap, typename Cons, SomeFuture Future>
-class QuorumControlBlock<OnHeap, Cons, detail::TaggedVector, Future> final: public detail::JoinBlock<true, QuorumControlBlock<OnHeap, Cons, detail::TaggedVector, Future>, detail::Dummy, std::vector<traits::ValueOf<Future>>, Cons, detail::TaggedVector, Future> {
+class QuorumControlBlock<OnHeap, Cons, detail::TaggedVector, Future> final: public detail::JoinBlock<true, QuorumControlBlock<true, Cons, detail::TaggedVector, Future>, detail::Dummy, std::vector<traits::ValueOf<Future>>, Cons, detail::TaggedVector, Future> {
  public:
   using InputType = traits::ValueOf<Future>;
   using ValueType = std::vector<InputType>;
-  using Base = detail::JoinBlock<true, QuorumControlBlock<OnHeap, Cons, detail::TaggedVector, Future>, detail::Dummy, ValueType, Cons, detail::TaggedVector, Future>;
-  using Storage = detail::TaggedVector<QuorumControlBlock<OnHeap, Cons, detail::TaggedVector, Future>, Future>;
+  using Base = detail::JoinBlock<true, QuorumControlBlock<true, Cons, detail::TaggedVector, Future>, detail::Dummy, ValueType, Cons, detail::TaggedVector, Future>;
+  using Storage = detail::TaggedVector<QuorumControlBlock<true, Cons, detail::TaggedVector, Future>, Future>;
   using Guard = threads::blocking::stdlike::UniqueLock<threads::blocking::SpinLock>;
 
   template <typename InterStorage>

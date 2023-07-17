@@ -35,12 +35,12 @@ using QuorumType = std::vector<typename QuorumTypeImpl<Ts...>::Type>;
 
 // Default is OnHeap == true
 template <bool OnHeap, typename Cons, SomeFuture... Futures>
-class QuorumControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final: public detail::JoinBlock<true, QuorumControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...>, detail::Dummy, QuorumType<traits::ValueOf<Futures>...>, Cons, detail::TaggedTuple, Futures...> {
+class QuorumControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final: public detail::JoinBlock<true, QuorumControlBlock<true, Cons, detail::TaggedTuple, Futures...>, detail::Dummy, QuorumType<traits::ValueOf<Futures>...>, Cons, detail::TaggedTuple, Futures...> {
  public:
   using InputType = typename QuorumTypeImpl<traits::ValueOf<Futures>...>::Type;
   using ValueType = QuorumType<traits::ValueOf<Futures>...>;
-  using Base = detail::JoinBlock<true, QuorumControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...>, detail::Dummy, ValueType, Cons, detail::TaggedTuple, Futures...>;
-  using StorageType = detail::TaggedTuple<QuorumControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...>, Futures...>;
+  using Base = detail::JoinBlock<true, QuorumControlBlock<true, Cons, detail::TaggedTuple, Futures...>, detail::Dummy, ValueType, Cons, detail::TaggedTuple, Futures...>;
+  using StorageType = detail::TaggedTuple<QuorumControlBlock<true, Cons, detail::TaggedTuple, Futures...>, Futures...>;
   using Guard = threads::blocking::stdlike::UniqueLock<threads::blocking::SpinLock>;
 
   template <typename InterStorage>

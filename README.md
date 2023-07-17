@@ -6,11 +6,7 @@ Concurrency for C++
  - [TaggedBuffer] Rework – Not done
 
  - [futures]:
-    - [model]:
-      - [Thunk] – Final
-      - [Evaluation] – Final
-      - [Context]/[Output] – Final
-      - [Consumer] – Final
+    - [model] – Final
     - [make]:
       - [Just] – Done
       - [Value] – Done
@@ -19,7 +15,7 @@ Concurrency for C++
       - [Contract] – Done
       - [Never] – Done
       - [After] – Not Done
-    - [combine/seq]
+    - [combine/seq]:
       - [AndThen]/[Map]/[OrElse] – Done
       - [Via] – Done
       - [Flatten/FlatMap] – Done
@@ -28,31 +24,18 @@ Concurrency for C++
       - [Box] – Done
       - [WithTimeout] – Not Done
       - [Fork] – Not Done
-    - [combine/par]
-      - [default/tuple] – Not Done
-        - [First] – Done
-        - [All] – Not Done
-        - [Select] – Done
-        - [Quorum] – Done
-      - [default/vector] – Not Done
-        - [First] – Done
-        - [All] – Not Done
-        - [Quorum] – Done
+    - [combine/par]:
+      - [default/tuple] – Done
+      - [default/vector] – Done
       - [no_alloc/tuple] – Not Done
       - [no_alloc/vector] – Not Done
-    - [run]
+    - [run]:
       - [Get] – Done
       - [Detach] – Done
       - [Await] – Not Done
       - [Discard] – Done
-    - [syntax]
-      - [pipe] – Done
-      - [bang] – Done
-      - [or] – Done
-      - [and] – Not Done
-    - [types]
-      - [eager] – Done
-      - [boxed] – Done
+    - [syntax] – Done
+    - [types] – Done
     - [traits]
       - [cancellable] – Not Done
 

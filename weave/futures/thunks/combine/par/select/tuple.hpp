@@ -25,10 +25,10 @@ using SelectedValue = std::variant<traits::ValueOf<Futures>...>;
 
 // Default is OnHeap == true
 template <bool OnHeap, typename Cons, SomeFuture... Futures>
-class SelectControlBlock<OnHeap ,Cons, detail::TaggedTuple, Futures...> final: public detail::JoinBlock<true, SelectControlBlock<OnHeap ,Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<true>, SelectedValue<Futures...>, Cons, detail::TaggedTuple, Futures...> {
+class SelectControlBlock<OnHeap ,Cons, detail::TaggedTuple, Futures...> final: public detail::JoinBlock<true, SelectControlBlock<true ,Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<true>, SelectedValue<Futures...>, Cons, detail::TaggedTuple, Futures...> {
  public:
   using ValueType = SelectedValue<Futures...>;
-  using Base = detail::JoinBlock<true, SelectControlBlock<OnHeap ,Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
+  using Base = detail::JoinBlock<true, SelectControlBlock<true ,Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
   template<typename InterStorage>
   requires std::is_constructible_v<Base, Cons&, InterStorage>
