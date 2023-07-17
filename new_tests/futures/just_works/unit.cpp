@@ -21,7 +21,7 @@
 // #include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
 // #include <weave/futures/combine/par/quorum.hpp>
-// #include <weave/futures/combine/par/select.hpp>
+#include <weave/futures/combine/par/select.hpp>
 
 #include <weave/futures/run/get.hpp>
 #include <weave/futures/run/detach.hpp>
@@ -931,175 +931,175 @@ TEST_SUITE(Futures) {
 //     ASSERT_EQ(ans.error(), IoError());
 //   }
 
-//   SIMPLE_TEST(MimicFirstOk1) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(MimicFirstOk1) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::Select(std::move(f1), std::move(f2));
+    auto first = futures::Select(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](auto variant) {
-//             switch(variant.index()){
-//               case 0 : {
-//                 ASSERT_EQ(std::get<0>(variant), 2);
-//                 break;
-//               }
-//               case 1 : {
-//                 ASSERT_EQ(std::get<1>(variant), 2);
-//                 break;
-//               }
-//             }
+    std::move(first)
+        | futures::Map([&ok](auto variant) {
+            switch(variant.index()){
+              case 0 : {
+                ASSERT_EQ(std::get<0>(variant), 2);
+                break;
+              }
+              case 1 : {
+                ASSERT_EQ(std::get<1>(variant), 2);
+                break;
+              }
+            }
 
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetValue(2);
+    std::move(p2).SetValue(2);
 
-//     ASSERT_TRUE(ok);
+    ASSERT_TRUE(ok);
 
-//     std::move(p1).SetValue(1);
-//   }
+    std::move(p1).SetValue(1);
+  }
 
-//   SIMPLE_TEST(MimicFirstOk2) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(MimicFirstOk2) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::Select(std::move(f1), std::move(f2));
+    auto first = futures::Select(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](auto variant) {
-//             switch(variant.index()){
-//               case 0 : {
-//                 ASSERT_EQ(std::get<0>(variant), 29);
-//                 break;
-//               }
-//               case 1 : {
-//                 ASSERT_EQ(std::get<1>(variant), 29);
-//                 break;
-//               }
-//             }
+    std::move(first)
+        | futures::Map([&ok](auto variant) {
+            switch(variant.index()){
+              case 0 : {
+                ASSERT_EQ(std::get<0>(variant), 29);
+                break;
+              }
+              case 1 : {
+                ASSERT_EQ(std::get<1>(variant), 29);
+                break;
+              }
+            }
 
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p1).SetError(TimeoutError());
-//     std::move(p2).SetValue(29);
+    std::move(p1).SetError(TimeoutError());
+    std::move(p2).SetValue(29);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(MimicFirstOk3) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(MimicFirstOk3) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::Select(std::move(f1), std::move(f2));
+    auto first = futures::Select(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(first)
-//         | futures::Map([&ok](auto variant) {
-//             switch(variant.index()){
-//               case 0 : {
-//                 ASSERT_EQ(std::get<0>(variant), 31);
-//                 break;
-//               }
-//               case 1 : {
-//                 ASSERT_EQ(std::get<1>(variant), 31);
-//                 break;
-//               }
-//             }
+    std::move(first)
+        | futures::Map([&ok](auto variant) {
+            switch(variant.index()){
+              case 0 : {
+                ASSERT_EQ(std::get<0>(variant), 31);
+                break;
+              }
+              case 1 : {
+                ASSERT_EQ(std::get<1>(variant), 31);
+                break;
+              }
+            }
 
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(IoError());
-//     std::move(p1).SetValue(31);
+    std::move(p2).SetError(IoError());
+    std::move(p1).SetValue(31);
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(MimicFirstFailure) {
-//     auto [f1, p1] = futures::Contract<int>();
-//     auto [f2, p2] = futures::Contract<int>();
+  SIMPLE_TEST(MimicFirstFailure) {
+    auto [f1, p1] = futures::Contract<int>();
+    auto [f2, p2] = futures::Contract<int>();
 
-//     auto first = futures::Select(std::move(f1), std::move(f2));
+    auto first = futures::Select(std::move(f1), std::move(f2));
 
-//     bool fail = false;
+    bool fail = false;
 
-//     std::move(first)
-//         | futures::OrElse([&](Error e) -> Result<std::variant<int, int>> {
-//             ASSERT_EQ(e, TimeoutError());
-//             fail = true;
-//             return result::Err(e);
-//           })
-//         | futures::Detach();
+    std::move(first)
+        | futures::OrElse([&](Error e) -> Result<std::variant<int, int>> {
+            ASSERT_EQ(e, TimeoutError());
+            fail = true;
+            return result::Err(e);
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetError(TimeoutError());
-//     std::move(p1).SetError(TimeoutError());
+    std::move(p2).SetError(TimeoutError());
+    std::move(p1).SetError(TimeoutError());
 
-//     ASSERT_TRUE(fail);
-//   }
+    ASSERT_TRUE(fail);
+  }
 
-//   SIMPLE_TEST(SelectTypes1){
-//     auto [f1, p1] = futures::Contract<std::string>();
-//     auto [f2, p2] = futures::Contract<std::tuple<int, int>>();
+  SIMPLE_TEST(SelectTypes1){
+    auto [f1, p1] = futures::Contract<std::string>();
+    auto [f2, p2] = futures::Contract<std::tuple<int, int>>();
 
-//     auto both = futures::Select(std::move(f1), std::move(f2));
+    auto both = futures::Select(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(both)
-//         | futures::Map([&ok](auto variant) {
-//             ASSERT_EQ(variant.index(), 1);
+    std::move(both)
+        | futures::Map([&ok](auto variant) {
+            ASSERT_EQ(variant.index(), 1);
 
-//             std::tuple<int, int> t = {1, 2};
-//             ASSERT_EQ(std::get<1>(variant), t);
+            std::tuple<int, int> t = {1, 2};
+            ASSERT_EQ(std::get<1>(variant), t);
 
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p2).SetValue({1, 2});
-//     std::move(p1).SetValue("3");
+    std::move(p2).SetValue({1, 2});
+    std::move(p1).SetValue("3");
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
-//   SIMPLE_TEST(SelectTypes2){
-//     auto [f1, p1] = futures::Contract<std::string>();
-//     auto [f2, p2] = futures::Contract<std::tuple<int, int>>();
+  SIMPLE_TEST(SelectTypes2){
+    auto [f1, p1] = futures::Contract<std::string>();
+    auto [f2, p2] = futures::Contract<std::tuple<int, int>>();
 
-//     auto both = futures::Select(std::move(f1), std::move(f2));
+    auto both = futures::Select(std::move(f1), std::move(f2));
 
-//     bool ok = false;
+    bool ok = false;
 
-//     std::move(both)
-//         | futures::Map([&ok](auto variant) {
-//             ASSERT_EQ(variant.index(), 0);
+    std::move(both)
+        | futures::Map([&ok](auto variant) {
+            ASSERT_EQ(variant.index(), 0);
 
-//             ASSERT_EQ(std::get<0>(variant), "3");
+            ASSERT_EQ(std::get<0>(variant), "3");
 
-//             ok = true;
-//             return Unit{};
-//           })
-//         | futures::Detach();
+            ok = true;
+            return Unit{};
+          })
+        | futures::Detach();
 
-//     std::move(p1).SetValue("3");
-//     std::move(p2).SetValue({1, 2});
+    std::move(p1).SetValue("3");
+    std::move(p2).SetValue({1, 2});
 
-//     ASSERT_TRUE(ok);
-//   }
+    ASSERT_TRUE(ok);
+  }
 
   SIMPLE_TEST(Inline1) {
     executors::ManualExecutor manual;

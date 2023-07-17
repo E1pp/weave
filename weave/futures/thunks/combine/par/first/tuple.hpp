@@ -34,11 +34,7 @@ using FirstType = typename FirstTypeImpl<Ts...>::Type;
 
 // Default is OnHeap == true
 template <bool OnHeap, typename Cons, SomeFuture... Futures>
-class FirstControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
-    : public detail::JoinBlock<
-          true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
-          detail::JoinAll<true>, FirstType<traits::ValueOf<Futures>...>, Cons,
-          detail::TaggedTuple, Futures...> {
+class FirstControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final: public detail::JoinBlock<true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<true>, FirstType<traits::ValueOf<Futures>...>, Cons, detail::TaggedTuple, Futures...> {
  public:
   using ValueType = FirstType<traits::ValueOf<Futures>...>;
   using Base = detail::JoinBlock<
