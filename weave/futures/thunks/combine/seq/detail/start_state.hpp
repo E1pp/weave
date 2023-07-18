@@ -19,6 +19,10 @@ class StartState final : public SharedState<typename Future::ValueType> {
 
   virtual ~StartState() override final = default;
 
+  void Start(){
+    eval_.Start();
+  }
+
   // Completable
   void Consume(Output<T> out) noexcept {
     Base::Produce(std::move(out.result), out.context);

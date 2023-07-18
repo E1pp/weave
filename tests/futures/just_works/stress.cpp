@@ -11,6 +11,7 @@
 
 #include <weave/futures/combine/seq/map.hpp>
 #include <weave/futures/combine/seq/flat_map.hpp>
+#include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/and_then.hpp>
 #include <weave/futures/combine/seq/or_else.hpp>
 #include <weave/futures/combine/seq/via.hpp>
@@ -304,6 +305,63 @@ void StressTestQuorumAll() {
 
 //////////////////////////////////////////////////////////////////////
 
+void StressTestFork() {
+  executors::ThreadPool pool{4};
+  pool.Start();
+
+  twist::test::Repeat repeat;
+
+  while (repeat()) {
+    size_t i = repeat.Iter();
+
+    auto f = futures::Submit(pool, [i]() -> Result<int> {
+      if (i % 7 == 5) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(1);
+      }
+    });
+
+    auto [left, right] = std::move(f) | futures::Fork<2>();
+
+    auto f1 = futures::Submit(pool, [f = std::move(left), i]() mutable {
+      auto r = std::move(f) | futures::ThreadAwait();
+
+      if (i % 7 == 5){
+        ASSERT_FALSE(r);
+
+        ASSERT_EQ(r.error(), TimeoutError());
+      } else {
+        ASSERT_TRUE(r);
+
+        ASSERT_EQ(*r, 1);
+      }
+    });
+
+    auto f2 = futures::Submit(pool, [f = std::move(right), i]() mutable {
+      auto r = std::move(f) | futures::ThreadAwait();
+
+      if (i % 7 == 5){
+        ASSERT_FALSE(r);
+
+        ASSERT_EQ(r.error(), TimeoutError());
+      } else {
+        ASSERT_TRUE(r);
+
+        ASSERT_EQ(*r, 1);
+      }
+    });
+
+    auto r = futures::Both(std::move(f1), std::move(f2)) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+  }
+
+  fmt::println("Iterations: {}", repeat.IterCount());
+
+  pool.Stop();
+}
+
 TEST_SUITE(Futures) {
   TWIST_TEST(StressContract, 5s) {
     StressTestContract();
@@ -327,6 +385,10 @@ TEST_SUITE(Futures) {
 
   TWIST_TEST(StressQuorumAll, 5s){
     StressTestQuorumAll();
+  }
+
+  TWIST_TEST(StressFork, 5s){
+    StressTestFork();
   }
 }
 

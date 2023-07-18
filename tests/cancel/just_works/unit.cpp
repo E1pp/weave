@@ -7,8 +7,6 @@
 #include <weave/fibers/sched/sleep_for.hpp>
 #include <weave/fibers/sched/yield.hpp>
 
-#include <weave/fibers/sync/mutex.hpp>
-
 #include <weave/futures/make/contract.hpp>
 #include <weave/futures/make/failure.hpp>
 #include <weave/futures/make/value.hpp>
@@ -31,7 +29,6 @@
 #include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
 #include <weave/futures/combine/par/quorum.hpp>
-#include <weave/futures/combine/par/select.hpp>
 
 #include <weave/futures/run/await.hpp>
 #include <weave/futures/run/discard.hpp>
@@ -103,7 +100,7 @@ TEST_SUITE(Sequential){
     ASSERT_EQ(manual.Drain(), 0);
   }
 
-  SIMPLE_TEST(CancelFuture){
+  SIMPLE_TEST(CancelContract){
     { 
       auto [f, p] = futures::Contract<int>();
       std::move(f).RequestCancel();
@@ -192,6 +189,10 @@ TEST_SUITE(Sequential){
     }) | futures::Discard();
 
     std::move(p).Set(result::Ok());
+  }
+
+  SIMPLE_TEST(DiscardNever){
+    futures::Never() | futures::Discard();
   }
 
   SIMPLE_TEST(OnCancelJust){
@@ -368,35 +369,11 @@ TEST_SUITE(Sequential){
 
     std::move(ff2) | futures::Discard();
 
-    auto res = std::move(f1) | futures::ThreadAwait();
+    auto res = std::move(f1) | futures::Await();
 
     ASSERT_TRUE(res);
 
     ASSERT_EQ(*res, 42);
-  }
-
-  SIMPLE_TEST(ForkCancellable1){
-    auto [f1, f2] = futures::Just() | futures::Fork<2>();
-
-    static_assert(futures::traits::Cancellable<decltype(f1)>);
-
-    static_assert(futures::traits::Cancellable<decltype(f2)>);
-
-    std::apply([](auto... fs){
-      ((std::move(fs) | futures::Discard()), ...);
-    }, std::make_tuple(std::move(f1), std::move(f2)));
-  }
-
-  SIMPLE_TEST(ForkCancellable2){
-    auto [f1, f2] = futures::Just() | futures::Box() | futures::Fork<2>();
-
-    static_assert(!futures::traits::Cancellable<decltype(f1)>);
-
-    static_assert(!futures::traits::Cancellable<decltype(f2)>);
-
-    std::apply([](auto... fs){
-      ((std::move(fs) | futures::Discard()), ...);
-    }, std::make_tuple(std::move(f1), std::move(f2)));
   }
 }
 
@@ -517,7 +494,7 @@ TEST_SUITE(Parallel){
     auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
       WHEELS_PANIC("f2 : Test failed!");
       return 84;
-    })) | futures::ThreadAwait();
+    })) | futures::Await();
 
     ASSERT_TRUE(res);
     
@@ -552,7 +529,7 @@ TEST_SUITE(Fibers){
       WHEELS_PANIC("f2 : Test failed!");
     });
 
-    auto f = futures::no_alloc::First(std::move(f1), std::move(f2)) | futures::Start();
+    auto f = futures::First(std::move(f1), std::move(f2)) | futures::Start();
 
     std::move(f) | futures::Discard();
 
@@ -584,76 +561,6 @@ TEST_SUITE(Fibers){
 
     manual.Stop();
   }
-
-  SIMPLE_TEST(UnsubEager1){
-    executors::fibers::ManualExecutor manual;
-
-    auto f = futures::Submit(manual, [&]{
-    }) | futures::Start() | futures::AndThen([]{
-
-      ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
-    }) | futures::Start();
-
-    ASSERT_EQ(manual.RunAtMost(2), 2);
-
-    ASSERT_TRUE(manual.IsEmpty());
-
-    std::move(f).RequestCancel();
-
-    ASSERT_TRUE(manual.NonEmpty());
-
-    ASSERT_EQ(manual.Drain(), 1);
-
-    manual.Stop();
-  }
-
-  SIMPLE_TEST(UnsubEager2){
-    executors::fibers::ManualExecutor manual;
-
-    auto f = futures::Submit(manual, [&]{
-    }) | futures::Start() | futures::AndThen([]{
-
-      futures::Just() | futures::Await();
-    }) | futures::Start();
-
-    ASSERT_EQ(manual.RunAtMost(1), 1);
-
-    std::move(f) | futures::Detach();
-
-    ASSERT_TRUE(manual.NonEmpty());
-
-    ASSERT_EQ(manual.Drain(), 2);
-
-    manual.Stop();
-  }
-
-  // TaggedBuffer Broken!!
-  // SIMPLE_TEST(UnsubPar1){
-  //   executors::fibers::ManualExecutor manual;
-
-  //   auto f = futures::Submit(manual, []{}) 
-  //   | futures::Start() | futures::AndThen([]{
-  //     ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
-
-  //     return 5;
-  //   });
-
-  //   auto [f1, p] = futures::Contract<int>();
-
-  //   futures::First(std::move(f), std::move(f1)) | futures::Detach();
-
-  //   ASSERT_EQ(manual.Drain(), 2);
-
-  //   ASSERT_TRUE(manual.IsEmpty());
-
-  //   std::move(p).SetValue(42);
-
-  //   ASSERT_TRUE(manual.NonEmpty());
-
-  //   ASSERT_EQ(manual.Drain(), 1);
-
-  //   manual.Stop();
-  // }
 
   SIMPLE_TEST(CancelSleep) {
     executors::fibers::ManualExecutor manual;
@@ -957,6 +864,92 @@ TEST_SUITE(Fibers){
 
     pool.Stop();
   }
+
+  SIMPLE_TEST(DdosEager1){
+    executors::fibers::ManualExecutor manual;
+
+    auto f = futures::Submit(manual, [&]{
+    }) | futures::Start() | futures::AndThen([]{
+
+      ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
+    }) | futures::Start();
+
+    ASSERT_EQ(manual.RunAtMost(2), 2);
+
+    ASSERT_TRUE(manual.IsEmpty());
+
+    std::move(f).RequestCancel();
+
+    ASSERT_TRUE(manual.NonEmpty());
+
+    ASSERT_EQ(manual.Drain(), 1);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(DdosEager2){
+    executors::fibers::ManualExecutor manual;
+
+    auto f = futures::Submit(manual, [&]{
+    }) | futures::Start() | futures::AndThen([]{
+      futures::Just() | futures::Start() | futures::Await();
+    }) | futures::Start();
+
+    ASSERT_EQ(manual.RunAtMost(1), 1);
+
+    std::move(f) | futures::Detach();
+
+    ASSERT_TRUE(manual.NonEmpty());
+
+    ASSERT_EQ(manual.Drain(), 2);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(DdosEager3){
+    executors::ThreadPool pool{4};
+    pool.Start();
+
+    const size_t num_attacks = 15;
+
+    futures::Submit(pool, [&]{
+    }) | futures::Start() | futures::AndThen([&]{
+      for(size_t i = 0; i < num_attacks; ++i){
+        futures::Submit(pool, []{
+        }) | futures::Start() | futures::Await();
+      }
+
+    }) | futures::Start() | futures::Await();
+
+    pool.Stop();
+  }
+
+  // SIMPLE_TEST(DdosFirst){
+  //   executors::fibers::ManualExecutor manual;
+
+  //   auto f = futures::Submit(manual, []{}) 
+  //   | futures::Start() | futures::AndThen([]{
+  //     ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
+
+  //     return 5;
+  //   });
+
+  //   auto [f1, p] = futures::Contract<int>();
+
+  //   futures::First(std::move(f), std::move(f1)) | futures::Detach();
+
+  //   ASSERT_EQ(manual.Drain(), 2);
+
+  //   ASSERT_TRUE(manual.IsEmpty());
+
+  //   std::move(p).SetValue(42);
+
+  //   ASSERT_TRUE(manual.NonEmpty());
+
+  //   ASSERT_EQ(manual.Drain(), 1);
+
+  //   manual.Stop();
+  // }
 }
 
 #endif

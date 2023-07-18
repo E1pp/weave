@@ -61,62 +61,6 @@ struct NonDefaultConstructible {
 // clang-format off
 
 TEST_SUITE(Futures) {
-  SIMPLE_TEST(ContractValue) {
-    auto [f, p] = futures::Contract<std::string>();
-
-    std::move(p).SetValue("Hi");
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r.has_value());
-    ASSERT_EQ(*r, "Hi");
-  }
-
-  SIMPLE_TEST(ContractError) {
-    auto [f, p] = futures::Contract<int>();
-
-    auto timeout = TimeoutError();
-
-    std::move(p).SetError(timeout);
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(!r);
-    ASSERT_EQ(r.error(), timeout);
-  }
-
-  SIMPLE_TEST(ContractDetach) {
-    {
-      auto [f, p] = futures::Contract<int>();
-
-      std::move(f) | futures::Detach();
-      std::move(p).SetValue(1);
-    }
-
-    {
-      auto [f, p] = futures::Contract<int>();
-
-      std::move(p).SetValue(1);
-      std::move(f) | futures::Detach();
-    }
-  }
-
-  SIMPLE_TEST(ContractMoveOnly) {
-    auto [f, p] = futures::Contract<MoveOnly>();
-
-    std::move(p).SetValue(MoveOnly{});
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-  }
-
-  SIMPLE_TEST(ContractNonDefaultConstructible) {
-    auto [f, p] = futures::Contract<NonDefaultConstructible>();
-
-    std::move(p).SetValue({128});
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-  }
-
   SIMPLE_TEST(Value) {
     futures::Future<int> auto f = futures::Value(111);
 
@@ -143,6 +87,59 @@ TEST_SUITE(Futures) {
 
     ASSERT_FALSE(r);
     ASSERT_EQ(r.error(), timeout);
+  }
+
+  SIMPLE_TEST(MapValue) {
+    auto f = futures::Value(1)
+             | futures::Map([](int v) {
+                 return v + 1;
+               });
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 2);
+  }
+
+  SIMPLE_TEST(MapError) {
+    auto f = futures::Failure<int>(TimeoutError())
+             | futures::Map([](int) {
+                 FAIL_TEST("Skip this mapper");
+                 return Unit{};
+               });
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_FALSE(r);
+    ASSERT_EQ(r.error(), TimeoutError());
+  }
+
+  SIMPLE_TEST(AndThen) {
+    auto f = futures::Value<std::string>("ok")
+             | futures::AndThen([](std::string s) {
+                 return result::Ok(s + "!");
+               })
+             | futures::AndThen([](std::string s) {
+                 return result::Ok(s + "!");
+               });
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, "ok!!");
+  }
+
+  SIMPLE_TEST(OrElse) {
+    auto f = futures::Failure<std::string>(IoError())
+             | futures::OrElse([](Error e) {
+                 ASSERT_EQ(e, IoError());
+                 return result::Ok(std::string("fallback"));
+               });
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, "fallback");
   }
 
   SIMPLE_TEST(SubmitPool) {
@@ -217,102 +214,12 @@ TEST_SUITE(Futures) {
     pool.Stop();
   }
 
-  SIMPLE_TEST(MapValue) {
-    auto f = futures::Value(1)
-             | futures::Map([](int v) {
-                 return v + 1;
-               });
+  SIMPLE_TEST(Flatten0){
+    auto ff = futures::Value(futures::Value(42)) | futures::Flatten();
 
-    auto r = std::move(f) | futures::ThreadAwait();
+    auto res = std::move(ff) | futures::ThreadAwait();
 
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, 2);
-  }
-
-  SIMPLE_TEST(MapError) {
-    auto f = futures::Failure<int>(TimeoutError())
-             | futures::Map([](int) {
-                 FAIL_TEST("Skip this mapper");
-                 return Unit{};
-               });
-
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_FALSE(r);
-    ASSERT_EQ(r.error(), TimeoutError());
-  }
-
-  SIMPLE_TEST(AndThen) {
-    auto f = futures::Value<std::string>("ok")
-             | futures::AndThen([](std::string s) {
-                 return result::Ok(s + "!");
-               })
-             | futures::AndThen([](std::string s) {
-                 return result::Ok(s + "!");
-               });
-
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, "ok!!");
-  }
-
-  SIMPLE_TEST(OrElse) {
-    auto f = futures::Failure<std::string>(IoError())
-             | futures::OrElse([](Error e) {
-                 ASSERT_EQ(e, IoError());
-                 return result::Ok(std::string("fallback"));
-               });
-
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, "fallback");
-  }
-
-  SIMPLE_TEST(Pipeline) {
-    auto [f, p] = futures::Contract<int>();
-
-    auto g = std::move(f) | futures::Map([](int v) {
-               return v + 1;
-             }) | futures::Map([](int v) {
-               return v + 2;
-             }) | futures::OrElse([](Error) {
-               FAIL_TEST("Skip this");
-               return result::Ok(111);
-             }) | futures::AndThen([](int) -> Result<int> {
-               return result::Err(TimeoutError());
-             }) | futures::AndThen([](int v) {
-               FAIL_TEST("Skip this");
-               return result::Ok(v + 3);
-             }) | futures::Map([](int v) {
-               FAIL_TEST("Skip this");
-               return v + 4;
-             }) | futures::OrElse([](Error) -> Result<int> {
-               return 17;
-             }) | futures::Map([](int v) {
-               return v + 1;
-             });
-
-    std::move(p).Set(3);
-
-    auto r = std::move(g) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, 18);
-  }
-
-  SIMPLE_TEST(ContractMap) {
-    auto [f, p] = futures::Contract<int>();
-
-    auto g = std::move(f) | futures::Map([](int v) { return v + 1; });
-
-    std::move(p).SetValue(35);
-
-    auto r = std::move(g) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, 36);
+    ASSERT_EQ(*res, 42);
   }
 
   SIMPLE_TEST(Flatten1) {
@@ -450,6 +357,232 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(steps, 7);
   }
 
+  SIMPLE_TEST(ContractValue) {
+    auto [f, p] = futures::Contract<std::string>();
+
+    std::move(p).SetValue("Hi");
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r.has_value());
+    ASSERT_EQ(*r, "Hi");
+  }
+
+  SIMPLE_TEST(ContractError) {
+    auto [f, p] = futures::Contract<int>();
+
+    auto timeout = TimeoutError();
+
+    std::move(p).SetError(timeout);
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(!r);
+    ASSERT_EQ(r.error(), timeout);
+  }
+
+  SIMPLE_TEST(ContractDetach) {
+    {
+      auto [f, p] = futures::Contract<int>();
+
+      std::move(f) | futures::Detach();
+      std::move(p).SetValue(1);
+    }
+
+    {
+      auto [f, p] = futures::Contract<int>();
+
+      std::move(p).SetValue(1);
+      std::move(f) | futures::Detach();
+    }
+  }
+
+  SIMPLE_TEST(ContractMoveOnly) {
+    auto [f, p] = futures::Contract<MoveOnly>();
+
+    std::move(p).SetValue(MoveOnly{});
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+  }
+
+  SIMPLE_TEST(ContractNonDefaultConstructible) {
+    auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+    std::move(p).SetValue({128});
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+  }
+
+  SIMPLE_TEST(Pipeline) {
+    auto [f, p] = futures::Contract<int>();
+
+    auto g = std::move(f) | futures::Map([](int v) {
+               return v + 1;
+             }) | futures::Map([](int v) {
+               return v + 2;
+             }) | futures::OrElse([](Error) {
+               FAIL_TEST("Skip this");
+               return result::Ok(111);
+             }) | futures::AndThen([](int) -> Result<int> {
+               return result::Err(TimeoutError());
+             }) | futures::AndThen([](int v) {
+               FAIL_TEST("Skip this");
+               return result::Ok(v + 3);
+             }) | futures::Map([](int v) {
+               FAIL_TEST("Skip this");
+               return v + 4;
+             }) | futures::OrElse([](Error) -> Result<int> {
+               return 17;
+             }) | futures::Map([](int v) {
+               return v + 1;
+             });
+
+    std::move(p).Set(3);
+
+    auto r = std::move(g) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 18);
+  }
+
+  SIMPLE_TEST(ContractMap) {
+    auto [f, p] = futures::Contract<int>();
+
+    auto g = std::move(f) | futures::Map([](int v) { return v + 1; });
+
+    std::move(p).SetValue(35);
+
+    auto r = std::move(g) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 36);
+  }
+
+  SIMPLE_TEST(DoNotWait1) {
+    executors::ThreadPool pool{4};
+    pool.Start();
+
+    bool submit = false;
+
+    auto f = futures::Submit(pool,
+                             [&] {
+                               std::this_thread::sleep_for(1s);
+                               submit = true;
+                               return result::Ok(11);
+                             })
+             | futures::Map([](int v) {
+                 return v + 1;
+               });
+
+    ASSERT_FALSE(submit);
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(submit);
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 12);
+
+    pool.Stop();
+  }
+
+  SIMPLE_TEST(DoNotWait2) {
+    executors::ThreadPool pool{4};
+    pool.Start();
+
+    bool submit = false;
+
+    auto f = futures::Submit(pool,
+                             [&] {
+                               std::this_thread::sleep_for(1s);
+                               submit = true;
+                               return result::Ok(31);
+                             })
+             | futures::FlatMap([&](int v) {
+                 return futures::Submit(pool, [v] {
+                   return result::Ok(v + 1);
+                 });
+               });
+
+    ASSERT_FALSE(submit);
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(submit);
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 32);
+
+    pool.Stop();
+  }
+
+  SIMPLE_TEST(Start) {
+    bool done = false;
+
+    auto f = futures::Just()
+              | futures::Map([&](Unit) {
+                  done = true;
+                  return 7;
+                })
+              | futures::Start();
+
+    ASSERT_TRUE(done);
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 7);
+  }
+
+  SIMPLE_TEST(BoxValue) {
+    futures::BoxedFuture<int> f = futures::Value(1) | futures::Box();
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 1);
+  }
+
+  SIMPLE_TEST(BoxPipeline) {
+    executors::ManualExecutor manual;
+
+    bool done = false;
+
+    futures::BoxedFuture<Unit> f = futures::Just()
+                                   | futures::Via(manual)
+                                   | futures::Map([](Unit) { return Unit{}; })
+                                   | futures::AndThen([](Unit) { return result::Ok(); })
+                                   | futures::Map([&](Unit) {
+                                       done = true;
+                                       return Unit{};
+                                     })
+                                   | futures::Box();
+
+    std::move(f) | futures::Detach();
+
+    manual.Drain();
+
+    ASSERT_TRUE(done);
+  }
+
+  SIMPLE_TEST(AutoBoxing) {
+    {
+      static const std::string kHello = "Hello";
+      futures::BoxedFuture<std::string> f = futures::Value(kHello);
+
+      std::move(f) | futures::Detach();
+    }
+
+    {
+      futures::BoxedFuture<int> f = futures::Value(2) | futures::Map([](int v) { return v + 1; });
+
+      auto r = std::move(f) | futures::ThreadAwait();
+
+      ASSERT_TRUE(r);
+      ASSERT_EQ(*r, 3);
+    }
+  }
+
   SIMPLE_TEST(FirstOk1) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();
@@ -537,6 +670,30 @@ TEST_SUITE(Futures) {
     std::move(p1).SetError(TimeoutError());
 
     ASSERT_TRUE(fail);
+  }
+
+  SIMPLE_TEST(FirstMoveOnly){
+    auto f1 = futures::Value<MoveOnly>({});
+
+    auto [f, p] = futures::Contract<MoveOnly>();
+
+    auto first = futures::First(std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::ThreadAwait();
+  };
+
+  SIMPLE_TEST(FirstNonDefaultContructible){
+    auto f1 = futures::Value<NonDefaultConstructible>(5);
+
+    auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+    auto first = futures::First(std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::ThreadAwait();   
   }
 
   SIMPLE_TEST(BothOk) {
@@ -798,6 +955,30 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(ans.error(), IoError());
   }
 
+  SIMPLE_TEST(QuorumMoveOnly){
+    auto f1 = futures::Value<MoveOnly>({});
+
+    auto [f, p] = futures::Contract<MoveOnly>();
+
+    auto first = futures::Quorum(1, std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::ThreadAwait();
+  };
+
+  SIMPLE_TEST(QuorumNonDefaultContructible){
+    auto f1 = futures::Value<NonDefaultConstructible>(5);
+
+    auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+    auto first = futures::Quorum(1, std::move(f1), std::move(f));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::ThreadAwait();   
+  }
+
   SIMPLE_TEST(MimicFirstOk1) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();
@@ -968,64 +1149,6 @@ TEST_SUITE(Futures) {
     ASSERT_TRUE(ok);
   }
 
-  SIMPLE_TEST(DoNotWait1) {
-    executors::ThreadPool pool{4};
-    pool.Start();
-
-    bool submit = false;
-
-    auto f = futures::Submit(pool,
-                             [&] {
-                               std::this_thread::sleep_for(1s);
-                               submit = true;
-                               return result::Ok(11);
-                             })
-             | futures::Map([](int v) {
-                 return v + 1;
-               });
-
-    ASSERT_FALSE(submit);
-
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(submit);
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, 12);
-
-    pool.Stop();
-  }
-
-  SIMPLE_TEST(DoNotWait2) {
-    executors::ThreadPool pool{4};
-    pool.Start();
-
-    bool submit = false;
-
-    auto f = futures::Submit(pool,
-                             [&] {
-                               std::this_thread::sleep_for(1s);
-                               submit = true;
-                               return result::Ok(31);
-                             })
-             | futures::FlatMap([&](int v) {
-                 return futures::Submit(pool, [v] {
-                   return result::Ok(v + 1);
-                 });
-               });
-
-    ASSERT_FALSE(submit);
-
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(submit);
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, 32);
-
-    pool.Stop();
-  }
-
   SIMPLE_TEST(Inline1) {
     executors::ManualExecutor manual;
 
@@ -1133,73 +1256,6 @@ TEST_SUITE(Futures) {
     ASSERT_TRUE(ok);
   }
 
-  SIMPLE_TEST(BoxValue) {
-    futures::BoxedFuture<int> f = futures::Value(1) | futures::Box();
-
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, 1);
-  }
-
-  SIMPLE_TEST(BoxPipeline) {
-    executors::ManualExecutor manual;
-
-    bool done = false;
-
-    futures::BoxedFuture<Unit> f = futures::Just()
-                                   | futures::Via(manual)
-                                   | futures::Map([](Unit) { return Unit{}; })
-                                   | futures::AndThen([](Unit) { return result::Ok(); })
-                                   | futures::Map([&](Unit) {
-                                       done = true;
-                                       return Unit{};
-                                     })
-                                   | futures::Box();
-
-    std::move(f) | futures::Detach();
-
-    manual.Drain();
-
-    ASSERT_TRUE(done);
-  }
-
-  SIMPLE_TEST(AutoBoxing) {
-    {
-      static const std::string kHello = "Hello";
-      futures::BoxedFuture<std::string> f = futures::Value(kHello);
-
-      std::move(f) | futures::Detach();
-    }
-
-    {
-      futures::BoxedFuture<int> f = futures::Value(2) | futures::Map([](int v) { return v + 1; });
-
-      auto r = std::move(f) | futures::ThreadAwait();
-
-      ASSERT_TRUE(r);
-      ASSERT_EQ(*r, 3);
-    }
-  }
-
-  SIMPLE_TEST(Start) {
-    bool done = false;
-
-    auto f = futures::Just()
-              | futures::Map([&](Unit) {
-                  done = true;
-                  return 7;
-                })
-              | futures::Start();
-
-    ASSERT_TRUE(done);
-
-    auto r = std::move(f) | futures::ThreadAwait();
-
-    ASSERT_TRUE(r);
-    ASSERT_EQ(*r, 7);
-  }
-
   SIMPLE_TEST(VectorFirstOk1) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();
@@ -1303,6 +1359,44 @@ TEST_SUITE(Futures) {
     std::move(p1).SetError(TimeoutError());
 
     ASSERT_TRUE(fail);
+  }
+
+  SIMPLE_TEST(VectorFirstMoveOnly){
+    futures::BoxedFuture<MoveOnly> f1 = futures::Value<MoveOnly>({});
+
+    auto [f, p] = futures::Contract<MoveOnly>();
+
+    futures::BoxedFuture<MoveOnly> f2 = std::move(f);
+
+    std::vector<decltype(f1)> vec{};
+
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+
+    auto first = futures::First(std::move(vec));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::ThreadAwait();
+  };
+
+  SIMPLE_TEST(VectorFirstNonDefaultContructible){
+    futures::BoxedFuture<NonDefaultConstructible> f1 = futures::Value<NonDefaultConstructible>(5);
+
+    auto [f, p] = futures::Contract<NonDefaultConstructible>();
+
+    futures::BoxedFuture<NonDefaultConstructible> f2 = std::move(f);
+
+    std::vector<decltype(f1)> vec{};
+
+    vec.push_back(std::move(f1));
+    vec.push_back(std::move(f2));
+
+    auto first = futures::First(std::move(vec));
+
+    std::move(p).SetError(TimeoutError());
+
+    std::move(first) | futures::ThreadAwait(); 
   }
 
   SIMPLE_TEST(VectorBothOk) {

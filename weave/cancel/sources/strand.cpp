@@ -41,7 +41,7 @@ void StrandSource::ClearReceiver(SignalReceiver* expected) {
   }
 
   bool ok = state_.compare_exchange_strong(curr, State::Value(kInit),
-                                           std::memory_order::release,
+                                           std::memory_order::acq_rel,
                                            std::memory_order::relaxed);
 
   if (ok) {

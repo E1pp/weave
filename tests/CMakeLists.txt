@@ -96,6 +96,7 @@ add_test_target(weave_fibers_tp_stress_tests executors/fibers/thread_pool/stress
 
 add_test_target(weave_cancel_unit_tests cancel/just_works/unit.cpp)
 add_test_target(weave_cancel_stress_tests cancel/just_works/stress.cpp)
+add_nontest_target(weave_cancel_traits_tests cancel/just_works/traits.cpp)
 add_test_target(weave_cancel_alloc_tests cancel/alloc/unit.cpp)
 
 # Timers 

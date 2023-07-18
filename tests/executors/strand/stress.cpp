@@ -1,4 +1,4 @@
-#include <weave/executors/thread_pool.hpp>
+#include <weave/executors/tp/compute/thread_pool.hpp>
 #include <weave/executors/strand.hpp>
 #include <weave/executors/submit.hpp>
 
@@ -16,7 +16,7 @@ using namespace std::chrono_literals;
 /////////////////////////////////////////////////////////////////////
 
 void ConcurrentStrands(size_t mutexes, size_t pushes) {
-  executors::ThreadPool workers{4};
+  executors::tp::compute::ThreadPool workers{4};
   workers.Start();
 
   std::list<executors::Strand> strands;
@@ -24,7 +24,7 @@ void ConcurrentStrands(size_t mutexes, size_t pushes) {
     strands.emplace_back(workers);
   }
 
-  executors::ThreadPool clients{mutexes};
+  executors::tp::compute::ThreadPool clients{mutexes};
   clients.Start();
 
   for (twist::test::Repeat repeat; repeat(); ) {
@@ -51,7 +51,7 @@ void ConcurrentStrands(size_t mutexes, size_t pushes) {
 //////////////////////////////////////////////////////////////////////
 
 void MissingTasks() {
-  executors::ThreadPool pool{4};
+  executors::tp::compute::ThreadPool pool{4};
   pool.Start();
 
   executors::Strand strand{pool};
