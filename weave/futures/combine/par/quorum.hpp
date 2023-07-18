@@ -58,7 +58,7 @@ Future<traits::ValueOf<First>> auto Quorum(size_t threshold, First f1) {
 }
 
 // Actually vector version does allocate memory for outputs since it collects
-// them in a vector But no_alloc versions do not allocate memory for input
+// them in a vector. But no_alloc versions do not allocate memory for input
 // futures themselves
 
 //////////////////////////////////////////////////////////////////////////////

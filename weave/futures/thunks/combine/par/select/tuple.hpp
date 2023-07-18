@@ -88,6 +88,74 @@ class SelectControlBlock<OnHeap ,Cons, detail::TaggedTuple, Futures...> final: p
 
 ///////////////////////////////////////////////////////////////////////
 
+template <typename Cons, SomeFuture... Futures>
+class SelectControlBlock<false ,Cons, detail::TaggedTuple, Futures...> final: public detail::JoinBlock<false, SelectControlBlock<false ,Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<false>, SelectedValue<Futures...>, Cons, detail::TaggedTuple, Futures...> {
+ public:
+  using ValueType = SelectedValue<Futures...>;
+  using Base = detail::JoinBlock<false, SelectControlBlock<false ,Cons, detail::TaggedTuple, Futures...>, detail::JoinAll<false>, ValueType, Cons, detail::TaggedTuple, Futures...>;
+
+  template<typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  SelectControlBlock(size_t, Cons& cons, InterStorage storage) : Base(cons, std::move(storage)){
+  }
+
+  ~SelectControlBlock() override = default;
+
+  template <size_t Index>
+  void Consume(
+      Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
+    auto result = std::move(out.result);
+
+    if (result && Base::MarkFulfilled()) {
+      // We got the first result
+      EmplaceResult<Index>(std::move(result));
+    }
+
+    if (bool is_the_last_one = Base::ProducerDone()) {
+      if (!res_) {
+        // Emplace the last error
+        EmplaceError<Index>(std::move(result));
+      }
+
+      Base::CompleteConsumer(std::move(*res_));
+    }
+  }
+
+  void Cancel() {
+    if (bool is_the_last_one = Base::ProducerDone()) {
+      if (res_) {
+        // Someone got through
+        Base::CompleteConsumer(std::move(*res_));
+      } else {
+        // Entire tree got cancelled
+        Base::CancelConsumer();
+      }
+    }
+  }
+
+ private:
+  template <size_t Index>
+  void EmplaceResult(
+      Result<detail::NthType<Index, traits::ValueOf<Futures>...>> res) {
+    ValueType variant{std::in_place_index<Index>, std::move(*res)};
+
+    res_.emplace(result::Ok(std::move(variant)));
+
+    Base::Forward(cancel::Signal::Cancel());
+  }
+
+  template <size_t Index>
+  void EmplaceError(
+      Result<detail::NthType<Index, traits::ValueOf<Futures>...>> err) {
+    Result<ValueType> matched_type{result::Err(std::move(err.error()))};
+
+    res_.emplace(std::move(matched_type));
+  }
+
+ private:
+  std::optional<Result<ValueType>> res_;
+};
+
 // // OnStack spec which waits for the last future to cancel
 // template <SomeFuture... Futures>
 // struct SelectControlBlock<false, detail::Tuple, Futures...>

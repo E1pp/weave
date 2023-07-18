@@ -122,186 +122,186 @@ void StressTestPipeline() {
 
 //////////////////////////////////////////////////////////////////////
 
-// void StressTestFirst() {
-//   executors::tp::fast::ThreadPool pool{4};
-//   pool.Start();
+void StressTestFirst() {
+  executors::tp::fast::ThreadPool pool{4};
+  pool.Start();
 
-//   twist::test::Repeat repeat;
+  twist::test::Repeat repeat;
 
-//   while (repeat()) {
-//     size_t i = repeat.Iter();
+  while (repeat()) {
+    size_t i = repeat.Iter();
 
-//     auto f = futures::Submit(pool, [&, i]() -> Result<int> {
-//       if (i % 3 == 0) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(1);
-//       }
-//     });
+    auto f = futures::Submit(pool, [&, i]() -> Result<int> {
+      if (i % 3 == 0) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(1);
+      }
+    });
 
-//     auto g = futures::Submit(pool, [&, i]() -> Result<int> {
-//       if (i % 4 == 0) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(2);
-//       }
-//     });
+    auto g = futures::Submit(pool, [&, i]() -> Result<int> {
+      if (i % 4 == 0) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(2);
+      }
+    });
 
-//     auto first = futures::no_alloc::First(std::move(f), std::move(g));
+    auto first = futures::no_alloc::First(std::move(f), std::move(g));
 
-//     auto r = std::move(first) | futures::ThreadAwait();
+    auto r = std::move(first) | futures::ThreadAwait();
 
-//     if (i % 12 != 0) {
-//       ASSERT_TRUE(r);
-//       ASSERT_TRUE((*r == 1) || (*r == 2)); // NOLINT
-//     } else {
-//       ASSERT_FALSE(r);
-//     }
+    if (i % 12 != 0) {
+      ASSERT_TRUE(r);
+      ASSERT_TRUE((*r == 1) || (*r == 2)); // NOLINT
+    } else {
+      ASSERT_FALSE(r);
+    }
 
-//     pool.WaitIdle();
-//   }
+    pool.WaitIdle();
+  }
 
-//   fmt::println("Iterations: {}", repeat.IterCount());
+  fmt::println("Iterations: {}", repeat.IterCount());
 
-//   pool.Stop();
-// }
+  pool.Stop();
+}
 
-// //////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 
-// void StressTestAll() {
-//   executors::ThreadPool pool{4};
-//   pool.Start();
+void StressTestAll() {
+  executors::ThreadPool pool{4};
+  pool.Start();
 
-//   twist::test::Repeat repeat;
+  twist::test::Repeat repeat;
 
-//   while (repeat()) {
-//     size_t i = repeat.Iter();
+  while (repeat()) {
+    size_t i = repeat.Iter();
 
-//     auto f = futures::Submit(pool, [i]() -> Result<int> {
-//       if (i % 7 == 5) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(1);
-//       }
-//     });
+    auto f = futures::Submit(pool, [i]() -> Result<int> {
+      if (i % 7 == 5) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(1);
+      }
+    });
 
-//     auto g = futures::Submit(pool, [i]() -> Result<int> {
-//       if (i % 7 == 6) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(2);
-//       }
-//     });
+    auto g = futures::Submit(pool, [i]() -> Result<int> {
+      if (i % 7 == 6) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(2);
+      }
+    });
 
-//     auto both = futures::no_alloc::All(std::move(f), std::move(g));
+    auto both = futures::no_alloc::All(std::move(f), std::move(g));
 
-//     auto r = std::move(both) | futures::ThreadAwait();
+    auto r = std::move(both) | futures::ThreadAwait();
 
-//     if (i % 7 < 5) {
-//       auto [x, y] = *r;
-//       ASSERT_EQ(x, 1);
-//       ASSERT_EQ(y, 2);
-//     } else {
-//       ASSERT_FALSE(r);
-//     }
-//   }
+    if (i % 7 < 5) {
+      auto [x, y] = *r;
+      ASSERT_EQ(x, 1);
+      ASSERT_EQ(y, 2);
+    } else {
+      ASSERT_FALSE(r);
+    }
+  }
 
-//   fmt::println("Iterations: {}", repeat.IterCount());
+  fmt::println("Iterations: {}", repeat.IterCount());
 
-//   pool.Stop();
-// }
+  pool.Stop();
+}
 
-// //////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 
-// void StressTestQuorumFirst() {
-//   executors::tp::fast::ThreadPool pool{4};
-//   pool.Start();
+void StressTestQuorumFirst() {
+  executors::tp::fast::ThreadPool pool{4};
+  pool.Start();
 
-//   twist::test::Repeat repeat;
+  twist::test::Repeat repeat;
 
-//   while (repeat()) {
-//     size_t i = repeat.Iter();
+  while (repeat()) {
+    size_t i = repeat.Iter();
 
-//     auto f = futures::Submit(pool, [&, i]() -> Result<int> {
-//       if (i % 3 == 0) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(1);
-//       }
-//     });
+    auto f = futures::Submit(pool, [&, i]() -> Result<int> {
+      if (i % 3 == 0) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(1);
+      }
+    });
 
-//     auto g = futures::Submit(pool, [&, i]() -> Result<int> {
-//       if (i % 4 == 0) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(2);
-//       }
-//     });
+    auto g = futures::Submit(pool, [&, i]() -> Result<int> {
+      if (i % 4 == 0) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(2);
+      }
+    });
 
-//     auto first = futures::no_alloc::Quorum(1, std::move(f), std::move(g));
+    auto first = futures::no_alloc::Quorum(1, std::move(f), std::move(g));
 
-//     auto r = std::move(first) | futures::ThreadAwait();
+    auto r = std::move(first) | futures::ThreadAwait();
 
-//     if (i % 12 != 0) {
-//       ASSERT_TRUE(r);
-//       ASSERT_TRUE(((*r)[0] == 1) || ((*r)[0] == 2)); // NOLINT
-//     } else {
-//       ASSERT_FALSE(r);
-//     }
+    if (i % 12 != 0) {
+      ASSERT_TRUE(r);
+      ASSERT_TRUE(((*r)[0] == 1) || ((*r)[0] == 2)); // NOLINT
+    } else {
+      ASSERT_FALSE(r);
+    }
 
-//     pool.WaitIdle();
-//   }
+    pool.WaitIdle();
+  }
 
-//   fmt::println("Iterations: {}", repeat.IterCount());
+  fmt::println("Iterations: {}", repeat.IterCount());
 
-//   pool.Stop();
-// }
+  pool.Stop();
+}
 
-// //////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 
-// void StressTestQuorumAll() {
-//   executors::ThreadPool pool{4};
-//   pool.Start();
+void StressTestQuorumAll() {
+  executors::ThreadPool pool{4};
+  pool.Start();
 
-//   twist::test::Repeat repeat;
+  twist::test::Repeat repeat;
 
-//   while (repeat()) {
-//     size_t i = repeat.Iter();
+  while (repeat()) {
+    size_t i = repeat.Iter();
 
-//     auto f = futures::Submit(pool, [i]() -> Result<int> {
-//       if (i % 7 == 5) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(1);
-//       }
-//     });
+    auto f = futures::Submit(pool, [i]() -> Result<int> {
+      if (i % 7 == 5) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(1);
+      }
+    });
 
-//     auto g = futures::Submit(pool, [i]() -> Result<int> {
-//       if (i % 7 == 6) {
-//         return result::Err(TimeoutError());
-//       } else {
-//         return result::Ok(2);
-//       }
-//     });
+    auto g = futures::Submit(pool, [i]() -> Result<int> {
+      if (i % 7 == 6) {
+        return result::Err(TimeoutError());
+      } else {
+        return result::Ok(2);
+      }
+    });
 
-//     auto both = futures::no_alloc::Quorum(2, std::move(f), std::move(g));
+    auto both = futures::no_alloc::Quorum(2, std::move(f), std::move(g));
 
-//     auto r = std::move(both) | futures::ThreadAwait();
+    auto r = std::move(both) | futures::ThreadAwait();
 
-//     if (i % 7 < 5) {
-//       int x = (*r)[0];
-//       int y = (*r)[1];
+    if (i % 7 < 5) {
+      int x = (*r)[0];
+      int y = (*r)[1];
 
-//       ASSERT_TRUE((x == 1 && y == 2) || (x == 2 && y == 1)); // NOLINT
-//     } else {
-//       ASSERT_FALSE(r);
-//     }
-//   }
+      ASSERT_TRUE((x == 1 && y == 2) || (x == 2 && y == 1)); // NOLINT
+    } else {
+      ASSERT_FALSE(r);
+    }
+  }
 
-//   fmt::println("Iterations: {}", repeat.IterCount());
+  fmt::println("Iterations: {}", repeat.IterCount());
 
-//   pool.Stop();
-// }
+  pool.Stop();
+}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -371,21 +371,21 @@ TEST_SUITE(Futures) {
     StressTestPipeline();
   }
 
-  // TWIST_TEST(StressFirst, 5s) {
-  //   StressTestFirst();
-  // }
+  TWIST_TEST(StressFirst, 5s) {
+    StressTestFirst();
+  }
   
-  // TWIST_TEST(StressBoth, 5s) {
-  //   StressTestAll();
-  // }
+  TWIST_TEST(StressBoth, 5s) {
+    StressTestAll();
+  }
 
-  // TWIST_TEST(StressQuorumFirst, 5s){
-  //   StressTestQuorumFirst();
-  // }
+  TWIST_TEST(StressQuorumFirst, 5s){
+    StressTestQuorumFirst();
+  }
 
-  // TWIST_TEST(StressQuorumAll, 5s){
-  //   StressTestQuorumAll();
-  // }
+  TWIST_TEST(StressQuorumAll, 5s){
+    StressTestQuorumAll();
+  }
 
   TWIST_TEST(StressFork, 5s){
     StressTestFork();

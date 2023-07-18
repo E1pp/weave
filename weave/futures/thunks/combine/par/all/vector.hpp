@@ -11,8 +11,6 @@
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
-
 #include <optional>
 
 namespace weave::futures::thunks {
@@ -75,6 +73,71 @@ class AllControlBlock<OnHeap, Cons, detail::TaggedVector, Future> final: public 
 };
 
 //////////////////////////////////////////////////////////////////////////
+
+template <typename Cons, SomeFuture Future>
+class AllControlBlock<false, Cons, detail::TaggedVector, Future> final: public detail::JoinBlock<false, AllControlBlock<false, Cons, detail::TaggedVector, Future>, detail::JoinAll<false>, std::vector<traits::ValueOf<Future>>, Cons, detail::TaggedVector, Future> {
+ public:
+  using InputType = traits::ValueOf<Future>;
+  using ValueType = std::vector<InputType>;
+  using Base = detail::JoinBlock<false, AllControlBlock<false, Cons, detail::TaggedVector, Future>, detail::JoinAll<false>, ValueType, Cons, detail::TaggedVector, Future>;
+
+  template<typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  AllControlBlock(size_t, Cons& cons, InterStorage storage) : Base(cons, std::move(storage)), storage_(storage.Size()) {
+  }
+
+  ~AllControlBlock() override = default;
+
+  void Consume(Output<InputType> out, size_t index) {
+    auto result = std::move(out.result);
+
+    if (result) {
+      storage_[index].emplace(std::move(*result));
+    } else if (Base::MarkFulfilled()) {
+      // we got the first error
+      Result<ValueType> matched_type = result::Err(result.error());
+      EmplaceError(std::move(matched_type));
+    }
+
+    if (bool is_the_last_one = Base::ProducerDone()) {
+      if (err_) {
+        Base::CompleteConsumer(std::move(*err_));
+      } else {
+        ValueType vector{};
+        for (size_t i = 0; i < storage_.size(); i++) {
+          vector.push_back(std::move(*(storage_[i])));
+        }
+
+        Base::CompleteConsumer(result::Ok(std::move(vector)));
+      }
+    }
+  }
+
+  // Being cancelled implies cancel from above
+  // or first error
+  void Cancel() {
+    if (bool is_the_last_one = Base::ProducerDone()) {
+      if (err_) {
+        Base::CompleteConsumer(std::move(*err_));
+      } else {
+        Base::CancelConsumer();
+      }
+    }
+  }
+
+ private:
+  void EmplaceError(Result<ValueType> err) {
+    // emplace error
+    err_.emplace(result::Err(err.error()));
+
+    // Cancel the rest
+    Base::Forward(cancel::Signal::Cancel());
+  }
+
+ private:
+  std::vector<std::optional<InputType>> storage_;
+  std::optional<Result<ValueType>> err_;
+};
 
 // template <SomeFuture Future>
 // struct AllControlBlock<false, detail::Vector, Future>

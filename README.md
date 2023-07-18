@@ -5,6 +5,9 @@ Concurrency for C++
 
  - [TaggedBuffer] Rework – Not done
 
+ - [cancel]
+    - [sources] – Needs Refactoring
+
  - [futures]:
     - [model] – Final
     - [make] – Done + Traits
@@ -19,11 +22,7 @@ Concurrency for C++
       - [Fork] – Done + Traits
     - [combine/par]:
       - [Allocating] – Done + Traits
-      - [no_alloc]:
-        - [First] – Done + Traits
-        - [All] – Not Done
-        - [Quorum] – Done + Traits
-        - [Select] – Done + Traits
+      - [no_alloc] – Done + Traits <- Need Refactoring
     - [run] – Done 
     - [syntax] – Done
     - [types] – Done

@@ -19,7 +19,7 @@ Future<std::vector<traits::ValueOf<InputFuture>>> auto All(
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-  using AllFuture = thunks::Join<true, true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using AllFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return AllFuture(0, std::move(vec));
 }
@@ -32,7 +32,7 @@ All(First f1, Futures... fs) {
   using Storage = thunks::detail::Tuple<First, Futures...>;
   using ValueType = std::tuple<traits::ValueOf<First>, traits::ValueOf<Futures>...>;
 
-  using AllFuture = thunks::Join<true, true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedTuple, First, Futures...>;
+  using AllFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedTuple, First, Futures...>;
 
   return AllFuture(0, std::move(f1), std::move(fs)...);
 }
@@ -48,35 +48,40 @@ Future<traits::ValueOf<First>> auto All(First f1) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-// namespace no_alloc {
+namespace no_alloc {
 
-// template <traits::Cancellable InputFuture>
-// Future<std::vector<traits::ValueOf<InputFuture>>> auto All(
-//     std::vector<InputFuture> vec) {
-//   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
+template <traits::Cancellable InputFuture>
+Future<std::vector<traits::ValueOf<InputFuture>>> auto All(
+    std::vector<InputFuture> vec) {
+  WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
 
-//   auto block =
-//       thunks::AllControlBlock<false, thunks::detail::Vector, InputFuture>(
-//           vec.size(), std::move(vec));
+  using Storage = thunks::detail::Vector<InputFuture>;
+  using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-//   return futures::thunks::JoinOnStack(std::move(block));
-// }
+  using AllFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
-// template <traits::Cancellable First, traits::Cancellable... Futures>
-// Future<std::tuple<traits::ValueOf<First>, traits::ValueOf<Futures>...>> auto
-// All(First f1, Futures... fs) {
-//   thunks::AllControlBlock<false, thunks::detail::Tuple, First, Futures...>
-//       block(1 + sizeof...(Futures), std::move(f1), std::move(fs)...);
+  return AllFuture(0, std::move(vec));
+}
 
-//   return thunks::JoinOnStack(std::move(block));
-// }
+template <traits::Cancellable First, traits::Cancellable... Futures>
+Future<std::tuple<traits::ValueOf<First>, traits::ValueOf<Futures>...>> auto
+All(First f1, Futures... fs) {
+  static_assert((SomeFuture<Futures> && ...));
+  
+  using Storage = thunks::detail::Tuple<First, Futures...>;
+  using ValueType = std::tuple<traits::ValueOf<First>, traits::ValueOf<Futures>...>;
 
-// template <traits::Cancellable First>
-// Future<traits::ValueOf<First>> auto All(First f1) {
-//   return std::move(f1);
-// }
+  using AllFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedTuple, First, Futures...>;
 
-// }  // namespace no_alloc
+  return AllFuture(0, std::move(f1), std::move(fs)...);
+}
+
+template <traits::Cancellable First>
+Future<traits::ValueOf<First>> auto All(First f1) {
+  return std::move(f1);
+}
+
+}  // namespace no_alloc
 
 //////////////////////////////////////////////////////////////////////////////
 
