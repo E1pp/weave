@@ -47,8 +47,9 @@ class JoinSource
   }
 
   void Detach(SignalReceiver* receiver) override {
-    buffer_.Pop(receiver);
-    receiver->Forward(Signal::Release());
+    if(buffer_.TryPop(receiver)){
+      receiver->Forward(Signal::Release());
+    }
   }
 
   void RequestCancel() {

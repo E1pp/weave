@@ -35,10 +35,6 @@ class [[nodiscard]] Tine final : public support::NonCopyableBase,
       : forker_(forker) {
   }
 
-  ~Tine() {
-    WHEELS_VERIFY(forker_ == nullptr, "You must not discard the future!");
-  }
-
   // Movable
   Tine(Tine&& that) noexcept
       : forker_(that.Release()) {
@@ -62,10 +58,6 @@ class [[nodiscard]] Tine final : public support::NonCopyableBase,
    public:
     void Start() {
       Release()->template Start<Index>(this);
-    }
-
-    ~EvaluationFor() override final {
-      WHEELS_VERIFY(forker_ == nullptr, "You must not discard the evaluation!");
     }
 
    private:

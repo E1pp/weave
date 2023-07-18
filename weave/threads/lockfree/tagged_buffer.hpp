@@ -69,10 +69,11 @@ class TaggedBuffer {
   }
 
   // Postcondition : node on the given position is fullptr
-  void Pop(Node* node) {
+  // true if we got it first
+  bool TryPop(Node* node) {
     WHEELS_VERIFY(node->position_ != -1, "Not pushed yet!");
 
-    buffer_[node->position_].ptr_.exchange(fullptr, std::memory_order::relaxed);
+    return buffer_[node->position_].ptr_.exchange(fullptr, std::memory_order::relaxed) != fullptr;
   }
 
   // One-shot

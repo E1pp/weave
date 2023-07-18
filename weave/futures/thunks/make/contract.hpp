@@ -43,10 +43,7 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase {
       std::exchange(state_, nullptr)->Consume(this);
     }
 
-    ~EvaluationFor() override final {
-      WHEELS_VERIFY(state_ == nullptr,
-                    "You must call Start on this evaluation!");
-    }
+    ~EvaluationFor() override final = default;
 
    private:
     // AbstractConsumer<ValueType>
@@ -83,10 +80,6 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase {
 
   void Cancellable() {
     // No-Op
-  }
-
-  ~ContractFuture() {
-    WHEELS_VERIFY(state_ == nullptr, "Unfulfilled Eager future!");
   }
 
  private:

@@ -865,7 +865,7 @@ TEST_SUITE(Fibers){
     pool.Stop();
   }
 
-  SIMPLE_TEST(DdosEager1){
+  SIMPLE_TEST(DDosEager1){
     executors::fibers::ManualExecutor manual;
 
     auto f = futures::Submit(manual, [&]{
@@ -887,7 +887,7 @@ TEST_SUITE(Fibers){
     manual.Stop();
   }
 
-  SIMPLE_TEST(DdosEager2){
+  SIMPLE_TEST(DDosEager2){
     executors::fibers::ManualExecutor manual;
 
     auto f = futures::Submit(manual, [&]{
@@ -906,7 +906,7 @@ TEST_SUITE(Fibers){
     manual.Stop();
   }
 
-  SIMPLE_TEST(DdosEager3){
+  SIMPLE_TEST(DDosEager3){
     executors::ThreadPool pool{4};
     pool.Start();
 
@@ -924,7 +924,7 @@ TEST_SUITE(Fibers){
     pool.Stop();
   }
 
-  // SIMPLE_TEST(DdosFirst){
+  // SIMPLE_TEST(DDosFirst){
   //   executors::fibers::ManualExecutor manual;
 
   //   auto f = futures::Submit(manual, []{}) 

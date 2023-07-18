@@ -41,10 +41,6 @@ class [[nodiscard]] Promise {
     Release()->Produce(result::Err(std::move(e)));
   }
 
-  ~Promise() {
-    assert(state_ == nullptr);
-  }
-
  private:
   SharedState* Release() {
     return std::exchange(state_, nullptr);
