@@ -25,7 +25,7 @@
 #include <weave/futures/combine/seq/or_else.hpp>
 #include <weave/futures/combine/seq/start.hpp>
 #include <weave/futures/combine/seq/via.hpp>
-// #include <weave/futures/combine/seq/with_timeout.hpp>
+#include <weave/futures/combine/seq/with_timeout.hpp>
 
 // Combine Par
 
@@ -221,6 +221,12 @@ TEST_SUITE(CancelTraits){
     NOT_CANCELLABLE(futures::Quorum(1, std::declval<std::vector<decltype(futures::Value(42) | futures::Box())>>()));
 
     NOT_CANCELLABLE(futures::Select(futures::Value(42), futures::Value(42) | futures::Box()));
+  }
+
+  SIMPLE_TEST(WithTimeoutCancellable){
+    CANCELLABLE(futures::Never() | futures::WithTimeout(5s));
+
+    NOT_CANCELLABLE(futures::Never() | futures::Box() | futures::WithTimeout(5s));
   }
 }
 
