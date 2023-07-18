@@ -18,7 +18,7 @@ Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec){
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = traits::ValueOf<InputFuture>;
 
-  using FirstFuture = thunks::Join<true, true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using FirstFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return FirstFuture(0, std::move(vec));
 }
@@ -31,7 +31,7 @@ Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
   using Storage = thunks::detail::Tuple<FirstF, Fs...>;
   using ValueType = traits::ValueOf<FirstF>;
 
-  using FirstFuture = thunks::Join<true, true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
+  using FirstFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
 
   return FirstFuture(0, std::move(f1), std::move(fs)...);
 }
@@ -45,40 +45,38 @@ Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-// namespace no_alloc {
+namespace no_alloc {
 
-// template <traits::Cancellable InputFuture>
-// Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec)
-// {
-//   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
+template <traits::Cancellable InputFuture>
+Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec){
+  WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
 
-//   auto block =
-//       thunks::FirstControlBlock<false, thunks::detail::Vector, InputFuture>(
-//           vec.size(), std::move(vec));
+  using Storage = thunks::detail::Vector<InputFuture>;
+  using ValueType = traits::ValueOf<InputFuture>;
 
-//   return futures::thunks::JoinOnStack(std::move(block));
-// }
+  using FirstFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
-// template <traits::Cancellable FirstFuture, traits::Cancellable... Futures>
-// Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1, Futures...
-// fs) {
-//   static_assert(
-//       (std::is_same_v<traits::ValueOf<FirstFuture>, traits::ValueOf<Futures>>
-//       &&
-//        ...));
+  return FirstFuture(0, std::move(vec));
+}
 
-//   thunks::FirstControlBlock<false, thunks::detail::Tuple, FirstFuture,
-//                             Futures...>
-//       block(1 + sizeof...(Futures), std::move(f1), std::move(fs)...);
+template <traits::Cancellable FirstF, traits::Cancellable... Fs>
+Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
+  static_assert(
+      (std::is_same_v<traits::ValueOf<FirstF>, traits::ValueOf<Fs>> && ...));
 
-//   return futures::thunks::JoinOnStack(std::move(block));
-// }
+  using Storage = thunks::detail::Tuple<FirstF, Fs...>;
+  using ValueType = traits::ValueOf<FirstF>;
 
-// template <SomeFuture FirstFuture>
-// Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1) {
-//   return std::move(f1);
-// }
+  using FirstFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
 
-// }  // namespace no_alloc
+  return FirstFuture(0, std::move(f1), std::move(fs)...);
+}
+
+template <SomeFuture FirstFuture>
+Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1) {
+  return std::move(f1);
+}
+
+}  // namespace no_alloc
 
 }  // namespace weave::futures

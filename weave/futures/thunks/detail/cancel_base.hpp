@@ -41,4 +41,11 @@ struct JustCancellableBase<T> {
 // Not Cancellable
 struct Empty{};
 
+// Cancellable
+struct Full {
+  void Cancellable() {
+    // No-Op
+  }
+};
+
 }  // namespace weave::futures::thunks::detail

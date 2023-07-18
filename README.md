@@ -19,8 +19,11 @@ Concurrency for C++
       - [Fork] – Done + Traits
     - [combine/par]:
       - [Allocating] – Done + Traits
-      - [no_alloc/tuple] – Not Done
-      - [no_alloc/vector] – Not Done
+      - [no_alloc]:
+        - [First] – Done + Traits
+        - [All] – Not Done
+        - [Quorum] – Done + Traits
+        - [Select] – Done + Traits
     - [run] – Done 
     - [syntax] – Done
     - [types] – Done

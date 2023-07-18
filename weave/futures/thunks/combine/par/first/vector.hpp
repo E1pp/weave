@@ -63,6 +63,62 @@ class FirstControlBlock<OnHeap, Cons, detail::TaggedVector, Future> final: publi
 
 ///////////////////////////////////////////////////////////////////////
 
+// OnStack spec which waits for the last future to cancel
+template <typename Cons, SomeFuture Future>
+class FirstControlBlock<false, Cons, detail::TaggedVector, Future> final: public detail::JoinBlock<false,  FirstControlBlock<false, Cons, detail::TaggedVector, Future>, detail::JoinAll<false>, traits::ValueOf<Future>, Cons, detail::TaggedVector, Future> {
+ public:
+  using ValueType = traits::ValueOf<Future>;
+  using Base = detail::JoinBlock<false,  FirstControlBlock<false, Cons, detail::TaggedVector, Future>, detail::JoinAll<false>, ValueType, Cons, detail::TaggedVector, Future>;
+ 
+  template<typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  FirstControlBlock(size_t, Cons& cons, InterStorage storage) : Base(cons, std::move(storage)){
+  }
+
+  ~FirstControlBlock() override = default;
+
+  void Consume(Output<ValueType> out, size_t) {
+    auto result = std::move(out.result);
+
+    if (result && Base::MarkFulfilled()) {
+      // we are the first result
+      EmplaceResult(std::move(result));
+    }
+
+    if (bool is_the_last = Base::ProducerDone()) {
+      // we are the last one
+      if (res_) {
+        Base::CompleteConsumer(std::move(*res_));
+      } else {
+        Base::CompleteConsumer(std::move(result));
+      }
+    }
+  }
+
+  void Cancel() {
+    if (bool is_the_last = Base::ProducerDone()) {
+      if (res_) {
+        Base::CompleteConsumer(std::move(*res_));
+      } else {
+        Base::CancelConsumer();
+      }
+    }
+  }
+
+ private:
+  void EmplaceResult(Result<ValueType> res) {
+    // Emplace result
+    res_.emplace(std::move(res));
+
+    // Cancel the rest
+    Base::Forward(cancel::Signal::Cancel());
+  }
+
+ private:
+  std::optional<Result<ValueType>> res_;
+};
+
+
 // // OnStack spec which waits for the last future to cancel
 // template <SomeFuture Future>
 // struct FirstControlBlock<false, detail::Vector, Future>

@@ -25,7 +25,7 @@ Future<std::vector<traits::ValueOf<InputFuture>>> auto Quorum(
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-  using QuorumFuture = thunks::Join<true, true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using QuorumFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return QuorumFuture(threshold, std::move(vec));
 }
@@ -44,7 +44,7 @@ Quorum(size_t threshold, First f1, Suffix... fs) {
   using Storage = thunks::detail::Tuple<First, Suffix...>;
   using ValueType = thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>;
 
-  using QuorumFuture = thunks::Join<true, true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedTuple, First, Suffix...>;
+  using QuorumFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedTuple, First, Suffix...>;
 
   return QuorumFuture(threshold, std::move(f1), std::move(fs)...);
 }
@@ -63,48 +63,52 @@ Future<traits::ValueOf<First>> auto Quorum(size_t threshold, First f1) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-// namespace no_alloc {
+namespace no_alloc {
 
-// template <traits::Cancellable InputFuture>
-// Future<std::vector<traits::ValueOf<InputFuture>>> auto Quorum(
-//     size_t threshold, std::vector<InputFuture> vec) {
-//   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
+template <traits::Cancellable InputFuture>
+Future<std::vector<traits::ValueOf<InputFuture>>> auto Quorum(
+    size_t threshold, std::vector<InputFuture> vec) {
+  const size_t size = vec.size();
+  WHEELS_VERIFY(size != 0, "Sending empty vector!");
 
-//   WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
-//   WHEELS_VERIFY(threshold <= vec.size(), "Treshold is too big!");
+  WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
+  WHEELS_VERIFY(threshold <= size, "Treshold is too big!");
 
-//   auto block =
-//       thunks::QuorumControlBlock<false, thunks::detail::Vector, InputFuture>(
-//           threshold, vec.size(), std::move(vec));
+  using Storage = thunks::detail::Vector<InputFuture>;
+  using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-//   return futures::thunks::JoinOnStack(std::move(block));
-// }
+  using QuorumFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
-// template <traits::Cancellable First, traits::Cancellable... Suffix>
-// Future<
-//     thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>> auto
-// Quorum(size_t threshold, First f1, Suffix... fs) {
-//   static_assert(
-//       (std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
+  return QuorumFuture(threshold, std::move(vec));
+}
 
-//   WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
-//   WHEELS_VERIFY(threshold <= sizeof...(Suffix) + 1, "Treshold is too big!");
+template <traits::Cancellable First, traits::Cancellable... Suffix>
+Future<
+    thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>> auto
+Quorum(size_t threshold, First f1, Suffix... fs) {
+  static_assert((std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
 
-//   auto block = thunks::QuorumControlBlock<false, thunks::detail::Tuple, First,
-//                                           Suffix...>(
-//       threshold, 1 + sizeof...(Suffix), std::move(f1), std::move(fs)...);
+  const size_t size = 1 + sizeof...(Suffix);
 
-//   return futures::thunks::JoinOnStack(std::move(block));
-// }
+  WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
+  WHEELS_VERIFY(threshold <= size, "Treshold is too big!");
 
-// template <SomeFuture First>
-// Future<traits::ValueOf<First>> auto Quorum(size_t threshold, First f1) {
-//   WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
-//   WHEELS_VERIFY(threshold <= 1, "Treshold is too big!");
+  using Storage = thunks::detail::Tuple<First, Suffix...>;
+  using ValueType = thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>;
 
-//   return std::move(f1);
-// }
+  using QuorumFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedTuple, First, Suffix...>;
 
-// }  // namespace no_alloc
+  return QuorumFuture(threshold, std::move(f1), std::move(fs)...);
+}
+
+template <SomeFuture First>
+Future<traits::ValueOf<First>> auto Quorum(size_t threshold, First f1) {
+  WHEELS_VERIFY(threshold > 0, "Threshold should be greater than zero!");
+  WHEELS_VERIFY(threshold <= 1, "Treshold is too big!");
+
+  return std::move(f1);
+}
+
+}  // namespace no_alloc
 
 }  // namespace weave::futures
