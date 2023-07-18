@@ -115,7 +115,6 @@ class [[nodiscard]] Forker final: public support::PinnedBase, public cancel::sou
   struct Rendezvous {
     AbstractConsumer<V>* consumer_{nullptr};
     threads::lockfree::RendezvousStateMachine rendezvous_;
-    std::optional<Output<V>> output_;
   };
 
  public:
@@ -159,9 +158,11 @@ class [[nodiscard]] Forker final: public support::PinnedBase, public cancel::sou
       Base::ReleaseRef();
     });
 
+    output_.emplace(std::move(out));
+
     // Iterate over array in compile time
-    [&]<size_t... Inds>(std::index_sequence<Inds...>) {
-      (ForkOutput<Inds>(out), ...);
+    [&]<size_t... IthConsumer>(std::index_sequence<IthConsumer...>) {
+      (TryRendezvousWith<IthConsumer>(), ...);
     }
     (std::make_index_sequence<NumTines>());
   }
@@ -193,11 +194,7 @@ class [[nodiscard]] Forker final: public support::PinnedBase, public cancel::sou
 
  private:
   template <size_t Index>
-  void ForkOutput(Output<V> out) {
-    // Emplace the result
-    states_[Index].output_.emplace(out);
-
-    // try rendezvous
+  void TryRendezvousWith() {
     if (bool both = states_[Index].rendezvous_.Produce()) {
       DoRendezvous<Index>();
     }
@@ -207,13 +204,13 @@ class [[nodiscard]] Forker final: public support::PinnedBase, public cancel::sou
   void DoRendezvous() {
     // At this point consumer in index'th place is set
     AbstractConsumer<V>* consumer = states_[Index].consumer_;
-    std::optional<Output<V>>& storage = states_[Index].output_;
+    Output<V> out = *output_;
 
     if (consumer->CancelToken().CancelRequested()) {
-      consumer->Cancel(std::move(storage->context));
+      consumer->Cancel(std::move(out.context));
     } else {
       consumer->CancelToken().Detach(Base::template AsLeaf<Index>());
-      consumer->Complete(std::move(*storage));
+      consumer->Complete(std::move(out));
     }
   }
 
@@ -228,6 +225,7 @@ class [[nodiscard]] Forker final: public support::PinnedBase, public cancel::sou
   twist::ed::stdlike::atomic<bool> started_{false};
 
   std::array<Rendezvous, NumTines> states_;
+  std::optional<Output<V>> output_;
 };
 
 }  // namespace weave::futures::thunks

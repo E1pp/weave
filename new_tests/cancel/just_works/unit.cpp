@@ -377,30 +377,6 @@ TEST_SUITE(Sequential){
 
     ASSERT_EQ(*res, 42);
   }
-
-  // SIMPLE_TEST(ForkCancellable1){
-  //   auto [f1, f2] = futures::Just() | futures::Fork<2>();
-
-  //   static_assert(futures::traits::Cancellable<decltype(f1)>);
-
-  //   static_assert(futures::traits::Cancellable<decltype(f2)>);
-
-  //   std::apply([](auto... fs){
-  //     ((std::move(fs) | futures::Discard()), ...);
-  //   }, std::make_tuple(std::move(f1), std::move(f2)));
-  // }
-
-  // SIMPLE_TEST(ForkCancellable2){
-  //   auto [f1, f2] = futures::Just() | futures::Box() | futures::Fork<2>();
-
-  //   static_assert(!futures::traits::Cancellable<decltype(f1)>);
-
-  //   static_assert(!futures::traits::Cancellable<decltype(f2)>);
-
-  //   std::apply([](auto... fs){
-  //     ((std::move(fs) | futures::Discard()), ...);
-  //   }, std::make_tuple(std::move(f1), std::move(f2)));
-  // }
 }
 
 TEST_SUITE(Parallel){
