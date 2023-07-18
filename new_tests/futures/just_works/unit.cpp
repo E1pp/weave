@@ -9,11 +9,11 @@
 
 #include <weave/futures/combine/seq/map.hpp>
 #include <weave/futures/combine/seq/and_then.hpp>
-// #include <weave/futures/combine/seq/on_success.hpp>
+#include <weave/futures/combine/seq/on_success.hpp>
 #include <weave/futures/combine/seq/or_else.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
 #include <weave/futures/combine/seq/flat_map.hpp>
-// #include <weave/futures/combine/seq/fork.hpp>
+#include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/via.hpp>
 #include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/start.hpp>
@@ -1678,86 +1678,86 @@ TEST_SUITE(Futures) {
     ASSERT_EQ(ans.error(), IoError());
   }
 
-//   SIMPLE_TEST(ForkOk){
-//     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+  SIMPLE_TEST(ForkOk){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-//     auto r1 = std::move(f1) | futures::ThreadAwait();
-//     auto r2 = std::move(f2) | futures::ThreadAwait();
+    auto r1 = std::move(f1) | futures::ThreadAwait();
+    auto r2 = std::move(f2) | futures::ThreadAwait();
 
-//     ASSERT_TRUE(r1);
-//     ASSERT_TRUE(r2);
+    ASSERT_TRUE(r1);
+    ASSERT_TRUE(r2);
 
-//     ASSERT_EQ(*r1, 42);
-//     ASSERT_EQ(*r2, 42);
-//   }
+    ASSERT_EQ(*r1, 42);
+    ASSERT_EQ(*r2, 42);
+  }
 
-//   SIMPLE_TEST(ForkFailure){
-//     auto [f1, f2] = futures::Failure<int>(TimeoutError()) | futures::Fork<2>();
+  SIMPLE_TEST(ForkFailure){
+    auto [f1, f2] = futures::Failure<int>(TimeoutError()) | futures::Fork<2>();
 
-//     auto r1 = std::move(f1) | futures::ThreadAwait();
-//     auto r2 = std::move(f2) | futures::ThreadAwait();
+    auto r1 = std::move(f1) | futures::ThreadAwait();
+    auto r2 = std::move(f2) | futures::ThreadAwait();
 
-//     ASSERT_FALSE(r1);
-//     ASSERT_FALSE(r2);
+    ASSERT_FALSE(r1);
+    ASSERT_FALSE(r2);
 
-//     ASSERT_EQ(r1.error(), TimeoutError());
-//     ASSERT_EQ(r2.error(), TimeoutError());   
-//   }
+    ASSERT_EQ(r1.error(), TimeoutError());
+    ASSERT_EQ(r2.error(), TimeoutError());   
+  }
 
-//   SIMPLE_TEST(ForkFirst){
-//     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
-//     auto res = futures::First(std::move(f1), std::move(f2)) | futures::ThreadAwait();
+  SIMPLE_TEST(ForkFirst){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+    auto res = futures::First(std::move(f1), std::move(f2)) | futures::ThreadAwait();
 
-//     ASSERT_TRUE(res);
-//     ASSERT_EQ(*res, 42);
-//   }
+    ASSERT_TRUE(res);
+    ASSERT_EQ(*res, 42);
+  }
 
-//   SIMPLE_TEST(ForkAll){
-//     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+  SIMPLE_TEST(ForkAll){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-//     auto res = futures::All(std::move(f1), std::move(f2)) | futures::ThreadAwait();
+    auto res = futures::All(std::move(f1), std::move(f2)) | futures::ThreadAwait();
 
-//     ASSERT_TRUE(res);
+    ASSERT_TRUE(res);
 
-//     auto [x, y] = *res;
+    auto [x, y] = *res;
 
-//     ASSERT_EQ(x, 42);
-//     ASSERT_EQ(y, 42);
-//   }
+    ASSERT_EQ(x, 42);
+    ASSERT_EQ(y, 42);
+  }
 
-//   SIMPLE_TEST(ForkFork){
-//     auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
-//     auto [f11, f12] = std::move(f1) | futures::Fork<2>();
+  SIMPLE_TEST(ForkFork){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+    auto [f11, f12] = std::move(f1) | futures::Fork<2>();
 
-//     auto all = futures::All(std::move(f11) | futures::Map([](int v){
-//       return 2 * v;
-//     }), std::move(f12) | futures::Map([](int v){
-//       return 3 * v;
-//     }), std::move(f2));
+    auto all = futures::All(std::move(f11) | futures::Map([](int v){
+      return 2 * v;
+    }), std::move(f12) | futures::Map([](int v){
+      return 3 * v;
+    }), std::move(f2));
 
-//     std::move(all) | futures::Map([](auto tuple){
-//       auto [x, y, z] = std::move(tuple);
+    std::move(all) | futures::Map([](auto tuple){
+      auto [x, y, z] = std::move(tuple);
 
-//       ASSERT_EQ(x, 84);
-//       ASSERT_EQ(y, 126);
-//       ASSERT_EQ(z, 42);
-//     }) | futures::Detach();
-//   }
+      ASSERT_EQ(x, 84);
+      ASSERT_EQ(y, 126);
+      ASSERT_EQ(z, 42);
+    }) | futures::Detach();
+  }
 
-//   SIMPLE_TEST(DontCopySideEffects){
-//     int i = 0;
-//     auto [f1, f2] = futures::Value(42) | futures::OnSuccess([&]{
-//       i++;
-//     }) | futures::Fork<2>();
+  SIMPLE_TEST(DontCopySideEffects){
+    int i = 0;
+    auto [f1, f2] = futures::Value(42) | futures::OnSuccess([&]{
+      i++;
+    }) | futures::Fork<2>();
 
-//     futures::Both(std::move(f1), std::move(f2)) | futures::AndThen([&](auto tuple){
-//       auto [x, y] = std::move(tuple);
+    futures::Both(std::move(f1), std::move(f2)) | futures::AndThen([&](auto tuple){
+      auto [x, y] = std::move(tuple);
 
-//       ASSERT_EQ(x, 42);
-//       ASSERT_EQ(y, 42);
-//       ASSERT_EQ(i, 1);
-//     }) | futures::Detach();
-//   }
+      ASSERT_EQ(x, 42);
+      ASSERT_EQ(y, 42);
+      ASSERT_EQ(i, 1);
+    }) | futures::Detach();
+  }
 }
 
 TEST_SUITE(LazyFutures) {

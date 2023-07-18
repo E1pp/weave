@@ -31,11 +31,11 @@ struct AbstractConsumer {
 
   virtual void Consume(Output<T>) noexcept = 0;
 
-  void Complete(Output<T> o) {
+  void Complete(Output<T> o) noexcept {
     Consume(std::move(o));
   }
 
-  void Complete(Result<T> r) {
+  void Complete(Result<T> r) noexcept {
     Consume({std::move(r), Context{}});
   }
 

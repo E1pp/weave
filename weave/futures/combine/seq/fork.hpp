@@ -1,10 +1,10 @@
 #pragma once
 
-#include <weave/futures/old_syntax/pipe.hpp>
+#include <weave/futures/syntax/pipe.hpp>
 
 #include <weave/futures/thunks/combine/seq/fork.hpp>
 
-#include <weave/futures/old_traits/value_of.hpp>
+#include <weave/futures/traits/value_of.hpp>
 
 #include <optional>
 #include <type_traits>
@@ -13,12 +13,12 @@ namespace weave::futures {
 
 namespace pipe {
 
-template <size_t NumTines>
+template <size_t Count>
 struct [[nodiscard]] Fork {
   template <SomeFuture InputFuture>
   requires std::is_copy_constructible_v<typename InputFuture::ValueType>
   auto Pipe(InputFuture f) {
-    auto* forker = new thunks::Forker<NumTines, decltype(f)>(std::move(f));
+    auto* forker = new thunks::Forker<Count, decltype(f)>(std::move(f));
 
     return forker->MakeTines();
   }
@@ -37,11 +37,11 @@ struct [[nodiscard]] Fork<1> {
 
 }  // namespace pipe
 
-// Future<T> -> Future<T> x NumTines
+// Future<T> -> Future<T> x Count
 
-template <size_t NumTines>
+template <size_t Count>
 inline auto Fork() {
-  return pipe::Fork<NumTines>{};
+  return pipe::Fork<Count>{};
 }
 
 }  // namespace weave::futures

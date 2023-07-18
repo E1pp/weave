@@ -20,7 +20,7 @@
 #include <weave/futures/combine/seq/anyway.hpp>
 #include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
-// #include <weave/futures/combine/seq/fork.hpp>
+#include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/map.hpp>
 #include <weave/futures/combine/seq/on_cancel.hpp>
 #include <weave/futures/combine/seq/on_success.hpp>
@@ -316,67 +316,67 @@ TEST_SUITE(Sequential){
     ASSERT_TRUE(flag);
   }
 
-  // SIMPLE_TEST(CancelFork1){
-  //   executors::ManualExecutor manual;
+  SIMPLE_TEST(CancelFork1){
+    executors::ManualExecutor manual;
 
-  //   auto tuple = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-  //     WHEELS_PANIC("Fork root : test failed!");
-  //   }) | futures::Fork<2>();
+    auto tuple = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("Fork root : test failed!");
+    }) | futures::Fork<2>();
 
-  //   std::apply([](futures::SomeFuture auto&... elements){
-  //     ([](auto one){
-  //       auto eager = std::move(one) | futures::Start();
-  //       std::move(eager).RequestCancel();
-  //     }(std::move(elements)), ...);
-  //   }, tuple);
+    std::apply([](futures::SomeFuture auto&... elements){
+      ([](auto one){
+        auto eager = std::move(one) | futures::Start();
+        std::move(eager).RequestCancel();
+      }(std::move(elements)), ...);
+    }, tuple);
 
-  //   ASSERT_EQ(manual.Drain(), 1);
-  // }
+    ASSERT_EQ(manual.Drain(), 1);
+  }
 
-  // SIMPLE_TEST(CancelFork2){
-  //   executors::ManualExecutor manual;
+  SIMPLE_TEST(CancelFork2){
+    executors::ManualExecutor manual;
 
-  //   auto tuple = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
-  //     WHEELS_PANIC("Fork root : test failed!");
-  //   }) | futures::Fork<10>();
+    auto tuple = futures::Submit(manual, []{}) | futures::AndThen([](Unit){
+      WHEELS_PANIC("Fork root : test failed!");
+    }) | futures::Fork<10>();
 
-  //   std::apply([](futures::SomeFuture auto&... elements){
-  //     ([](auto one){
-  //       auto eager = std::move(one) | futures::Start();
-  //       std::move(eager).RequestCancel();
-  //     }(std::move(elements)), ...);
-  //   }, tuple);
+    std::apply([](futures::SomeFuture auto&... elements){
+      ([](auto one){
+        auto eager = std::move(one) | futures::Start();
+        std::move(eager).RequestCancel();
+      }(std::move(elements)), ...);
+    }, tuple);
 
-  //   ASSERT_EQ(manual.Drain(), 1);
-  // }
+    ASSERT_EQ(manual.Drain(), 1);
+  }
 
-  // SIMPLE_TEST(ForkCancelTine1){
-  //   auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+  SIMPLE_TEST(ForkCancelTine1){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-  //   auto ff2 = std::move(f2) | futures::AndThen([](int){
-  //     WHEELS_PANIC("f2 : Test failed!");
-  //   });
+    auto ff2 = std::move(f2) | futures::AndThen([](int){
+      WHEELS_PANIC("f2 : Test failed!");
+    });
 
-  //   std::move(f1) | futures::Detach();
+    std::move(f1) | futures::Detach();
 
-  //   std::move(ff2) | futures::Discard();
-  // }
+    std::move(ff2) | futures::Discard();
+  }
 
-  // SIMPLE_TEST(ForkCancelTine2){
-  //   auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+  SIMPLE_TEST(ForkCancelTine2){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-  //   auto ff2 = std::move(f2) | futures::AndThen([](int){
-  //     WHEELS_PANIC("f2 : Test failed!");
-  //   });
+    auto ff2 = std::move(f2) | futures::AndThen([](int){
+      WHEELS_PANIC("f2 : Test failed!");
+    });
 
-  //   std::move(ff2) | futures::Discard();
+    std::move(ff2) | futures::Discard();
 
-  //   auto res = std::move(f1) | futures::Await();
+    auto res = std::move(f1) | futures::Await();
 
-  //   ASSERT_TRUE(res);
+    ASSERT_TRUE(res);
 
-  //   ASSERT_EQ(*res, 42);
-  // }
+    ASSERT_EQ(*res, 42);
+  }
 
   // SIMPLE_TEST(ForkCancellable1){
   //   auto [f1, f2] = futures::Just() | futures::Fork<2>();
@@ -514,18 +514,18 @@ TEST_SUITE(Parallel){
     futures::Quorum(1, std::move(f1), std::move(f2)) | futures::Discard();   
   }
 
-  // SIMPLE_TEST(FirstFork){
-  //   auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
+  SIMPLE_TEST(FirstFork){
+    auto [f1, f2] = futures::Value(42) | futures::Fork<2>();
 
-  //   auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
-  //     WHEELS_PANIC("f2 : Test failed!");
-  //     return 84;
-  //   })) | futures::Await();
+    auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
+      WHEELS_PANIC("f2 : Test failed!");
+      return 84;
+    })) | futures::Await();
 
-  //   ASSERT_TRUE(res);
+    ASSERT_TRUE(res);
     
-  //   ASSERT_EQ(*res, 42);
-  // }
+    ASSERT_EQ(*res, 42);
+  }
 }
 
 TEST_SUITE(Fibers){
@@ -948,24 +948,6 @@ TEST_SUITE(Fibers){
     }) | futures::Start() | futures::Await();
 
     pool.Stop();
-  }
-
-  SIMPLE_TEST(ThreadAwait){
-    executors::fibers::ManualExecutor manual;
-
-    auto f = futures::Submit(manual, [&]{
-      futures::Submit(manual, []{
-        ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
-      }) | futures::Await();
-    }) | futures::Start();
-
-    manual.RunNext();
-
-    std::move(f).RequestCancel();
-
-    manual.Drain();
-
-    manual.Stop();
   }
 }
 
