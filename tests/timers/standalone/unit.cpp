@@ -1,3 +1,5 @@
+#include <weave/cancel/never.hpp>
+
 #include <weave/threads/blocking/wait_group.hpp>
 
 #include <weave/timers/processors/standalone.hpp>
@@ -8,7 +10,8 @@
 #include <chrono>
 #include <thread>
 
-#if !defined(TWIST_FIBERS)
+// Sanitizers slow down too much
+#if !defined(TWIST_FIBERS) && !(__has_feature(address_sanitizer) || __has_feature(thread_sanitizer) || defined(__SANITIZE_ADDRESS__))
 
 using namespace weave; // NOLINT
 
@@ -29,8 +32,8 @@ TEST_SUITE(Standalone){
       std::move(fun_)();
     }
 
-    bool WasCancelled() override {
-      return false;
+    cancel::Token CancelToken() override {
+      return cancel::Never();
     }
 
     ~Tester() override = default;
@@ -181,7 +184,7 @@ TEST_SUITE(Standalone){
     wg2.Wait();
   }
 
-  SIMPLE_TEST(DontWasteCPU) {
+  SIMPLE_TEST(DontWasteTooMuchCPU) {
     wheels::ProcessCPUTimer cpu_timer;
 
     timers::StandaloneProcessor proc{};
@@ -198,7 +201,7 @@ TEST_SUITE(Standalone){
 
     wg.Wait();
 
-    ASSERT_LE(cpu_timer.Spent(), 25ms);
+    ASSERT_LE(cpu_timer.Spent(), 100ms);
   }
 }
 

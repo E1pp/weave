@@ -32,6 +32,8 @@ executors::IExecutor* GetExecutor();
 
 void MakeVisible(timers::IProcessor*);
 
+void ResetGlobalProcessor();
+
 timers::IProcessor* GetProcessor();
 
 }  // namespace weave::satellite

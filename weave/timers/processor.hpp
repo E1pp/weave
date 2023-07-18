@@ -5,14 +5,14 @@
 
 #include <weave/satellite/satellite.hpp>
 
+#include <optional>
+
 namespace weave::timers {
 
 struct IProcessor {
   virtual ~IProcessor() = default;
 
   virtual void AddTimer(ITimer*) = 0;
-
-  virtual void CancelTimer(ITimer*) = 0;
 
   Delay DelayFromThis(Millis ms) {
     return Delay{ms, *this};

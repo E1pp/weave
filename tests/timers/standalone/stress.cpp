@@ -1,3 +1,5 @@
+#include <weave/cancel/never.hpp>
+
 #include <weave/threads/blocking/wait_group.hpp>
 
 #include <weave/timers/processors/standalone.hpp>
@@ -30,8 +32,8 @@ template <typename F>
       std::move(fun_)();
     }
 
-    bool WasCancelled() override {
-      return false;
+    cancel::Token CancelToken() override {
+      return cancel::Never();
     }
 
     ~Tester() override = default;

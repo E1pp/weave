@@ -31,11 +31,6 @@ class StandaloneProcessor : public IProcessor {
     TryWakeWorker();
   }
 
-  void CancelTimer(ITimer* timer) override {
-    queue_.Cancel(timer);
-    TryWakeWorker();
-  }
-
   ~StandaloneProcessor() override {
     Stop();
   }
@@ -57,9 +52,7 @@ class StandaloneProcessor : public IProcessor {
       // must be in hb with idle_.store thus seq_cst on store-load here
 
       if (until_next_deadline) {
-        Millis roundup = std::max(1ms, *until_next_deadline);
-        twist::ed::futex::WaitTimed(wakeups_, old,
-                                    roundup /*, std::memory_order::relaxed*/);
+        twist::ed::futex::WaitTimed(wakeups_, old,1ms /*, std::memory_order::relaxed*/);
       } else {
         twist::ed::futex::Wait(wakeups_, old, std::memory_order::relaxed);
       }
@@ -71,8 +64,8 @@ class StandaloneProcessor : public IProcessor {
   }
 
   // nullopt if queue was depleted
-  std::optional<Millis> PollQueue() {
-    auto [timer_list, ms_until_inactive] = queue_.GrabReadyTimers();
+  bool PollQueue() {
+    auto [timer_list, is_empty] = queue_.GrabReadyTimers();
 
     while (timer_list != nullptr) {
       auto* next = static_cast<executors::Task*>(timer_list->next_);
@@ -82,7 +75,7 @@ class StandaloneProcessor : public IProcessor {
       timer_list = next;
     }
 
-    return ms_until_inactive;
+    return is_empty;
   }
 
   void TryWakeWorker() {
@@ -104,8 +97,6 @@ class StandaloneProcessor : public IProcessor {
 
     while (head != nullptr) {
       auto* next = static_cast<executors::Task*>(head->next_);
-
-      static_cast<ITimer*>(head)->WasCancelled();
 
       head->Run();
 

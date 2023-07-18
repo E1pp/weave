@@ -14,12 +14,7 @@ struct ITimer : public executors::Task {
   virtual Millis GetDelay() = 0;
 
   // Cancellation
-  virtual bool WasCancelled() = 0;
-
-  // Run
-
- public:
-  bool was_cancelled_{false};
+  virtual cancel::Token CancelToken() = 0;
 };
 
 }  // namespace weave::timers

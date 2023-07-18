@@ -29,7 +29,6 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
-                              public cancel::SignalReceiver,
                               public timers::ITimer {
     friend class After;
 
@@ -42,8 +41,6 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
     ~EvaluationFor() override final = default;
 
     void Start() {
-      cons_.CancelToken().Attach(this);
-
       delay_.processor_->AddTimer(this);
     }
 
@@ -61,15 +58,8 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
       }
     }
 
-    bool WasCancelled() override final {
-      return cons_.CancelToken().CancelRequested();
-    }
-
-    // SignalReceiver
-    void Forward(cancel::Signal signal) override final {
-      if (signal.CancelRequested()) {
-        delay_.processor_->CancelTimer(this);
-      }
+    cancel::Token CancelToken() override final {
+      return cons_.CancelToken();
     }
 
    private:

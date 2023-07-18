@@ -1,8 +1,11 @@
+#include <weave/cancel/never.hpp>
+
 #include <weave/timers/processors/standalone.hpp>
 
 #include <fmt/core.h>
 
 #include <thread>
+#include "weave/satellite/satellite.hpp"
 
 using namespace weave; // NOLINT
 
@@ -27,9 +30,9 @@ class SimpleTimer : public timers::ITimer {
     fmt::println("Timer expired!");
   }
   
-  // Cancellation polling -- more on that in examples/cancel
-  bool WasCancelled() override {
-    return false;
+  // cancel::Never basically means that we cannot be cancelled
+  cancel::Token CancelToken() override {
+    return cancel::Never();
   }
 };
 
@@ -75,8 +78,8 @@ struct SubmitOnCommand : timers::ITimer {
     fmt::println("Timer expired!");
   }
   
-  bool WasCancelled() override {
-    return false;
+  cancel::Token CancelToken() override {
+    return cancel::Never();
   }
 
  private:
@@ -114,7 +117,7 @@ struct SimpleSubmitOnCommand : SubmitOnCommand {
 };
 
 void MakeGlobalExample(){
-  fmt::println("MakeGloabl example");
+  fmt::println("MakeGlobal example");
 
   timers::StandaloneProcessor proc{};
 
@@ -132,6 +135,11 @@ void MakeGlobalExample(){
   std::this_thread::sleep_for(1s);
 
   fmt::println("We woke up!");
+
+  // global scope still holds pointer to proc even after its destruction!
+  // make sure to either reset it manually 
+  // or keep it alive until you no longer need it
+  satellite::ResetGlobalProcessor();
 }
 
 //////////////////////////////////////////////////////////////////////
