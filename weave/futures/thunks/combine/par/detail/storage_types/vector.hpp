@@ -2,6 +2,8 @@
 
 #include <weave/futures/model/evaluation.hpp>
 
+#include <weave/futures/thunks/detail/cancel_base.hpp>
+
 #include <weave/support/constructor_bases.hpp>
 
 #include <weave/result/types/unit.hpp>
@@ -13,7 +15,7 @@ namespace weave::futures::thunks::detail {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <Thunk Future>
-class Vector final: public support::NonCopyableBase {
+class Vector final: public support::NonCopyableBase, public CancellableBase<Future> {
  public:
   explicit Vector(std::vector<Future> vec) : cached_size_(vec.size()), futures_(std::move(vec)){
   }

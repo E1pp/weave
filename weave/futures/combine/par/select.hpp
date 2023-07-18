@@ -17,7 +17,7 @@ Future<thunks::SelectedValue<FirstFuture, Futures...>> auto Select(
   using Storage = thunks::detail::Tuple<FirstFuture, Futures...>;
   using ValueType = thunks::SelectedValue<FirstFuture, Futures...>;
 
-  using SelectFuture = thunks::Join<true, ValueType, thunks::SelectControlBlock, Storage, thunks::detail::TaggedTuple, FirstFuture, Futures...>;
+  using SelectFuture = thunks::Join<true, true, ValueType, thunks::SelectControlBlock, Storage, thunks::detail::TaggedTuple, FirstFuture, Futures...>;
 
   return SelectFuture(0, std::move(f1), std::move(fs)...); 
 }

@@ -3,6 +3,7 @@
 #include <weave/futures/model/evaluation.hpp>
 
 #include <weave/support/constructor_bases.hpp>
+#include "weave/futures/model/thunk.hpp"
 
 namespace weave::futures::thunks {
 
@@ -56,15 +57,19 @@ class TemplateSender final : public IErasedFuture<typename Future::ValueType>,
 };
 
 template <typename F, typename T>
-concept NotBoxed = !std::is_same_v<F, Boxed<T>> && Thunk<F> &&
+concept NotBoxed = !std::is_same_v<F, Boxed<T>> && UnrestrictedThunk<F> &&
                    std::is_same_v<typename F::ValueType, T>;
 
 }  // namespace detail
 
 template <typename T>
-class [[nodiscard]] Boxed final : public support::NonCopyableBase {
+class [[nodiscard]] Boxed final {
  public:
   using ValueType = T;
+
+  // Non-copyable
+  Boxed(const Boxed&) = delete;
+  Boxed& operator=(const Boxed&) = delete;
 
   // Auto-boxing
   template <detail::NotBoxed<T> Future>

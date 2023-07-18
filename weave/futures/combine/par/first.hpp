@@ -18,7 +18,7 @@ Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec){
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = traits::ValueOf<InputFuture>;
 
-  using FirstFuture = thunks::Join<true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using FirstFuture = thunks::Join<true, true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return FirstFuture(0, std::move(vec));
 }
@@ -31,7 +31,7 @@ Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
   using Storage = thunks::detail::Tuple<FirstF, Fs...>;
   using ValueType = traits::ValueOf<FirstF>;
 
-  using FirstFuture = thunks::Join<true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
+  using FirstFuture = thunks::Join<true, true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
 
   return FirstFuture(0, std::move(f1), std::move(fs)...);
 }

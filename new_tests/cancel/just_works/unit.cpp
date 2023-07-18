@@ -7,8 +7,6 @@
 #include <weave/fibers/sched/sleep_for.hpp>
 #include <weave/fibers/sched/yield.hpp>
 
-#include <weave/fibers/sync/mutex.hpp>
-
 #include <weave/futures/make/contract.hpp>
 #include <weave/futures/make/failure.hpp>
 #include <weave/futures/make/value.hpp>

@@ -17,6 +17,7 @@
 #include <weave/futures/combine/seq/anyway.hpp>
 #include <weave/futures/combine/seq/box.hpp>
 #include <weave/futures/combine/seq/flatten.hpp>
+#include <weave/futures/combine/seq/flat_map.hpp>
 #include <weave/futures/combine/seq/fork.hpp>
 #include <weave/futures/combine/seq/map.hpp>
 #include <weave/futures/combine/seq/on_cancel.hpp>
@@ -104,60 +105,122 @@ TEST_SUITE(CancelTraits){
     CANCELLABLE(std::move(f) | futures::Map([]{}));   
   }
 
-//   SIMPLE_TEST(ViaCancellable){
-//     executors::ManualExecutor manual;
+  SIMPLE_TEST(ViaCancellable){
+    executors::ManualExecutor manual;
 
-//     CANCELLABLE(futures::Submit(manual, []{}));    
-//   }
+    CANCELLABLE(futures::Just() | futures::Via(manual));
+
+    CANCELLABLE(futures::Submit(manual, []{}));    
+  }
 
   SIMPLE_TEST(SideEffectsCancellable){
-    //
+    CANCELLABLE(futures::Value(42) | futures::OnCancel([]{}));
+
+    CANCELLABLE(futures::Value(42) | futures::OnSuccess([]{}));
+
+    CANCELLABLE(futures::Just() | futures::Anyway([]{}));
   }
 
   SIMPLE_TEST(StartCancellable){
-    //
+    CANCELLABLE(futures::Value(42) | futures::Start());
+
+    CANCELLABLE(futures::Value(42) | futures::Start() | futures::Start());
   }
 
   SIMPLE_TEST(BoxNotCancellable){
-    //
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box());
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::AndThen([]{}));
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::OrElse([]{
+      return 42;
+    }));
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::Map([]{}));
+
+    executors::ManualExecutor manual;
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::Via(manual));
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::OnCancel([]{}));
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::OnSuccess([]{}));
+
+    NOT_CANCELLABLE(futures::Just() | futures::Box() | futures::Anyway([]{}));
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::Start());
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::Start() | futures::Start());  
+  }
+
+  SIMPLE_TEST(ForkCancellable1){
+    auto [f1, f2] = futures::Just() | futures::Fork<2>();
+
+    CANCELLABLE(f1);
+    CANCELLABLE(f2);
+
+    std::apply([](auto... fs){
+      futures::All(std::move(fs)...) | futures::ThreadAwait();
+    }, std::make_tuple(std::move(f1), std::move(f2)));
+  }
+
+  SIMPLE_TEST(ForkCancellable2){
+    auto [f1, f2] = futures::Just() | futures::Box() | futures::Fork<2>();
+
+    NOT_CANCELLABLE(f1);
+    NOT_CANCELLABLE(f2);
+
+    std::apply([](auto... fs){
+      futures::All(std::move(fs)...) | futures::ThreadAwait();
+    }, std::make_tuple(std::move(f1), std::move(f2)));
   }
 
   SIMPLE_TEST(FlattenCancellable1){
-    //
+    CANCELLABLE(futures::Value(futures::Value(42)) | futures::Flatten());
+
+    CANCELLABLE(futures::Value(42) | futures::FlatMap([]{
+      return futures::Value(37);
+    }));
+
+    NOT_CANCELLABLE(futures::Value(futures::Value(42)) | futures::Box() |  futures::Flatten());
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::FlatMap([]{
+      return futures::Value(37);
+    }));
   }
 
   SIMPLE_TEST(FlattenCancellable2){
-    //
+    NOT_CANCELLABLE(futures::Value(futures::Value(42) | futures::Box())|  futures::Flatten());
+
+    NOT_CANCELLABLE(futures::Value(42) | futures::FlatMap([]{
+      return futures::Value(37) | futures::Box();
+    }));    
   }
 
-//   SIMPLE_TEST(ForkCancellable1){
-//     auto [f1, f2] = futures::Just() | futures::Fork<2>();
-
-//     CANCELLABLE(f1);
-//     CANCELLABLE(f2);
-
-//     std::apply([](auto... fs){
-//       futures::All(std::move(fs)...) | futures::ThreadAwait();
-//     }, std::make_tuple(std::move(f1), std::move(f2)));
-//   }
-
-//   SIMPLE_TEST(ForkCancellable2){
-//     auto [f1, f2] = futures::Just() | futures::Box() | futures::Fork<2>();
-
-//     NOT_CANCELLABLE(f1);
-//     NOT_CANCELLABLE(f2);
-
-//     std::apply([](auto... fs){
-//       futures::All(std::move(fs)...) | futures::ThreadAwait();
-//     }, std::make_tuple(std::move(f1), std::move(f2)));
-//   }
-
   SIMPLE_TEST(ParallelCancellable1){
-    // 
+    CANCELLABLE(futures::First(futures::Value(42), futures::Value(42)));
+    CANCELLABLE(futures::First(std::declval<std::vector<decltype(futures::Value(42))>>()));
+
+    CANCELLABLE(futures::Select(futures::Value(42), futures::Value(42)));
+
+    CANCELLABLE(futures::All(futures::Value(42), futures::Value(42)));
+    CANCELLABLE(futures::All(std::declval<std::vector<decltype(futures::Value(42))>>()));
+
+    CANCELLABLE(futures::Quorum(1, futures::Value(42), futures::Value(42)));
+    CANCELLABLE(futures::Quorum(1, std::declval<std::vector<decltype(futures::Value(42))>>()));
   }
 
   SIMPLE_TEST(ParallelCancellable2){
-    //
+    NOT_CANCELLABLE(futures::First(futures::Value(42), futures::Value(42) | futures::Box()));
+    NOT_CANCELLABLE(futures::First(std::declval<std::vector<decltype(futures::Value(42) | futures::Box())>>()));
+
+    NOT_CANCELLABLE(futures::All(futures::Value(42), futures::Value(42) | futures::Box()));
+    NOT_CANCELLABLE(futures::All(std::declval<std::vector<decltype(futures::Value(42) | futures::Box())>>()));
+
+    NOT_CANCELLABLE(futures::Quorum(1, futures::Value(42), futures::Value(42) | futures::Box()));
+    NOT_CANCELLABLE(futures::Quorum(1, std::declval<std::vector<decltype(futures::Value(42) | futures::Box())>>()));
+
+    NOT_CANCELLABLE(futures::Select(futures::Value(42), futures::Value(42) | futures::Box()));
   }
 }
 

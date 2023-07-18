@@ -2,6 +2,8 @@
 
 #include <weave/futures/model/evaluation.hpp>
 
+#include <weave/futures/thunks/detail/cancel_base.hpp>
+
 #include <weave/support/constructor_bases.hpp>
 
 #include <tuple>
@@ -24,7 +26,7 @@ using NthType = typename NthTypeImpl<N, Pack...>::Type;
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <Thunk... Future>
-class Tuple final : public support::NonCopyableBase {
+class Tuple final : public support::NonCopyableBase, public VariadicCancellableBase<Future...> {
  public:
   explicit Tuple(Future... fs)
       : futures_(std::make_tuple(std::move(fs)...)) {

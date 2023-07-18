@@ -19,7 +19,7 @@ Future<std::vector<traits::ValueOf<InputFuture>>> auto All(
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-  using AllFuture = thunks::Join<true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using AllFuture = thunks::Join<true, true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return AllFuture(0, std::move(vec));
 }
@@ -32,7 +32,7 @@ All(First f1, Futures... fs) {
   using Storage = thunks::detail::Tuple<First, Futures...>;
   using ValueType = std::tuple<traits::ValueOf<First>, traits::ValueOf<Futures>...>;
 
-  using AllFuture = thunks::Join<true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedTuple, First, Futures...>;
+  using AllFuture = thunks::Join<true, true, ValueType, thunks::AllControlBlock, Storage, thunks::detail::TaggedTuple, First, Futures...>;
 
   return AllFuture(0, std::move(f1), std::move(fs)...);
 }

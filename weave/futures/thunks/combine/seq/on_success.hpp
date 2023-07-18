@@ -1,8 +1,8 @@
 #pragma once
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
-
 #include <weave/futures/model/evaluation.hpp>
+
+#include <weave/futures/thunks/detail/cancel_base.hpp>
 
 #include <weave/satellite/meta_data.hpp>
 #include <weave/satellite/satellite.hpp>
@@ -17,7 +17,7 @@
 namespace weave::futures::thunks {
 
 template <Thunk Future, typename F>
-class [[nodiscard]] OnSuccess final : public support::NonCopyableBase {
+class [[nodiscard]] OnSuccess final : public support::NonCopyableBase, public detail::CancellableBase<Future>  {
  public:
   using ValueType = typename Future::ValueType;
 

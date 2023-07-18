@@ -1,6 +1,5 @@
 #pragma once
 
-#include <type_traits>
 #include <weave/futures/model/consumer.hpp>
 #include <weave/futures/model/thunk.hpp>
 

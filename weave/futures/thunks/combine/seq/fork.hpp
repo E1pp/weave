@@ -6,7 +6,7 @@
 
 #include <weave/threads/lockfree/rendezvous.hpp>
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
+#include <weave/futures/thunks/detail/cancel_base.hpp>
 
 #include <weave/support/constructor_bases.hpp>
 
@@ -23,7 +23,7 @@ class [[nodiscard]] Forker;
 ///////////////////////////////////////////////////////////////////////////////////
 
 template <size_t Index, size_t NumTines, Thunk Future>
-class [[nodiscard]] Tine final: public support::NonCopyableBase {
+class [[nodiscard]] Tine final: public support::NonCopyableBase, public detail::CancellableBase<Future> {
  private:
   using ForkerType = Forker<NumTines, Future>;
 

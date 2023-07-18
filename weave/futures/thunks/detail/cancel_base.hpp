@@ -5,7 +5,7 @@
 namespace weave::futures::thunks::detail {
 
 // Not Cancellable
-template <SomeFuture Future>
+template <Thunk Future>
 struct CancellableBase {};
 
 // Cancellable
@@ -37,5 +37,8 @@ struct JustCancellableBase<T> {
     // No-Op
   }
 };
+
+// Not Cancellable
+struct Empty{};
 
 }  // namespace weave::futures::thunks::detail

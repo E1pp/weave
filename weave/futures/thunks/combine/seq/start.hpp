@@ -1,8 +1,8 @@
 #pragma once
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
-
 #include <weave/futures/model/evaluation.hpp>
+
+#include <weave/futures/thunks/detail/cancel_base.hpp>
 
 #include <weave/futures/thunks/combine/seq/detail/start_state.hpp>
 
@@ -13,7 +13,7 @@
 namespace weave::futures::thunks {
 
 template <Thunk Future>
-class [[nodiscard]] StartFuture final : public support::NonCopyableBase {
+class [[nodiscard]] StartFuture final : public support::NonCopyableBase, public detail::CancellableBase<Future> {
  public:
   using ValueType = typename Future::ValueType;
   using SharedState = detail::SharedState<ValueType>;  // Not Implemented

@@ -7,25 +7,25 @@ Concurrency for C++
 
  - [futures]:
     - [model] – Final
-    - [make] – Done
+    - [make] – Done + Traits
     - [combine/seq]:
-      - [AndThen]/[Map]/[OrElse] – Done
-      - [Via] – Done
-      - [Flatten/FlatMap] – Done
-      - [OnCancel]/[OnSuccess]/[Anyway] – Done
-      - [Start] – Done
-      - [Box] – Done
+      - [AndThen]/[Map]/[OrElse] – Done + Traits
+      - [Via] – Done + Traits
+      - [Flatten/FlatMap] – Done + Traits
+      - [OnCancel]/[OnSuccess]/[Anyway] – Done + Traits
+      - [Start] – Done + Traits
+      - [Box] – Done + Traits
       - [WithTimeout] – Not Done
-      - [Fork] – Not Done
+      - [Fork] – Done + Traits
     - [combine/par]:
-      - [Allocating] – Done
+      - [Allocating] – Done + Traits
       - [no_alloc/tuple] – Not Done
       - [no_alloc/vector] – Not Done
     - [run] – Done 
     - [syntax] – Done
     - [types] – Done
     - [traits]
-      - [cancellable] – Not Done
+      - [cancellable] – Trait is Done Thunks Are not
 
   - [executors/submit] – Done
 

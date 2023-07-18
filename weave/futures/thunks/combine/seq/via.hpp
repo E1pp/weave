@@ -4,18 +4,18 @@
 
 #include <weave/futures/model/evaluation.hpp>
 
+#include <weave/futures/thunks/detail/cancel_base.hpp>
+
 #include <weave/futures/types/future.hpp>
 
 #include <weave/support/constructor_bases.hpp>
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
-
 namespace weave::futures::thunks {
 
-// Via is seemless thus no need for lookup of CancelRequested inside to be
+// Via is seamless thus no need for lookup of CancelRequested inside to be
 // Cancellable
 template <Thunk Future>
-class [[nodiscard]] Via final : public support::NonCopyableBase {
+class [[nodiscard]] Via final : public support::NonCopyableBase, public detail::CancellableBase<Future> {
  public:
   using ValueType = typename Future::ValueType;
 

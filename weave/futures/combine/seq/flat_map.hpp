@@ -22,7 +22,10 @@ struct [[nodiscard]] FlatMap {
   }
 
   template <typename T>
-  using U = traits::ValueOf<std::invoke_result_t<F, T>>;
+  using Completed = result::Complete<T, F>;
+
+  template <typename T>
+  using U = traits::ValueOf<std::invoke_result_t<Completed<T>, T>>;
 
   template <SomeFuture InputFuture>
   Future<U<traits::ValueOf<InputFuture>>> auto Pipe(InputFuture f) {

@@ -2,7 +2,7 @@
 
 #include <weave/futures/combine/seq/via.hpp>
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
+#include <weave/futures/thunks/detail/cancel_base.hpp>
 
 #include <weave/result/make/err.hpp>
 
@@ -15,7 +15,7 @@ namespace weave::futures::thunks {
 // Cancellable if both are Cancellable
 // is seemless thus no need for CancelRequested lookups
 template <Thunk Future>
-class Flattenned final : public support::NonCopyableBase {
+class Flattenned final : public support::NonCopyableBase, public detail::VariadicCancellableBase<Future, typename Future::ValueType> {
  public:
   using InnerType = typename Future::ValueType;
   using ValueType = typename InnerType::ValueType;

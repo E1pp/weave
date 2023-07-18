@@ -25,7 +25,7 @@ Future<std::vector<traits::ValueOf<InputFuture>>> auto Quorum(
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-  using QuorumFuture = thunks::Join<true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using QuorumFuture = thunks::Join<true, true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return QuorumFuture(threshold, std::move(vec));
 }
@@ -44,7 +44,7 @@ Quorum(size_t threshold, First f1, Suffix... fs) {
   using Storage = thunks::detail::Tuple<First, Suffix...>;
   using ValueType = thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>;
 
-  using QuorumFuture = thunks::Join<true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedTuple, First, Suffix...>;
+  using QuorumFuture = thunks::Join<true, true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedTuple, First, Suffix...>;
 
   return QuorumFuture(threshold, std::move(f1), std::move(fs)...);
 }

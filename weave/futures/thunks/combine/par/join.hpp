@@ -2,20 +2,20 @@
 
 #include <weave/futures/model/evaluation.hpp>
 
-#include <weave/support/constructor_bases.hpp>
+#include <weave/futures/thunks/detail/cancel_base.hpp>
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
+#include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
 
 // OnHeap == true
 template <
-    bool OnHeap, typename ValType,
+    bool Cancellable, bool OnHeap, typename ValType,
     template <bool, typename, template <typename...> typename, typename...>
     typename Block,
     typename Storage, template <typename...> typename EvalStorage,
     Thunk... Futures>
-struct [[nodiscard]] Join final : public support::NonCopyableBase {
+struct [[nodiscard]] Join final : public support::NonCopyableBase, public std::conditional_t<Cancellable, detail::JustCancellableBase<Storage>, detail::Empty> {
  public:
   using ValueType = ValType;
 

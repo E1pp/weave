@@ -1,6 +1,6 @@
 #pragma once
 
-// #include <weave/futures/thunks/detail/cancel_base.hpp>
+#include <weave/futures/thunks/detail/cancel_base.hpp>
 
 #include <weave/futures/model/evaluation.hpp>
 #include <weave/futures/traits/value_of.hpp>
@@ -35,7 +35,7 @@ concept Mapper = SomeFuture<InputFuture> &&
 ////////////////////////////////////////////////////////////////////////////////
 
 template <Thunk Future, Mapper<Future> Mapper>
-class [[nodiscard]] Apply final : public support::NonCopyableBase {
+class [[nodiscard]] Apply final : public support::NonCopyableBase, public detail::CancellableBase<Future> {
  public:
   using InputValueType = typename Future::ValueType;
   using ValueType = result::traits::ValueOf<typename Mapper::InvokeResult>;
