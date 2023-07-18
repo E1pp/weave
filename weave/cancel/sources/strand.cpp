@@ -1,8 +1,4 @@
-#include <atomic>
 #include <weave/cancel/sources/strand.hpp>
-#include "weave/cancel/token.hpp"
-#include "wheels/core/assert.hpp"
-#include "wheels/core/panic.hpp"
 
 namespace weave::cancel::sources {
 

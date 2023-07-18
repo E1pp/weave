@@ -5,7 +5,6 @@
 #include <fmt/core.h>
 
 #include <thread>
-#include "weave/satellite/satellite.hpp"
 
 using namespace weave; // NOLINT
 

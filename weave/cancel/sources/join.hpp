@@ -2,8 +2,6 @@
 
 #include <weave/cancel/token.hpp>
 
-#include <weave/support/delayed.hpp>
-
 #include <weave/threads/lockfree/ref_count.hpp>
 #include <weave/threads/lockfree/tagged_buffer.hpp>
 

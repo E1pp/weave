@@ -3,7 +3,6 @@
 #include <weave/futures/model/evaluation.hpp>
 
 #include <weave/support/constructor_bases.hpp>
-#include "weave/futures/model/thunk.hpp"
 
 namespace weave::futures::thunks {
 
