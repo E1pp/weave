@@ -19,6 +19,10 @@ class ThreadPool final : private runners::FiberRunner,
   ThreadPool(ThreadPool&&) = delete;
   ThreadPool& operator=(ThreadPool&&) = delete;
 
+  bool IRunFibers() override {
+    return true;
+  }
+
   ~ThreadPool() override = default;
 };
 

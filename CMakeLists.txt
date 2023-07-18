@@ -30,6 +30,7 @@ add_subdirectory(weave)
 
 if(WEAVE_TESTS OR WEAVE_DEVELOPER)
     add_subdirectory(tests)
+    add_subdirectory(new_tests)
 endif()
 
 if(WEAVE_WORKLOADS OR WEAVE_DEVELOPER)

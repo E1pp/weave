@@ -24,6 +24,8 @@ namespace tests {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(__WEAVE_REALTIME__)
+
 void TestSpawners() {
   executors::ThreadPool pool{4};
   auto* logger = pool.GetLogger();
@@ -100,6 +102,8 @@ void TestSpawners() {
 
   pool.Stop();
 }
+
+#endif
 
 }  // namespace tests
 

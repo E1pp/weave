@@ -22,11 +22,23 @@ class StrandSource : public SignalSender,
   static constexpr uint32_t kCancelled = 1;
 
  public:
+  static constexpr SignalReceiver* kAnyOne = nullptr;
+
   StrandSource()
       : state_(State::Value(kInit)) {
   }
 
-  ~StrandSource() override = default;
+  // Non-copyable
+  StrandSource(const StrandSource&) = delete;
+  StrandSource& operator=(const StrandSource&) = delete;
+
+  // Non-movable
+  StrandSource(StrandSource&&) = delete;
+  StrandSource& operator=(StrandSource&&) = delete;
+
+  ~StrandSource() override {
+    ClearReceiver(kAnyOne);
+  }
 
   // SignalSender
   bool CancelRequested() override;
@@ -39,8 +51,8 @@ class StrandSource : public SignalSender,
     SetReceiver(receiver);
   }
 
-  void Detach(SignalReceiver*) override {
-    ClearReceiver();
+  void Detach(SignalReceiver* expected) override {
+    ClearReceiver(expected);
   }
 
   // SignalReceiver
@@ -48,7 +60,7 @@ class StrandSource : public SignalSender,
 
   void Forward(Signal) override;
 
-  void ClearReceiver();
+  void ClearReceiver(SignalReceiver* expected);
 
  private:
   // Helps with interpetation

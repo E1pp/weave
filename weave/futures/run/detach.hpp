@@ -2,6 +2,8 @@
 
 #include <weave/cancel/never.hpp>
 
+#include <weave/futures/model/evaluation.hpp>
+
 #include <weave/futures/syntax/pipe.hpp>
 
 namespace weave::futures {
@@ -10,40 +12,35 @@ namespace pipe {
 
 struct [[nodiscard]] Detach {
   template <SomeFuture Future>
-  class Runner final : public IConsumer<typename Future::ValueType> {
+  class Runner {
    public:
     using ValueType = typename Future::ValueType;
 
     explicit Runner(Future f)
-        : future_(std::move(f)) {
+        : eval_(std::move(f).Force(*this)) {
+      eval_.Start();
     }
 
-    void Start() {
-      future_.Start(this);
-    }
-
-   private:
-    void Consume(Output<ValueType>) noexcept override final {
+    void Consume(Output<ValueType>) noexcept {
       delete this;
     }
 
-    void Cancel(Context) noexcept override final {
+    void Cancel(Context) noexcept {
       WHEELS_PANIC("Cancelled Detach!");
       delete this;
     }
 
-    cancel::Token CancelToken() override final {
+    cancel::Token CancelToken() {
       return cancel::Never();
     }
 
    private:
-    Future future_;
+    EvaluationType<Runner, Future> eval_;
   };
 
   template <SomeFuture Future>
   void Pipe(Future f) {
-    auto* runner = new Runner(std::move(f));
-    runner->Start();
+    new Runner(std::move(f));
   }
 };
 

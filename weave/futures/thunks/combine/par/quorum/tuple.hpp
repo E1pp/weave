@@ -11,8 +11,6 @@
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
-
 #include <weave/threads/blocking/spinlock.hpp>
 #include <weave/threads/blocking/stdlike/mutex.hpp>
 
@@ -34,37 +32,35 @@ using QuorumType = std::vector<typename QuorumTypeImpl<Ts...>::Type>;
 ///////////////////////////////////////////////////////////////////////
 
 // Default is OnHeap == true
-template <bool OnHeap, SomeFuture... Futures>
-struct QuorumControlBlock<OnHeap, detail::Tuple, Futures...>
+template <bool OnHeap, typename Cons, SomeFuture... Futures>
+class QuorumControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
     : public detail::JoinBlock<
-          true, QuorumType<traits::ValueOf<Futures>...>,
-          QuorumControlBlock<OnHeap, detail::Tuple, Futures...>, detail::Dummy,
-          detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
+          true, QuorumControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+          detail::Dummy, QuorumType<traits::ValueOf<Futures>...>, Cons,
+          detail::TaggedTuple, Futures...> {
  public:
   using InputType = typename QuorumTypeImpl<traits::ValueOf<Futures>...>::Type;
   using ValueType = QuorumType<traits::ValueOf<Futures>...>;
-  using Base =
-      detail::JoinBlock<true, ValueType,
-                        QuorumControlBlock<OnHeap, detail::Tuple, Futures...>,
-                        detail::Dummy, detail::Tuple, Futures...>;
+  using Base = detail::JoinBlock<
+      true, QuorumControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+      detail::Dummy, ValueType, Cons, detail::TaggedTuple, Futures...>;
+  using StorageType = detail::TaggedTuple<
+      QuorumControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+      Futures...>;
   using Guard =
       threads::blocking::stdlike::UniqueLock<threads::blocking::SpinLock>;
 
-  template <typename... Args>
-  requires std::is_constructible_v<Base, size_t, Args...>
-  explicit QuorumControlBlock(size_t threshold, size_t capacity, Args&&... args)
-      : Base(capacity, std::forward<Args>(args)...),
+  template <typename InterStorage>
+  requires std::is_constructible_v<StorageType, InterStorage>
+  explicit QuorumControlBlock(size_t threshold, Cons& cons,
+                              InterStorage storage)
+      : Base(cons, std::move(storage)),
         threshold_(threshold),
-        active_producers_(capacity) {
-    storage_.reserve(threshold);
+        active_producers_(storage.Size()) {
+    storage_.reserve(threshold_);
   }
 
   ~QuorumControlBlock() override = default;
-
-  void Create() {
-    // No-Op
-  }
 
   // NB : reverse order of destruction spinlock.Unlock -> ReleaseRef
   template <size_t Index>
@@ -160,54 +156,43 @@ struct QuorumControlBlock<OnHeap, detail::Tuple, Futures...>
 
 ///////////////////////////////////////////////////////////////////////
 
-template <SomeFuture... Futures>
-struct QuorumControlBlock<false, detail::Tuple, Futures...>
+template <typename Cons, SomeFuture... Futures>
+class QuorumControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
     : public detail::JoinBlock<
-          false, QuorumType<traits::ValueOf<Futures>...>,
-          QuorumControlBlock<false, detail::Tuple, Futures...>, detail::Dummy,
-          detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
- public:
+          false,
+          QuorumControlBlock<false, Cons, detail::TaggedTuple, Futures...>,
+          detail::Dummy, QuorumType<traits::ValueOf<Futures>...>, Cons,
+          detail::TaggedTuple, Futures...> {
   using InputType = typename QuorumTypeImpl<traits::ValueOf<Futures>...>::Type;
   using ValueType = QuorumType<traits::ValueOf<Futures>...>;
-  using Base =
-      detail::JoinBlock<false, ValueType,
-                        QuorumControlBlock<false, detail::Tuple, Futures...>,
-                        detail::Dummy, detail::Tuple, Futures...>;
+  using Base = detail::JoinBlock<
+      false, QuorumControlBlock<false, Cons, detail::TaggedTuple, Futures...>,
+      detail::Dummy, ValueType, Cons, detail::TaggedTuple, Futures...>;
+  using StorageType = detail::TaggedTuple<
+      QuorumControlBlock<false, Cons, detail::TaggedTuple, Futures...>,
+      Futures...>;
   using Guard =
       threads::blocking::stdlike::UniqueLock<threads::blocking::SpinLock>;
 
-  template <typename... Args>
-  requires std::is_constructible_v<Base, size_t, Args...>
-  explicit QuorumControlBlock(size_t threshold, size_t capacity, Args&&... args)
-      : Base(capacity, std::forward<Args>(args)...),
+ public:
+  template <typename InterStorage>
+  requires std::is_constructible_v<StorageType, InterStorage>
+  explicit QuorumControlBlock(size_t threshold, Cons& cons,
+                              InterStorage storage)
+      : Base(cons, std::move(storage)),
         threshold_(threshold),
-        active_producers_(capacity) {
-    storage_.reserve(threshold);
+        active_producers_(storage.Size()) {
+    storage_.reserve(threshold_);
   }
 
-  // Non-Copyable
-  QuorumControlBlock(const QuorumControlBlock&) = delete;
-  QuorumControlBlock& operator=(const QuorumControlBlock&) = delete;
-
-  // Movable
-  QuorumControlBlock(QuorumControlBlock&&) = default;
-  QuorumControlBlock& operator=(QuorumControlBlock&&) = default;
-
-  ~QuorumControlBlock() override {
-    spinlock_.Destroy();
-  }
-
-  void Create() {
-    spinlock_.Create();
-  }
+  ~QuorumControlBlock() override = default;
 
   // NB : reverse order of destruction spinlock.Unlock -> ReleaseRef
   template <size_t Index>
   void Consume(Output<InputType> out) {
     auto result = std::move(out.result);
 
-    Guard guard(spinlock_.Refer());
+    Guard guard(spinlock_);
 
     if (result) {
       ProcessResult(std::move(result));
@@ -225,7 +210,7 @@ struct QuorumControlBlock<false, detail::Tuple, Futures...>
 
   // NB : reverse order of destruction spinlock.Unlock -> ReleaseRef
   void Cancel() {
-    Guard guard(spinlock_.Refer());
+    Guard guard(spinlock_);
 
     if (ProducerDone()) {
       // Unlock mutex to prevent heap use after free (scope)
@@ -300,7 +285,7 @@ struct QuorumControlBlock<false, detail::Tuple, Futures...>
   std::vector<InputType> storage_{};
 
   // sync
-  support::Delayed<threads::blocking::SpinLock> spinlock_;
+  threads::blocking::SpinLock spinlock_;
 };
 
 }  // namespace weave::futures::thunks

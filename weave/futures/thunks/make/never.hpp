@@ -1,50 +1,62 @@
 #pragma once
 
-#include <weave/futures/model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
 #include <weave/result/types/unit.hpp>
 
-namespace weave::futures::thunks {
+#include <weave/support/constructor_bases.hpp>
 
-class [[nodiscard]] Never final : public cancel::SignalReceiver {
+namespace weave::futures::thunks {
+// public cancel::SignalReceiver
+class [[nodiscard]] Never final : support::NonCopyableBase {
  public:
   using ValueType = Unit;
 
   Never() = default;
 
-  // Non-Copyable
-  Never(const Never&) = delete;
-  Never& operator=(const Never&) = delete;
-
   // Movable
-  Never(Never&&) {
-    [[maybe_unused]] int fake = 1;
-    fake++;
-  };
-
+  Never(Never&&) noexcept {};
   Never& operator=(Never&&) = default;
 
-  void Start(IConsumer<Unit>* consumer) {
-    consumer_ = consumer;
-    consumer_->CancelToken().Attach(this);
+ private:
+  template <Consumer<Unit> Cons>
+  class EvaluationFor final : public support::PinnedBase,
+                              public cancel::SignalReceiver {
+    friend class Never;
+
+    EvaluationFor(Never, Cons& cons)
+        : cons_(cons) {
+    }
+
+   public:
+    void Start() {
+      cons_.CancelToken().Attach(this);
+    }
+
+   private:
+    void Forward(cancel::Signal signal) override final {
+      if (signal.CancelRequested()) {
+        cons_.Cancel(Context{});
+
+        return;
+      }
+
+      WHEELS_PANIC("You must not release futures::Never!");
+    }
+
+   private:
+    Cons& cons_;
+  };
+
+ public:
+  template <Consumer<Unit> Cons>
+  Evaluation<Never, Cons> auto Force(Cons& cons) {
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
   void Cancellable() {
     // No-Op
   }
-
-  void Forward(cancel::Signal signal) override final {
-    if (signal.CancelRequested()) {
-      consumer_->Cancel(Context{});
-
-      return;
-    }
-
-    WHEELS_PANIC("You must not release Never!");
-  }
-
- private:
-  IConsumer<ValueType>* consumer_{nullptr};
 };
 
 }  // namespace weave::futures::thunks

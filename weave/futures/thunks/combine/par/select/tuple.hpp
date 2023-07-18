@@ -11,8 +11,6 @@
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
-
 #include <optional>
 #include <variant>
 
@@ -24,24 +22,22 @@ using SelectedValue = std::variant<traits::ValueOf<Futures>...>;
 ///////////////////////////////////////////////////////////////////////
 
 // Default is OnHeap == true
-template <bool OnHeap, SomeFuture... Futures>
-struct SelectControlBlock<OnHeap, detail::Tuple, Futures...>
+template <bool OnHeap, typename Cons, SomeFuture... Futures>
+class SelectControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
     : public detail::JoinBlock<
-          true, SelectedValue<Futures...>,
-          SelectControlBlock<OnHeap, detail::Tuple, Futures...>,
-          detail::JoinAllOnHeap, detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
+          true, SelectControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+          detail::JoinAll<true>, SelectedValue<Futures...>, Cons,
+          detail::TaggedTuple, Futures...> {
  public:
   using ValueType = SelectedValue<Futures...>;
-  using Base =
-      detail::JoinBlock<true, ValueType,
-                        SelectControlBlock<OnHeap, detail::Tuple, Futures...>,
-                        detail::JoinAllOnHeap, detail::Tuple, Futures...>;
+  using Base = detail::JoinBlock<
+      true, SelectControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+      detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
-
-  void Create() {
-    // No-Op
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  SelectControlBlock(size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)) {
   }
 
   ~SelectControlBlock() override = default;
@@ -50,10 +46,6 @@ struct SelectControlBlock<OnHeap, detail::Tuple, Futures...>
   void Consume(
       Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
     auto result = std::move(out.result);
-
-    wheels::Defer cleanup([&] {
-      Base::ReleaseRef();
-    });
 
     if (result && Base::MarkFulfilled()) {
       // We got the first result
@@ -64,17 +56,17 @@ struct SelectControlBlock<OnHeap, detail::Tuple, Futures...>
       // We got the last error
       ProduceError<Index>(std::move(result));
     }
+
+    Base::ReleaseRef();
   }
 
   void Cancel() {
-    wheels::Defer cleanup([&] {
-      Base::ReleaseRef();
-    });
-
     if (bool should_complete = Base::ProducerDone()) {
       // Entire tree got cancelled
       Base::CancelConsumer();
     }
+
+    Base::ReleaseRef();
   }
 
  private:
@@ -97,33 +89,24 @@ struct SelectControlBlock<OnHeap, detail::Tuple, Futures...>
 
 ///////////////////////////////////////////////////////////////////////
 
-// OnStack spec which waits for the last future to cancel
-template <SomeFuture... Futures>
-struct SelectControlBlock<false, detail::Tuple, Futures...>
+// OnHeap == false
+template <typename Cons, SomeFuture... Futures>
+class SelectControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
     : public detail::JoinBlock<
-          false, SelectedValue<Futures...>,
-          SelectControlBlock<false, detail::Tuple, Futures...>,
-          detail::JoinAllOnStack, detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
+          false,
+          SelectControlBlock<false, Cons, detail::TaggedTuple, Futures...>,
+          detail::JoinAll<false>, SelectedValue<Futures...>, Cons,
+          detail::TaggedTuple, Futures...> {
  public:
   using ValueType = SelectedValue<Futures...>;
-  using Base =
-      detail::JoinBlock<false, ValueType,
-                        SelectControlBlock<false, detail::Tuple, Futures...>,
-                        detail::JoinAllOnStack, detail::Tuple, Futures...>;
+  using Base = detail::JoinBlock<
+      false, SelectControlBlock<false, Cons, detail::TaggedTuple, Futures...>,
+      detail::JoinAll<false>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
-
-  // Non-copyable
-  SelectControlBlock(const SelectControlBlock&) = delete;
-  SelectControlBlock& operator=(const SelectControlBlock&) = delete;
-
-  // Movable
-  SelectControlBlock(SelectControlBlock&&) = default;
-  SelectControlBlock& operator=(SelectControlBlock&&) = default;
-
-  void Create() {
-    // No-Op
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage>
+  SelectControlBlock(size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)) {
   }
 
   ~SelectControlBlock() override = default;
@@ -182,48 +165,5 @@ struct SelectControlBlock<false, detail::Tuple, Futures...>
  private:
   std::optional<Result<ValueType>> res_;
 };
-
-//   template <size_t Index>
-//   void Consume(
-//       Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
-//     auto result = std::move(out.result);
-
-//     if (result && Base::MarkFulfilled()) {
-//       // we are the first result
-//       EmplaceResult(std::move(result));
-//     }
-
-//     if (bool is_the_last = Base::ProducerDone()) {
-//       // we are the last one
-//       if (res_) {
-//         Base::CompleteConsumer(std::move(*res_));
-//       } else {
-//         Base::CompleteConsumer(std::move(result));
-//       }
-//     }
-//   }
-
-//   void Cancel() {
-//     if (bool is_the_last = Base::ProducerDone()) {
-//       if (res_) {
-//         Base::CompleteConsumer(std::move(*res_));
-//       } else {
-//         Base::CancelConsumer();
-//       }
-//     }
-//   }
-
-//  private:
-//   void EmplaceResult(Result<ValueType> res) {
-//     // Emplace the result
-//     res_.emplace(std::move(res));
-
-//     // Cancel the rest
-//     Base::Forward(cancel::Signal::Cancel());
-//   }
-
-//  private:
-//   std::optional<Result<ValueType>> res_;
-// };
 
 }  // namespace weave::futures::thunks

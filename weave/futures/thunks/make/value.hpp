@@ -1,37 +1,57 @@
 #pragma once
 
-#include <weave/futures/model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
 #include <weave/result/make/ok.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
 
 template <typename T>
-class [[nodiscard]] Value {
+class [[nodiscard]] Value final : public support::NonCopyableBase {
  public:
   using ValueType = T;
 
-  explicit Value(T&& val)
+  explicit Value(T&& val) noexcept
       : value_(std::move(val)) {
   }
 
-  // Non-Copyable
-  Value(const Value&) = delete;
-  Value& operator=(const Value&) = delete;
-
   // Movable
   // Construction is non-trivial because tl::expected is broken
-  Value(Value&& rhs)
+  Value(Value&& rhs) noexcept
       : value_(std::move(rhs.value_)) {
   }
   Value& operator=(Value&&) = default;
 
-  void Start(IConsumer<T>* consumer) {
-    if (consumer->CancelToken().CancelRequested()) {
-      consumer->Cancel(Context{});
-    } else {
-      consumer->Complete(result::Ok(std::move(value_)));
+ private:
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final : public support::PinnedBase {
+    friend class Value;
+
+    EvaluationFor(Value fut, Cons& consumer)
+        : val_(std::move(fut.value_)),
+          consumer_(consumer) {
     }
+
+   public:
+    void Start() {
+      if (consumer_.CancelToken().CancelRequested()) {
+        consumer_.Cancel(Context{});
+      } else {
+        Complete(consumer_, result::Ok(std::move(val_)));
+      }
+    }
+
+   private:
+    ValueType val_;
+    Cons& consumer_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Value, Cons> auto Force(Cons& consumer) {
+    return EvaluationFor<Cons>(std::move(*this), consumer);
   }
 
   void Cancellable() {

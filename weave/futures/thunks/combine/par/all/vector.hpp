@@ -11,46 +11,35 @@
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
-
 #include <optional>
 
 namespace weave::futures::thunks {
 
-template <bool OnHeap, SomeFuture Future>
-struct AllControlBlock<OnHeap, detail::Vector, Future>
-    : public detail::JoinBlock<true, std::vector<traits::ValueOf<Future>>,
-                               AllControlBlock<OnHeap, detail::Vector, Future>,
-                               detail::JoinAllOnHeap, detail::Vector, Future>,
-      public detail::CancellableBase<Future> {
+template <bool OnHeap, typename Cons, SomeFuture Future>
+class AllControlBlock<OnHeap, Cons, detail::TaggedVector, Future> final
+    : public detail::JoinBlock<
+          true, AllControlBlock<true, Cons, detail::TaggedVector, Future>,
+          detail::JoinAll<true>, std::vector<traits::ValueOf<Future>>, Cons,
+          detail::TaggedVector, Future> {
  public:
   using InputType = traits::ValueOf<Future>;
   using ValueType = std::vector<InputType>;
-  using Base =
-      detail::JoinBlock<true, ValueType,
-                        AllControlBlock<OnHeap, detail::Vector, Future>,
-                        detail::JoinAllOnHeap, detail::Vector, Future>;
+  using Base = detail::JoinBlock<
+      true, AllControlBlock<true, Cons, detail::TaggedVector, Future>,
+      detail::JoinAll<true>, ValueType, Cons, detail::TaggedVector, Future>;
 
-  using Base::Base;
-
-  template <typename... Args>
-  requires std::is_constructible<
-      Base, size_t, Args...>::value explicit AllControlBlock(size_t capacity,
-                                                             Args&&... args)
-      : Base(capacity, std::forward<Args>(args)...),
-        storage_(capacity) {
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage> AllControlBlock(
+      size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)),
+        storage_(storage.Size()) {
   }
 
   ~AllControlBlock() override = default;
 
-  void Create() {
-    // No-Op
-  }
-
   void Consume(Output<InputType> out, size_t index) {
     auto result = std::move(out.result);
 
-    // CompleteConsumer may throw
     wheels::Defer cleanup([&] {
       Base::ReleaseRef();
     });
@@ -76,7 +65,6 @@ struct AllControlBlock<OnHeap, detail::Vector, Future>
   }
 
   void Cancel() {
-    // consumer->Cancel() may throw
     wheels::Defer cleanup([&] {
       Base::ReleaseRef();
     });
@@ -92,41 +80,27 @@ struct AllControlBlock<OnHeap, detail::Vector, Future>
 
 //////////////////////////////////////////////////////////////////////////
 
-template <SomeFuture Future>
-struct AllControlBlock<false, detail::Vector, Future>
-    : public detail::JoinBlock<false, std::vector<traits::ValueOf<Future>>,
-                               AllControlBlock<false, detail::Vector, Future>,
-                               detail::JoinAllOnStack, detail::Vector, Future>,
-      public detail::CancellableBase<Future> {
+template <typename Cons, SomeFuture Future>
+class AllControlBlock<false, Cons, detail::TaggedVector, Future> final
+    : public detail::JoinBlock<
+          false, AllControlBlock<false, Cons, detail::TaggedVector, Future>,
+          detail::JoinAll<false>, std::vector<traits::ValueOf<Future>>, Cons,
+          detail::TaggedVector, Future> {
  public:
   using InputType = traits::ValueOf<Future>;
   using ValueType = std::vector<InputType>;
-  using Base =
-      detail::JoinBlock<false, ValueType,
-                        AllControlBlock<false, detail::Vector, Future>,
-                        detail::JoinAllOnStack, detail::Vector, Future>;
+  using Base = detail::JoinBlock<
+      false, AllControlBlock<false, Cons, detail::TaggedVector, Future>,
+      detail::JoinAll<false>, ValueType, Cons, detail::TaggedVector, Future>;
 
-  template <typename... Args>
-  requires std::is_constructible<
-      Base, size_t, Args...>::value explicit AllControlBlock(size_t capacity,
-                                                             Args&&... args)
-      : Base(capacity, std::forward<Args>(args)...),
-        storage_(capacity) {
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage> AllControlBlock(
+      size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)),
+        storage_(storage.Size()) {
   }
-
-  // Non-copyable
-  AllControlBlock(const AllControlBlock&) = delete;
-  AllControlBlock& operator=(const AllControlBlock&) = delete;
-
-  // Movable
-  AllControlBlock(AllControlBlock&&) = default;
-  AllControlBlock& operator=(AllControlBlock&&) = default;
 
   ~AllControlBlock() override = default;
-
-  void Create() {
-    // No-Op
-  }
 
   void Consume(Output<InputType> out, size_t index) {
     auto result = std::move(out.result);

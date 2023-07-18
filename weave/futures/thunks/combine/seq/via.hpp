@@ -2,14 +2,20 @@
 
 #include <weave/executors/executor.hpp>
 
+#include <weave/futures/model/evaluation.hpp>
+
 #include <weave/futures/thunks/detail/cancel_base.hpp>
+
+#include <weave/futures/types/future.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
 
-// Via is seemless thus no need for lookup of CancelRequested inside to be
+// Via is seamless thus no need for lookup of CancelRequested inside to be
 // Cancellable
-template <SomeFuture Future>
-class [[nodiscard]] Via final : public IConsumer<typename Future::ValueType>,
+template <Thunk Future>
+class [[nodiscard]] Via final : public support::NonCopyableBase,
                                 public detail::CancellableBase<Future> {
  public:
   using ValueType = typename Future::ValueType;
@@ -19,36 +25,58 @@ class [[nodiscard]] Via final : public IConsumer<typename Future::ValueType>,
         next_context_(context) {
   }
 
-  // Non-copyable
-  Via(const Via&) = delete;
-  Via& operator=(const Via&) = delete;
-
   // Movable
-  Via(Via&&) = default;
+  Via(Via&& that) noexcept
+      : future_(std::move(that.future_)),
+        next_context_(std::move(that.next_context_)) {
+  }
+  Via& operator=(Via&& that) = default;
 
-  void Start(IConsumer<ValueType>* consumer) {
-    consumer_ = consumer;
-    future_.Start(this);
+ private:
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final : public support::PinnedBase {
+    friend class Via;
+
+    EvaluationFor(Via fut, Cons& consumer) noexcept
+        : next_context_(std::move(fut.next_context_)),
+          consumer_(consumer),
+          eval_(std::move(fut.future_).Force(*this)) {
+    }
+
+   public:
+    void Start() {
+      eval_.Start();
+    }
+
+    // Completable<ValueType>
+    void Consume(Output<ValueType> o) noexcept {
+      o.context = std::move(next_context_);
+      Complete(consumer_, std::move(o));
+    }
+
+    // CancelSource
+    void Cancel(Context) noexcept {
+      consumer_.Cancel(std::move(next_context_));
+    }
+
+    cancel::Token CancelToken() {
+      // forward down the chain
+      return consumer_.CancelToken();
+    }
+
+   private:
+    Context next_context_;
+    Cons& consumer_;
+    EvaluationType<EvaluationFor, Future> eval_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Via, Cons> auto Force(Cons& cons) {
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:
-  void Consume(Output<ValueType> out) noexcept override final {
-    out.context = next_context_;
-    consumer_->Complete(std::move(out));
-  }
-
-  // insert your own context
-  void Cancel(Context) noexcept override final {
-    consumer_->Cancel(std::move(next_context_));
-  }
-
-  cancel::Token CancelToken() override final {
-    // forward down the chain
-    return consumer_->CancelToken();
-  }
-
- private:
-  IConsumer<ValueType>* consumer_;
   Future future_;
   Context next_context_;
 };

@@ -4,6 +4,8 @@
 
 #include <weave/futures/syntax/pipe.hpp>
 
+#include <weave/futures/traits/value_of.hpp>
+
 #include <optional>
 
 #include <type_traits>

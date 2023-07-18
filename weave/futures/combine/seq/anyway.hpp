@@ -4,6 +4,8 @@
 
 #include <weave/futures/thunks/combine/seq/anyway.hpp>
 
+#include <weave/futures/traits/value_of.hpp>
+
 #include <optional>
 
 #include <type_traits>

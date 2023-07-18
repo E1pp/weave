@@ -11,7 +11,7 @@
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
+#include <weave/support/constructor_bases.hpp>
 
 #include <optional>
 
@@ -28,37 +28,33 @@ requires(std::same_as<T, Ts>&&...) struct FirstTypeImpl<T, Ts...> {
 template <typename... Ts>
 using FirstType = typename FirstTypeImpl<Ts...>::Type;
 
-///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
 
 // Default is OnHeap == true
-template <bool OnHeap, SomeFuture... Futures>
-struct FirstControlBlock<OnHeap, detail::Tuple, Futures...>
+template <bool OnHeap, typename Cons, SomeFuture... Futures>
+class FirstControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
     : public detail::JoinBlock<
-          true, FirstType<traits::ValueOf<Futures>...>,
-          FirstControlBlock<OnHeap, detail::Tuple, Futures...>,
-          detail::JoinAllOnHeap, detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
+          true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+          detail::JoinAll<true>, FirstType<traits::ValueOf<Futures>...>, Cons,
+          detail::TaggedTuple, Futures...> {
  public:
   using ValueType = FirstType<traits::ValueOf<Futures>...>;
-  using Base =
-      detail::JoinBlock<true, ValueType,
-                        FirstControlBlock<OnHeap, detail::Tuple, Futures...>,
-                        detail::JoinAllOnHeap, detail::Tuple, Futures...>;
+  using Base = detail::JoinBlock<
+      true, FirstControlBlock<true, Cons, detail::TaggedTuple, Futures...>,
+      detail::JoinAll<true>, ValueType, Cons, detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
-
-  void Create() {
-    // No-Op
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage> FirstControlBlock(
+      size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)) {
   }
 
   ~FirstControlBlock() override = default;
 
   template <size_t Index>
-  void Consume(
-      Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
+  void Consume(Output<ValueType> out) {
     auto result = std::move(out.result);
 
-    // CompleteConsumer may throw
     wheels::Defer cleanup([&] {
       Base::ReleaseRef();
     });
@@ -74,7 +70,6 @@ struct FirstControlBlock<OnHeap, detail::Tuple, Futures...>
   }
 
   void Cancel() {
-    // consumer->Cancel() may throw
     wheels::Defer cleanup([&] {
       Base::ReleaseRef();
     });
@@ -87,40 +82,31 @@ struct FirstControlBlock<OnHeap, detail::Tuple, Futures...>
 
 ///////////////////////////////////////////////////////////////////////
 
-// OnStack spec which waits for the last future to cancel
-template <SomeFuture... Futures>
-struct FirstControlBlock<false, detail::Tuple, Futures...>
+// OnHeap == false
+template <typename Cons, SomeFuture... Futures>
+class FirstControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
     : public detail::JoinBlock<
-          false, FirstType<traits::ValueOf<Futures>...>,
-          FirstControlBlock<false, detail::Tuple, Futures...>,
-          detail::JoinAllOnStack, detail::Tuple, Futures...>,
-      public detail::VariadicCancellableBase<Futures...> {
+          false,
+          FirstControlBlock<false, Cons, detail::TaggedTuple, Futures...>,
+          detail::JoinAll<false>, FirstType<traits::ValueOf<Futures>...>, Cons,
+          detail::TaggedTuple, Futures...> {
  public:
   using ValueType = FirstType<traits::ValueOf<Futures>...>;
-  using Base =
-      detail::JoinBlock<false, ValueType,
-                        FirstControlBlock<false, detail::Tuple, Futures...>,
-                        detail::JoinAllOnStack, detail::Tuple, Futures...>;
+  using Base = detail::JoinBlock<
+      false, FirstControlBlock<false, Cons, detail::TaggedTuple, Futures...>,
+      detail::JoinAll<false>, FirstType<traits::ValueOf<Futures>...>, Cons,
+      detail::TaggedTuple, Futures...>;
 
-  using Base::Base;
-
-  // Non-copyable
-  FirstControlBlock(const FirstControlBlock&) = delete;
-  FirstControlBlock& operator=(const FirstControlBlock&) = delete;
-
-  // Movable
-  FirstControlBlock(FirstControlBlock&&) = default;
-  FirstControlBlock& operator=(FirstControlBlock&&) = default;
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage> FirstControlBlock(
+      size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)) {
+  }
 
   ~FirstControlBlock() override = default;
 
-  void Create() {
-    // No-Op
-  }
-
   template <size_t Index>
-  void Consume(
-      Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
+  void Consume(Output<ValueType> out) {
     auto result = std::move(out.result);
 
     if (result && Base::MarkFulfilled()) {

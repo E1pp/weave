@@ -27,6 +27,10 @@ class ManualExecutor : public IExecutor {
   // IExecutor
   void Submit(Task*, SchedulerHint hint = SchedulerHint::UpToYou) override;
 
+  bool IRunFibers() override {
+    return true;
+  }
+
   // Run tasks
 
   // Run at most `limit` tasks from queue

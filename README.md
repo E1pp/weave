@@ -1,6 +1,20 @@
 # Weave
 Concurrency for C++
 
+# Branch Status:
+
+ - [TaggedBuffer] Rework – Not done
+
+ - [cancel]
+    - [sources]:
+      - [StrandSource] – Done
+      - [JoinSource] – Not Done
+      - [ForkSource] – Done
+
+ - [futures] – Done
+
+  - [executors/submit] – Done
+
 ## Features
 
 - Scalable work-stealing scheduler – `executors::tp::fast::ThreadPool`
@@ -43,7 +57,7 @@ Concurrency for C++
       - `Box` – erases concrete `Future` (`Thunk`) type
       - `Start` (or `Force`) – converts to `EagerFuture`, starts operation
       - `Fork<N>` – splits future value into N copies
-      - `OnComplete` / `OnCancel` / `Anyway` – add side effect based on what happened to the underlying future
+      - `OnComplete` / `OnCancel` / `Anyway` – add side effect
       - `WithTimeout` – attaches timeout
     - Parallel composition (`par`)
       - `All`/`Both`

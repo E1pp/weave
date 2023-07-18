@@ -12,8 +12,8 @@ namespace pipe {
 
 struct [[nodiscard]] Start {
   template <SomeFuture InputFuture>
-  StartedFuture<InputFuture> Pipe(InputFuture f) {
-    return futures::thunks::StartedFuture(std::move(f));
+  StartFuture<InputFuture> Pipe(InputFuture f) {
+    return futures::thunks::StartFuture<InputFuture>(std::move(f));
   }
 };
 

@@ -2,9 +2,13 @@
 
 #include <weave/cancel/sources/fork.hpp>
 
+#include <weave/futures/model/evaluation.hpp>
+
 #include <weave/threads/lockfree/rendezvous.hpp>
 
 #include <weave/futures/thunks/detail/cancel_base.hpp>
+
+#include <weave/support/constructor_bases.hpp>
 
 #include <wheels/core/defer.hpp>
 
@@ -13,13 +17,14 @@
 
 namespace weave::futures::thunks {
 
-template <size_t NumTines, SomeFuture Future>
+template <size_t NumTines, Thunk Future>
 class [[nodiscard]] Forker;
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-template <size_t Index, size_t NumTines, SomeFuture Future>
-class [[nodiscard]] Tine : public detail::CancellableBase<Future> {
+template <size_t Index, size_t NumTines, Thunk Future>
+class [[nodiscard]] Tine final : public support::NonCopyableBase,
+                                 public detail::CancellableBase<Future> {
  private:
   using ForkerType = Forker<NumTines, Future>;
 
@@ -31,21 +36,66 @@ class [[nodiscard]] Tine : public detail::CancellableBase<Future> {
   }
 
   ~Tine() {
-    assert(forker_ == nullptr);
+    WHEELS_VERIFY(forker_ == nullptr, "You must not discard the future!");
   }
-
-  // Non-copyable
-  Tine(const Tine&) = delete;
-  Tine& operator=(const Tine&) = delete;
 
   // Movable
-  Tine(Tine&& that)
+  Tine(Tine&& that) noexcept
       : forker_(that.Release()) {
   }
-  Tine& operator=(Tine&&) = default;
+  Tine& operator=(Tine&&) = delete;
 
-  void Start(IConsumer<ValueType>* consumer) {
-    Release()->template Start<Index>(consumer);
+ private:
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final : public support::PinnedBase,
+                              public AbstractConsumer<ValueType> {
+    template <size_t Count, Thunk F>
+    friend class Forker;
+
+    friend class Tine;
+
+    EvaluationFor(Tine fut, Cons& cons)
+        : cons_(cons),
+          forker_(fut.Release()) {
+    }
+
+   public:
+    void Start() {
+      Release()->template Start<Index>(this);
+    }
+
+    ~EvaluationFor() override final {
+      WHEELS_VERIFY(forker_ == nullptr, "You must not discard the evaluation!");
+    }
+
+   private:
+    // AbstractConsumer
+    void Consume(Output<ValueType> o) noexcept override final {
+      cons_.Consume(std::move(o));
+    }
+
+    void Cancel(Context ctx) noexcept override final {
+      cons_.Cancel(std::move(ctx));
+    }
+
+    cancel::Token CancelToken() override final {
+      return cons_.CancelToken();
+    }
+
+   private:
+    ForkerType* Release() {
+      return std::exchange(forker_, nullptr);
+    }
+
+   private:
+    Cons& cons_;
+    ForkerType* forker_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Tine, Cons> auto Force(Cons& cons) {
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
  private:
@@ -59,37 +109,28 @@ class [[nodiscard]] Tine : public detail::CancellableBase<Future> {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-template <size_t NumTines, SomeFuture Future>
+template <size_t NumTines, Thunk Future>
 class [[nodiscard]] Forker final
-    : public IConsumer<typename Future::ValueType>,
+    : public support::PinnedBase,
       public cancel::sources::ForkSource<NumTines> {
  private:
-  template <size_t Index, size_t N, SomeFuture F>
+  template <size_t Index, size_t N, Thunk F>
   friend class Tine;
 
   using V = typename Future::ValueType;
   using Base = cancel::sources::ForkSource<NumTines>;
 
   struct Rendezvous {
-    IConsumer<V>* consumer_{nullptr};
+    AbstractConsumer<V>* consumer_{nullptr};
     threads::lockfree::RendezvousStateMachine rendezvous_;
-    std::optional<Output<V>> output_;
   };
 
  public:
   // Add Refs for every consumer and producer
   explicit Forker(Future f)
-      : future_(std::move(f)) {
+      : eval_(std::move(f).Force(*this)) {
     Base::AddRef(NumTines + 1);
   }
-
-  // Non-copyable
-  Forker(const Forker&) = delete;
-  Forker& operator=(const Forker&) = delete;
-
-  // Not-movable
-  Forker(Forker&&) = delete;
-  Forker& operator=(Forker&&) = delete;
 
   auto MakeTines() {
     return [forker = this]<size_t... Inds>(std::index_sequence<Inds...>) {
@@ -99,7 +140,7 @@ class [[nodiscard]] Forker final
   }
 
   template <size_t Index>
-  void Start(IConsumer<V>* consumer) {
+  void Start(AbstractConsumer<V>* consumer) {
     states_[Index].consumer_ = consumer;
 
     Base::AddRef(1);
@@ -119,20 +160,23 @@ class [[nodiscard]] Forker final
     }
   }
 
- private:
-  void Consume(Output<V> out) noexcept override final {
+  // Completable
+  void Consume(Output<V> out) noexcept {
     wheels::Defer cleanup([&] {
       Base::ReleaseRef();
     });
 
+    output_.emplace(std::move(out));
+
     // Iterate over array in compile time
-    [&]<size_t... Inds>(std::index_sequence<Inds...>) {
-      (ForkOutput<Inds>(out), ...);
+    [&]<size_t... IthConsumer>(std::index_sequence<IthConsumer...>) {
+      (TryRendezvousWith<IthConsumer>(), ...);
     }
     (std::make_index_sequence<NumTines>());
   }
 
-  void Cancel(Context ctx) noexcept override final {
+  // CancelSource
+  void Cancel(Context ctx) noexcept {
     // We cancel underlying only if every consumer
     // decides to cancel us. Then we report
     // cancellation to everyone
@@ -152,17 +196,13 @@ class [[nodiscard]] Forker final
     }
   }
 
-  cancel::Token CancelToken() override final {
+  cancel::Token CancelToken() {
     return cancel::Token::Fabricate(this);
   }
 
  private:
   template <size_t Index>
-  void ForkOutput(Output<V> out) {
-    // Emplace the result
-    states_[Index].output_.emplace(out);
-
-    // try rendezvous
+  void TryRendezvousWith() {
     if (bool both = states_[Index].rendezvous_.Produce()) {
       DoRendezvous<Index>();
     }
@@ -171,28 +211,29 @@ class [[nodiscard]] Forker final
   template <size_t Index>
   void DoRendezvous() {
     // At this point consumer in index'th place is set
-    IConsumer<V>* consumer = states_[Index].consumer_;
-    std::optional<Output<V>>& storage = states_[Index].output_;
+    AbstractConsumer<V>* consumer = states_[Index].consumer_;
+    Output<V> out = *output_;
 
     if (consumer->CancelToken().CancelRequested()) {
-      consumer->Cancel(std::move(storage->context));
+      consumer->Cancel(std::move(out.context));
     } else {
       consumer->CancelToken().Detach(Base::template AsLeaf<Index>());
-      consumer->Complete(std::move(*storage));
+      consumer->Complete(std::move(out));
     }
   }
 
   void TryStart() {
     if (!started_.exchange(true, std::memory_order::relaxed)) {
-      future_.Start(this);
+      eval_.Start();
     }
   }
 
  private:
-  Future future_;
+  EvaluationType<Forker, Future> eval_;
   twist::ed::stdlike::atomic<bool> started_{false};
 
   std::array<Rendezvous, NumTines> states_;
+  std::optional<Output<V>> output_;
 };
 
 }  // namespace weave::futures::thunks

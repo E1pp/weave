@@ -11,39 +11,34 @@
 #include <weave/result/make/err.hpp>
 #include <weave/result/make/ok.hpp>
 
-#include <weave/futures/thunks/detail/cancel_base.hpp>
-
 #include <optional>
 
 namespace weave::futures::thunks {
 
 // Default is OnHeap == true
-template <bool OnHeap, SomeFuture Future>
-struct FirstControlBlock<OnHeap, detail::Vector, Future>
+template <bool OnHeap, typename Cons, SomeFuture Future>
+class FirstControlBlock<OnHeap, Cons, detail::TaggedVector, Future> final
     : public detail::JoinBlock<
-          true, traits::ValueOf<Future>,
-          FirstControlBlock<OnHeap, detail::Vector, Future>,
-          detail::JoinAllOnHeap, detail::Vector, Future>,
-      public detail::VariadicCancellableBase<Future> {
+          true, FirstControlBlock<true, Cons, detail::TaggedVector, Future>,
+          detail::JoinAll<true>, traits::ValueOf<Future>, Cons,
+          detail::TaggedVector, Future> {
  public:
   using ValueType = traits::ValueOf<Future>;
-  using Base =
-      detail::JoinBlock<true, ValueType,
-                        FirstControlBlock<OnHeap, detail::Vector, Future>,
-                        detail::JoinAllOnHeap, detail::Vector, Future>;
+  using Base = detail::JoinBlock<
+      true, FirstControlBlock<true, Cons, detail::TaggedVector, Future>,
+      detail::JoinAll<true>, ValueType, Cons, detail::TaggedVector, Future>;
 
-  using Base::Base;
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage> FirstControlBlock(
+      size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)) {
+  }
 
   ~FirstControlBlock() override = default;
-
-  void Create() {
-    // No-Op
-  }
 
   void Consume(Output<ValueType> out, size_t) {
     auto result = std::move(out.result);
 
-    // CompleteConsumer may throw
     wheels::Defer cleanup([&] {
       Base::ReleaseRef();
     });
@@ -59,7 +54,6 @@ struct FirstControlBlock<OnHeap, detail::Vector, Future>
   }
 
   void Cancel() {
-    // CancelConsumer() may throw
     wheels::Defer cleanup([&] {
       Base::ReleaseRef();
     });
@@ -72,35 +66,26 @@ struct FirstControlBlock<OnHeap, detail::Vector, Future>
 
 ///////////////////////////////////////////////////////////////////////
 
-// OnStack spec which waits for the last future to cancel
-template <SomeFuture Future>
-struct FirstControlBlock<false, detail::Vector, Future>
-    : public detail::JoinBlock<false, traits::ValueOf<Future>,
-                               FirstControlBlock<false, detail::Vector, Future>,
-                               detail::JoinAllOnHeap, detail::Vector, Future>,
-      public detail::VariadicCancellableBase<Future> {
+// OnHeap == false
+template <typename Cons, SomeFuture Future>
+class FirstControlBlock<false, Cons, detail::TaggedVector, Future> final
+    : public detail::JoinBlock<
+          false, FirstControlBlock<false, Cons, detail::TaggedVector, Future>,
+          detail::JoinAll<false>, traits::ValueOf<Future>, Cons,
+          detail::TaggedVector, Future> {
  public:
   using ValueType = traits::ValueOf<Future>;
-  using Base =
-      detail::JoinBlock<false, ValueType,
-                        FirstControlBlock<false, detail::Vector, Future>,
-                        detail::JoinAllOnHeap, detail::Vector, Future>;
+  using Base = detail::JoinBlock<
+      false, FirstControlBlock<false, Cons, detail::TaggedVector, Future>,
+      detail::JoinAll<false>, ValueType, Cons, detail::TaggedVector, Future>;
 
-  using Base::Base;
-
-  // Non-copyable
-  FirstControlBlock(const FirstControlBlock&) = delete;
-  FirstControlBlock& operator=(const FirstControlBlock&) = delete;
-
-  // Movable
-  FirstControlBlock(FirstControlBlock&&) = default;
-  FirstControlBlock& operator=(FirstControlBlock&&) = default;
+  template <typename InterStorage>
+  requires std::is_constructible_v<Base, Cons&, InterStorage> FirstControlBlock(
+      size_t, Cons& cons, InterStorage storage)
+      : Base(cons, std::move(storage)) {
+  }
 
   ~FirstControlBlock() override = default;
-
-  void Create() {
-    // No-Op
-  }
 
   void Consume(Output<ValueType> out, size_t) {
     auto result = std::move(out.result);

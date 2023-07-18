@@ -1,11 +1,11 @@
 #pragma once
 
-#include <weave/futures/traits/cancellable.hpp>
+#include <weave/futures/traits/cancel.hpp>
 
 namespace weave::futures::thunks::detail {
 
 // Not Cancellable
-template <SomeFuture Future>
+template <Thunk Future>
 struct CancellableBase {};
 
 // Cancellable
@@ -33,6 +33,16 @@ struct JustCancellableBase {};
 
 template <traits::JustCancellable T>
 struct JustCancellableBase<T> {
+  void Cancellable() {
+    // No-Op
+  }
+};
+
+// Not Cancellable
+struct Empty {};
+
+// Cancellable
+struct Full {
   void Cancellable() {
     // No-Op
   }

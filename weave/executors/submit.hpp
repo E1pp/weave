@@ -22,12 +22,7 @@ namespace weave::executors {
 template <typename F>
 void Submit(IExecutor& exe, F fun,
             SchedulerHint hint = SchedulerHint::UpToYou) {
-  auto wrapped = [f = std::move(fun)](Unit) mutable -> Status {
-    f();
-    return result::Ok();
-  };
-
-  futures::Just() | futures::Via(exe, hint) | futures::Map(std::move(wrapped)) |
+  futures::Just() | futures::Via(exe, hint) | futures::Map(std::move(fun)) |
       futures::Detach();
 }
 

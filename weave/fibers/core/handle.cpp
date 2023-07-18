@@ -21,4 +21,8 @@ void FiberHandle::Switch() {
   Release()->Switch();
 }
 
+cancel::Token FiberHandle::CancelToken() {
+  return fiber_->CancelToken();
+}
+
 }  // namespace weave::fibers

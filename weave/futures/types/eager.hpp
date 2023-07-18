@@ -2,7 +2,7 @@
 
 #include <weave/futures/thunks/make/contract.hpp>
 
-#include <weave/futures/thunks/combine/seq/started.hpp>
+#include <weave/futures/thunks/combine/seq/start.hpp>
 
 #include <weave/futures/traits/is_lazy.hpp>
 
@@ -15,6 +15,6 @@ template <typename T>
 using ContractFuture = thunks::ContractFuture<T>;
 
 template <SomeFuture Future>
-using StartedFuture = thunks::StartedFuture<Future>;
+using StartFuture = thunks::StartFuture<Future>;
 
 }  // namespace weave::futures

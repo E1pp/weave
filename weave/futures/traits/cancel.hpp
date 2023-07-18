@@ -10,6 +10,6 @@ concept JustCancellable = requires(T obj) {
 };
 
 template <typename Future>
-concept Cancellable = SomeFuture<Future> && JustCancellable<Future>;
+concept Cancellable = Thunk<Future> && JustCancellable<Future>;
 
 }  // namespace weave::futures::traits

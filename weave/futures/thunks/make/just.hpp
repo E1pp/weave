@@ -1,35 +1,49 @@
 #pragma once
 
-#include <weave/futures/model/thunk.hpp>
+#include <weave/futures/model/evaluation.hpp>
 
 #include <weave/result/make/ok.hpp>
 
+#include <weave/support/constructor_bases.hpp>
+
 namespace weave::futures::thunks {
 
-class [[nodiscard]] Just {
+class [[nodiscard]] Just final : public support::NonCopyableBase {
  public:
   using ValueType = Unit;
 
   Just() = default;
 
-  // Non-Copyable
-  Just(const Just&) = delete;
-  Just& operator=(const Just&) = delete;
-
   // Movable
-  Just(Just&&) {
-    [[maybe_unused]] int fake = 1;
-    fake++;
-  };
-
+  Just(Just&&) noexcept {};
   Just& operator=(Just&&) = default;
 
-  void Start(IConsumer<Unit>* consumer) {
-    if (consumer->CancelToken().CancelRequested()) {
-      consumer->Cancel(Context{});
-    } else {
-      consumer->Complete(result::Ok());
+ private:
+  template <Consumer<ValueType> Cons>
+  class EvaluationFor final : public support::PinnedBase {
+    friend class Just;
+
+    EvaluationFor(Just, Cons& consumer)
+        : consumer_(consumer) {
     }
+
+   public:
+    void Start() {
+      if (consumer_.CancelToken().CancelRequested()) {
+        consumer_.Cancel(Context{});
+      } else {
+        Complete(consumer_, result::Ok());
+      }
+    }
+
+   private:
+    Cons& consumer_;
+  };
+
+ public:
+  template <Consumer<ValueType> Cons>
+  Evaluation<Just, Cons> auto Force(Cons& cons) {
+    return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
   void Cancellable() {

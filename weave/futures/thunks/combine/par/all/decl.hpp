@@ -2,8 +2,8 @@
 
 namespace weave::futures::thunks {
 
-template <bool OnHeap, template <typename...> typename StorageImpl,
-          typename... Futures>
-struct AllControlBlock {};
+template <bool OnHeap, typename Cons, template <typename...> typename Storage,
+          typename... Suffix>
+class AllControlBlock {};
 
 }  // namespace weave::futures::thunks
