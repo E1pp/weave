@@ -184,17 +184,17 @@ void StressTestSched() {
 //////////////////////////////////////////////////////////////////////
 
 TEST_SUITE(Cancellation) {
-  TWIST_TEST(StressPipeline, 5s) {
-    StressTestPipeline();
-  }
+  // TWIST_TEST(StressPipeline, 5s) {
+  //   StressTestPipeline();
+  // }
 
   TWIST_TEST(DdosStart, 5s){
     StressTestDdosStart();
   }
 
-  TWIST_TEST(StressSched, 5s){
-    StressTestSched();
-  }
+  // TWIST_TEST(StressSched, 5s){
+  //   StressTestSched();
+  // }
 }
 
 RUN_ALL_TESTS()

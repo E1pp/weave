@@ -47,7 +47,7 @@ void StrandSource::ClearReceiver(SignalReceiver* expected) {
   if (ok) {
     receiver->Forward(Signal::Release());
     return;
-  } else {
+  } else if (expected != kAnyOne) {
     WHEELS_VERIFY(!curr.IsPointer(), "Broken state: different receiver!");
 
     if (IsInit(curr) || IsCancelled(curr)) {
