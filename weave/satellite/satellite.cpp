@@ -26,11 +26,10 @@ void RestoreContext(MetaData old) {
 // Cancel Token
 
 void PollToken() {
-  data->PollToken();
-}
-
-cancel::Token GetToken() {
-  return data->token_;
+  fibers::Fiber* runner = fibers::Fiber::Self();
+  if (runner != nullptr && runner->CancelToken().CancelRequested()) {
+    throw cancel::CancelledException{};
+  }
 }
 
 // Executor

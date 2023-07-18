@@ -25,7 +25,9 @@ Future<std::vector<traits::ValueOf<InputFuture>>> auto Quorum(
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-  using QuorumFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using QuorumFuture =
+      thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::QuorumControlBlock,
+                   Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return QuorumFuture(threshold, std::move(vec));
 }
@@ -34,7 +36,8 @@ template <SomeFuture First, typename... Suffix>
 Future<
     thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>> auto
 Quorum(size_t threshold, First f1, Suffix... fs) {
-  static_assert((std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
+  static_assert(
+      (std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
 
   const size_t size = 1 + sizeof...(Suffix);
 
@@ -42,9 +45,12 @@ Quorum(size_t threshold, First f1, Suffix... fs) {
   WHEELS_VERIFY(threshold <= size, "Treshold is too big!");
 
   using Storage = thunks::detail::Tuple<First, Suffix...>;
-  using ValueType = thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>;
+  using ValueType =
+      thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>;
 
-  using QuorumFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedTuple, First, Suffix...>;
+  using QuorumFuture =
+      thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::QuorumControlBlock,
+                   Storage, thunks::detail::TaggedTuple, First, Suffix...>;
 
   return QuorumFuture(threshold, std::move(f1), std::move(fs)...);
 }
@@ -77,7 +83,9 @@ Future<std::vector<traits::ValueOf<InputFuture>>> auto Quorum(
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = std::vector<traits::ValueOf<InputFuture>>;
 
-  using QuorumFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using QuorumFuture = thunks::Join<true, /*OnHeap=*/false, ValueType,
+                                    thunks::QuorumControlBlock, Storage,
+                                    thunks::detail::TaggedVector, InputFuture>;
 
   return QuorumFuture(threshold, std::move(vec));
 }
@@ -86,7 +94,8 @@ template <traits::Cancellable First, traits::Cancellable... Suffix>
 Future<
     thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>> auto
 Quorum(size_t threshold, First f1, Suffix... fs) {
-  static_assert((std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
+  static_assert(
+      (std::is_same_v<traits::ValueOf<First>, traits::ValueOf<Suffix>> && ...));
 
   const size_t size = 1 + sizeof...(Suffix);
 
@@ -94,9 +103,13 @@ Quorum(size_t threshold, First f1, Suffix... fs) {
   WHEELS_VERIFY(threshold <= size, "Treshold is too big!");
 
   using Storage = thunks::detail::Tuple<First, Suffix...>;
-  using ValueType = thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>;
+  using ValueType =
+      thunks::QuorumType<traits::ValueOf<First>, traits::ValueOf<Suffix>...>;
 
-  using QuorumFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::QuorumControlBlock, Storage, thunks::detail::TaggedTuple, First, Suffix...>;
+  using QuorumFuture =
+      thunks::Join<true, /*OnHeap=*/false, ValueType,
+                   thunks::QuorumControlBlock, Storage,
+                   thunks::detail::TaggedTuple, First, Suffix...>;
 
   return QuorumFuture(threshold, std::move(f1), std::move(fs)...);
 }

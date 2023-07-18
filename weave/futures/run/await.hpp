@@ -1,5 +1,7 @@
 #pragma once
 
+#include <weave/fibers/core/self.hpp>
+
 #include <weave/fibers/sched/suspend.hpp>
 
 #include <weave/futures/run/thread_await.hpp>
@@ -12,7 +14,6 @@
 
 #include <weave/threads/blocking/event.hpp>
 
-#include <weave/satellite/meta_data.hpp>
 #include <weave/satellite/satellite.hpp>
 
 #include <weave/support/constructor_bases.hpp>
@@ -31,12 +32,13 @@ struct [[nodiscard]] Await {
 
     explicit Waiter(Future f)
         : eval_(std::move(f).Force(*this)),
-          token_(satellite::GetToken()) {
+          token_(cancel::Never()) {
     }
 
     Result<ValueType> Await() {
       auto awaiter = [this](fibers::FiberHandle handle) mutable {
         fiber_ = handle;
+        token_ = fiber_.CancelToken();
 
         eval_.Start();
 
@@ -57,14 +59,14 @@ struct [[nodiscard]] Await {
 
     // CancelSource
     void Cancel(Context) noexcept {
-      fiber_.Schedule(
-          executors::SchedulerHint::UpToYou);  // Resumed Await() call will throw
+      fiber_.Schedule(executors::SchedulerHint::UpToYou);  // Resumed Await()
+                                                           // call will throw
     }
 
     cancel::Token CancelToken() {
       return token_;
     }
-   
+
    private:
     Result<ValueType> GetResult() {
       if (res_.has_value() && !token_.CancelRequested()) {
@@ -84,7 +86,7 @@ struct [[nodiscard]] Await {
 
   template <SomeFuture InputFuture>
   Result<traits::ValueOf<InputFuture>> Pipe(InputFuture f) {
-    if(fibers::Fiber::Self() == nullptr){
+    if (fibers::Self() == nullptr) {
       return std::move(f) | futures::ThreadAwait();
     }
 

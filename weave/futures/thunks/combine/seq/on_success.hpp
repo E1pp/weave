@@ -17,7 +17,8 @@
 namespace weave::futures::thunks {
 
 template <Thunk Future, typename F>
-class [[nodiscard]] OnSuccess final : public support::NonCopyableBase, public detail::CancellableBase<Future>  {
+class [[nodiscard]] OnSuccess final : public support::NonCopyableBase,
+                                      public detail::CancellableBase<Future> {
  public:
   using ValueType = typename Future::ValueType;
 
@@ -37,13 +38,15 @@ class [[nodiscard]] OnSuccess final : public support::NonCopyableBase, public de
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
                               public executors::Task {
-   public:
+    friend class OnSuccess;
+
     EvaluationFor(OnSuccess fut, Cons& cons)
         : eval_(std::move(fut.future_).Force(*this)),
           fun_(std::move(fut.fun_)),
           cons_(cons) {
     }
 
+   public:
     void Start() {
       eval_.Start();
     }

@@ -87,12 +87,14 @@ class [[nodiscard]] Boxed final {
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
                               public AbstractConsumer<ValueType> {
-   public:
+    friend class Boxed;
+
     EvaluationFor(Boxed fut, Cons& cons)
         : sender_(std::exchange(fut.erased_, nullptr)),
           cons_(cons) {
     }
 
+   public:
     void Start() {
       sender_->RequestOutput(this);
     }

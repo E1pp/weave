@@ -35,7 +35,8 @@ concept Mapper = SomeFuture<InputFuture> &&
 ////////////////////////////////////////////////////////////////////////////////
 
 template <Thunk Future, Mapper<Future> Mapper>
-class [[nodiscard]] Apply final : public support::NonCopyableBase, public detail::CancellableBase<Future> {
+class [[nodiscard]] Apply final : public support::NonCopyableBase,
+                                  public detail::CancellableBase<Future> {
  public:
   using InputValueType = typename Future::ValueType;
   using ValueType = result::traits::ValueOf<typename Mapper::InvokeResult>;
@@ -56,13 +57,15 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase, public detail
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
                               public executors::Task {
-   public:
+    friend class Apply;
+
     EvaluationFor(Apply fut, Cons& consumer)
         : map_(std::move(fut.mapper_)),
           consumer_(consumer),
           evaluation_(std::move(fut.future_).Force(*this)) {
     }
 
+   public:
     void Start() {
       evaluation_.Start();
     }

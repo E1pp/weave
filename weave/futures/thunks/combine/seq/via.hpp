@@ -15,7 +15,8 @@ namespace weave::futures::thunks {
 // Via is seamless thus no need for lookup of CancelRequested inside to be
 // Cancellable
 template <Thunk Future>
-class [[nodiscard]] Via final : public support::NonCopyableBase, public detail::CancellableBase<Future> {
+class [[nodiscard]] Via final : public support::NonCopyableBase,
+                                public detail::CancellableBase<Future> {
  public:
   using ValueType = typename Future::ValueType;
 
@@ -34,13 +35,15 @@ class [[nodiscard]] Via final : public support::NonCopyableBase, public detail::
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
-   public:
+    friend class Via;
+
     EvaluationFor(Via fut, Cons& consumer) noexcept
         : next_context_(std::move(fut.next_context_)),
           consumer_(consumer),
           eval_(std::move(fut.future_).Force(*this)) {
     }
 
+   public:
     void Start() {
       eval_.Start();
     }

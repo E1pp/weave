@@ -15,7 +15,10 @@ namespace weave::futures::thunks {
 // Cancellable if both are Cancellable
 // is seemless thus no need for CancelRequested lookups
 template <Thunk Future>
-class Flattenned final : public support::NonCopyableBase, public detail::VariadicCancellableBase<Future, typename Future::ValueType> {
+class Flattenned final
+    : public support::NonCopyableBase,
+      public detail::VariadicCancellableBase<Future,
+                                             typename Future::ValueType> {
  public:
   using InnerType = typename Future::ValueType;
   using ValueType = typename InnerType::ValueType;
@@ -32,12 +35,14 @@ class Flattenned final : public support::NonCopyableBase, public detail::Variadi
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
-   public:
+    friend class Flattenned;
+
     EvaluationFor(Flattenned fut, Cons& cons)
         : consumer_(cons),
           outer_eval_(std::move(fut.future_).Force(*this)) {
     }
 
+   public:
     void Start() {
       outer_eval_.Start();
     }

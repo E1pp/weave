@@ -21,11 +21,13 @@ class [[nodiscard]] Just final : public support::NonCopyableBase {
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
-   public:
+    friend class Just;
+
     EvaluationFor(Just, Cons& consumer)
         : consumer_(consumer) {
     }
 
+   public:
     void Start() {
       if (consumer_.CancelToken().CancelRequested()) {
         consumer_.Cancel(Context{});
@@ -44,7 +46,7 @@ class [[nodiscard]] Just final : public support::NonCopyableBase {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
-  void Cancellable(){
+  void Cancellable() {
     // No-Op
   }
 };

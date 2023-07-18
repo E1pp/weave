@@ -10,7 +10,7 @@ namespace weave::futures {
 template <typename E, typename F, typename C>
 concept Evaluation =
     !std::movable<E> && !std::copyable<E> && requires(E eval, F fut, C& cons) {
-  E(std::move(fut), cons);
+  // E(std::move(fut), cons);
   eval.Start();
 };
 

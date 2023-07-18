@@ -6,20 +6,12 @@ Concurrency for C++
  - [TaggedBuffer] Rework – Not done
 
  - [cancel]
-    - [sources] – Needs Refactoring
+    - [sources]:
+      - [StrandSource] – Done
+      - [JoinSource] – Not Done
+      - [ForkSource] – Done
 
- - [futures]:
-    - [model] – Final
-    - [make] – Done + Traits
-    - [combine/seq] – Done + Traits
-    - [combine/par]:
-      - [Allocating] – Done + Traits
-      - [no_alloc] – Done + Traits <- Need Refactoring
-    - [run] – Done 
-    - [syntax] – Done
-    - [types] – Done
-    - [traits]
-      - [cancellable] – Trait is Done Thunks Are not
+ - [futures] – Done
 
   - [executors/submit] – Done
 

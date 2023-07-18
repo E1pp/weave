@@ -25,17 +25,15 @@ class JoinSource
   JoinSource(const JoinSource&) = delete;
   JoinSource& operator=(const JoinSource&) = delete;
 
-  // Movable
-  JoinSource(JoinSource&&) = default;
-  JoinSource& operator=(JoinSource&&) = default;
+  // Non-movable
+  JoinSource(JoinSource&&) = delete;
+  JoinSource& operator=(JoinSource&&) = delete;
 
-  ~JoinSource() override {
-    buffer_.Destroy();
-  }
+  ~JoinSource() override = default;
 
   // SignalSender
   bool CancelRequested() override {
-    return buffer_.Refer().IsSealed();
+    return buffer_.IsSealed();
   }
 
   bool Cancellable() override {
@@ -43,13 +41,13 @@ class JoinSource
   }
 
   void Attach(SignalReceiver* receiver) override {
-    if (!buffer_.Refer().TryPush(receiver)) {
+    if (!buffer_.TryPush(receiver)) {
       receiver->Forward(Signal::Cancel());
     }
   }
 
   void Detach(SignalReceiver* receiver) override {
-    buffer_.Refer().Pop(receiver);
+    buffer_.Pop(receiver);
     receiver->Forward(Signal::Release());
   }
 
@@ -58,7 +56,7 @@ class JoinSource
       receiver->Forward(Signal::Cancel());
     };
 
-    buffer_.Refer().SealBuffer(processor);
+    buffer_.SealBuffer(processor);
   }
 
   // SignalReceiver
@@ -73,15 +71,8 @@ class JoinSource
     Base::ReleaseRef();
   }
 
- protected:
-  void Create(size_t capacity) {
-    buffer_.Create(capacity);
-  }
-
  private:
-  support::MaybeDelayed<!OnHeap,
-                        threads::lockfree::TaggedBuffer<SignalReceiver>>
-      buffer_;
+  threads::lockfree::TaggedBuffer<SignalReceiver> buffer_;
 };
 
 }  // namespace weave::cancel::sources

@@ -26,7 +26,8 @@ using NthType = typename NthTypeImpl<N, Pack...>::Type;
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <Thunk... Future>
-class Tuple final : public support::NonCopyableBase, public VariadicCancellableBase<Future...> {
+class Tuple final : public support::NonCopyableBase,
+                    public VariadicCancellableBase<Future...> {
  public:
   explicit Tuple(Future... fs)
       : futures_(std::make_tuple(std::move(fs)...)) {
@@ -102,7 +103,9 @@ struct TaggedBase<Block, std::index_sequence<Index...>, Future...>
 
 template <typename ControlBlock, Thunk... Futures>
 class TaggedTuple final
-    : public TaggedBase<ControlBlock, std::make_index_sequence<sizeof...(Futures)>, Futures...>,
+    : public TaggedBase<ControlBlock,
+                        std::make_index_sequence<sizeof...(Futures)>,
+                        Futures...>,
       public support::PinnedBase {
  public:
   using Base =

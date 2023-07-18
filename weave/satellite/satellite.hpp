@@ -24,8 +24,6 @@ void RestoreContext(MetaData);
 
 void PollToken();
 
-cancel::Token GetToken();
-
 // Executors
 
 executors::IExecutor* GetExecutor();

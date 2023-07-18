@@ -29,15 +29,16 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase {
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
                               public AbstractConsumer<ValueType> {
-   public:
+    friend class ContractFuture;
+
     using U = ValueType;
 
-    // Evaluation
     EvaluationFor(ContractFuture fut, Cons& cons)
         : state_(fut.Release()),
           cons_(cons) {
     }
 
+   public:
     void Start() {
       std::exchange(state_, nullptr)->Consume(this);
     }
@@ -80,7 +81,7 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase {
     // No-Op
   }
 
-  void Cancellable(){
+  void Cancellable() {
     // No-Op
   }
 

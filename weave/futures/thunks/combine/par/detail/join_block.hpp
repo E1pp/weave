@@ -52,7 +52,6 @@ class JoinBlock : public cancel::sources::JoinSource<OnHeap> {
     const size_t num_producers = storage_.Size();
 
     // Prepare producers
-    CancelBase::Create(num_producers);
     CancelBase::AddRef(num_producers);
     state_.SetProducerCount(num_producers);
 

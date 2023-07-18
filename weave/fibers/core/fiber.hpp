@@ -1,5 +1,7 @@
 #pragma once
 
+#include <weave/cancel/never.hpp>
+
 #include <weave/coro/core.hpp>
 
 #include <weave/executors/task.hpp>
@@ -22,8 +24,13 @@ class Fiber : public executors::Task,
   void Schedule(
       executors::SchedulerHint hint = executors::SchedulerHint::UpToYou);
 
-  void SetScheduler(Scheduler* sched) {
+  void SetupFiber(Scheduler* sched, cancel::Token token) {
     my_sched_ = sched;
+    my_token_ = token;
+  }
+
+  cancel::Token CancelToken() {
+    return my_token_;
   }
 
   // Just throws at this point
@@ -85,6 +92,8 @@ class Fiber : public executors::Task,
   size_t epoch_count_{0};
 
   inline TWISTED_THREAD_LOCAL_PTR(Fiber, active_fiber)
+
+      cancel::Token my_token_{cancel::Never()};
 };
 
 }  // namespace weave::fibers

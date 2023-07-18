@@ -13,10 +13,11 @@
 namespace weave::futures::thunks {
 
 template <Thunk Future>
-class [[nodiscard]] StartFuture final : public support::NonCopyableBase, public detail::CancellableBase<Future> {
+class [[nodiscard]] StartFuture final : public support::NonCopyableBase,
+                                        public detail::CancellableBase<Future> {
  public:
   using ValueType = typename Future::ValueType;
-  using SharedState = detail::SharedState<ValueType>;  // Not Implemented
+  using SharedState = detail::SharedState<ValueType>;
 
   explicit StartFuture(Future fut)
       : state_(new detail::StartState(std::move(fut))) {
@@ -32,12 +33,14 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase, public 
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
                               public AbstractConsumer<ValueType> {
-   public:
+    friend class StartFuture;
+
     EvaluationFor(StartFuture fut, Cons& cons)
         : state_(fut.Release()),
           cons_(cons) {
     }
 
+   public:
     void Start() {
       std::exchange(state_, nullptr)->Consume(this);
     }
@@ -72,6 +75,10 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase, public 
 
   void RequestCancel() && {
     Release()->Forward(cancel::Signal::Cancel());
+  }
+
+  void ImEager() {
+    // No-Op
   }
 
   ~StartFuture() {

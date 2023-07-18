@@ -22,6 +22,8 @@ class FiberHandle {
     return FiberHandle(nullptr);
   }
 
+  cancel::Token CancelToken();
+
   bool IsValid() const {
     return fiber_ != nullptr;
   }

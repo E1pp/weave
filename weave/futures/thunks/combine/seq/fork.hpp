@@ -23,7 +23,8 @@ class [[nodiscard]] Forker;
 ///////////////////////////////////////////////////////////////////////////////////
 
 template <size_t Index, size_t NumTines, Thunk Future>
-class [[nodiscard]] Tine final: public support::NonCopyableBase, public detail::CancellableBase<Future> {
+class [[nodiscard]] Tine final : public support::NonCopyableBase,
+                                 public detail::CancellableBase<Future> {
  private:
   using ForkerType = Forker<NumTines, Future>;
 
@@ -39,7 +40,8 @@ class [[nodiscard]] Tine final: public support::NonCopyableBase, public detail::
   }
 
   // Movable
-  Tine(Tine&& that) noexcept: forker_(that.Release()) {
+  Tine(Tine&& that) noexcept
+      : forker_(that.Release()) {
   }
   Tine& operator=(Tine&&) = delete;
 
@@ -50,11 +52,15 @@ class [[nodiscard]] Tine final: public support::NonCopyableBase, public detail::
     template <size_t Count, Thunk F>
     friend class Forker;
 
-   public:
-    EvaluationFor(Tine fut, Cons& cons) : cons_(cons), forker_(fut.Release()){
+    friend class Tine;
+
+    EvaluationFor(Tine fut, Cons& cons)
+        : cons_(cons),
+          forker_(fut.Release()) {
     }
 
-    void Start(){
+   public:
+    void Start() {
       Release()->template Start<Index>(this);
     }
 
@@ -77,7 +83,7 @@ class [[nodiscard]] Tine final: public support::NonCopyableBase, public detail::
     }
 
    private:
-    ForkerType* Release(){
+    ForkerType* Release() {
       return std::exchange(forker_, nullptr);
     }
 
@@ -88,7 +94,7 @@ class [[nodiscard]] Tine final: public support::NonCopyableBase, public detail::
 
  public:
   template <Consumer<ValueType> Cons>
-  Evaluation<Tine, Cons> auto Force(Cons& cons){
+  Evaluation<Tine, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
@@ -104,7 +110,9 @@ class [[nodiscard]] Tine final: public support::NonCopyableBase, public detail::
 ///////////////////////////////////////////////////////////////////////////////////
 
 template <size_t NumTines, Thunk Future>
-class [[nodiscard]] Forker final: public support::PinnedBase, public cancel::sources::ForkSource<NumTines> {
+class [[nodiscard]] Forker final
+    : public support::PinnedBase,
+      public cancel::sources::ForkSource<NumTines> {
  private:
   template <size_t Index, size_t N, Thunk F>
   friend class Tine;

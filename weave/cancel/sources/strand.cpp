@@ -1,4 +1,8 @@
+#include <atomic>
 #include <weave/cancel/sources/strand.hpp>
+#include "weave/cancel/token.hpp"
+#include "wheels/core/assert.hpp"
+#include "wheels/core/panic.hpp"
 
 namespace weave::cancel::sources {
 
@@ -23,13 +27,34 @@ void StrandSource::SetReceiver(SignalReceiver* receiver) {
   receiver->Forward(Signal::Cancel());
 }
 
-void StrandSource::ClearReceiver() {
-  State old = state_.exchange(State::Value(kInit), std::memory_order::acquire);
+void StrandSource::ClearReceiver(SignalReceiver* expected) {
+  State curr = state_.load(std::memory_order::acquire);
 
-  if (old.IsPointer()) {
-    SignalReceiver* receiver = old.AsPointerTo<SignalReceiver>();
+  if (IsCancelled(curr) || IsInit(curr)) {
+    return;
+  }
 
+  auto* receiver = curr.AsPointerTo<SignalReceiver>();
+
+  if (expected != kAnyOne) {
+    WHEELS_VERIFY(expected == receiver, "Expected a different receiver!");
+  }
+
+  bool ok = state_.compare_exchange_strong(curr, State::Value(kInit),
+                                           std::memory_order::release,
+                                           std::memory_order::relaxed);
+
+  if (ok) {
     receiver->Forward(Signal::Release());
+    return;
+  } else {
+    WHEELS_VERIFY(!curr.IsPointer(), "Broken state: different receiver!");
+
+    if (IsInit(curr) || IsCancelled(curr)) {
+      return;
+    }
+
+    WHEELS_PANIC("Unreachable");
   }
 }
 
@@ -54,7 +79,7 @@ void StrandSource::Forward(Signal signal) {
   if (signal.CancelRequested()) {
     RequestCancel();
   } else {
-    ClearReceiver();
+    ClearReceiver(kAnyOne);
   }
 
   // Memory Management

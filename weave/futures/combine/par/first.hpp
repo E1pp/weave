@@ -12,13 +12,15 @@ namespace weave::futures {
 //////////////////////////////////////////////////////////////////////////////
 
 template <SomeFuture InputFuture>
-Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec){
+Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec) {
   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
 
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = traits::ValueOf<InputFuture>;
 
-  using FirstFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using FirstFuture =
+      thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::FirstControlBlock,
+                   Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return FirstFuture(0, std::move(vec));
 }
@@ -31,7 +33,9 @@ Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
   using Storage = thunks::detail::Tuple<FirstF, Fs...>;
   using ValueType = traits::ValueOf<FirstF>;
 
-  using FirstFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
+  using FirstFuture =
+      thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::FirstControlBlock,
+                   Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
 
   return FirstFuture(0, std::move(f1), std::move(fs)...);
 }
@@ -48,13 +52,15 @@ Future<traits::ValueOf<FirstFuture>> auto First(FirstFuture f1) {
 namespace no_alloc {
 
 template <traits::Cancellable InputFuture>
-Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec){
+Future<traits::ValueOf<InputFuture>> auto First(std::vector<InputFuture> vec) {
   WHEELS_VERIFY(!vec.empty(), "Sending empty vector!");
 
   using Storage = thunks::detail::Vector<InputFuture>;
   using ValueType = traits::ValueOf<InputFuture>;
 
-  using FirstFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedVector, InputFuture>;
+  using FirstFuture =
+      thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::FirstControlBlock,
+                   Storage, thunks::detail::TaggedVector, InputFuture>;
 
   return FirstFuture(0, std::move(vec));
 }
@@ -67,7 +73,9 @@ Future<traits::ValueOf<FirstF>> auto First(FirstF f1, Fs... fs) {
   using Storage = thunks::detail::Tuple<FirstF, Fs...>;
   using ValueType = traits::ValueOf<FirstF>;
 
-  using FirstFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::FirstControlBlock, Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
+  using FirstFuture =
+      thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::FirstControlBlock,
+                   Storage, thunks::detail::TaggedTuple, FirstF, Fs...>;
 
   return FirstFuture(0, std::move(f1), std::move(fs)...);
 }

@@ -19,7 +19,8 @@
 namespace weave::futures::thunks {
 
 template <Thunk Future, typename F>
-class [[nodiscard]] Anyway final : public support::NonCopyableBase, public detail::CancellableBase<Future>  {
+class [[nodiscard]] Anyway final : public support::NonCopyableBase,
+                                   public detail::CancellableBase<Future> {
  public:
   using ValueType = typename Future::ValueType;
 
@@ -44,13 +45,15 @@ class [[nodiscard]] Anyway final : public support::NonCopyableBase, public detai
       return std::make_error_code(static_cast<std::errc>(1337));
     }
 
-   public:
+    friend class Anyway;
+
     EvaluationFor(Anyway fut, Cons& cons)
         : eval_(std::move(fut.future_).Force(*this)),
           fun_(std::move(fut.fun_)),
           cons_(cons) {
     }
 
+   public:
     void Start() {
       eval_.Start();
     }

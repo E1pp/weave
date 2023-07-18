@@ -26,12 +26,14 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase {
-   public:
+    friend class Failure;
+
     EvaluationFor(Failure fut, Cons& consumer)
         : err_(std::move(fut.error_)),
           consumer_(consumer) {
     }
 
+   public:
     void Start() {
       if (consumer_.CancelToken().CancelRequested()) {
         consumer_.Cancel(Context{});
@@ -51,7 +53,7 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
-  void Cancellable(){
+  void Cancellable() {
     // No-Op
   }
 

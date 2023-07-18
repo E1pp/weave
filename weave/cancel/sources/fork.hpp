@@ -37,7 +37,7 @@ class ForkSource
   void Forward(Signal signal) override {
     if (!signal.CancelRequested()) {
       should_cancel_.store(false);
-      StrandSource::ClearReceiver();
+      StrandSource::ClearReceiver(StrandSource::kAnyOne);
     }
 
     if (bool should_cancel = ReleaseTine()) {

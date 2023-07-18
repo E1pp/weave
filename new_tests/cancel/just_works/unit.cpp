@@ -923,6 +923,33 @@ TEST_SUITE(Fibers){
 
     pool.Stop();
   }
+
+  // SIMPLE_TEST(DdosFirst){
+  //   executors::fibers::ManualExecutor manual;
+
+  //   auto f = futures::Submit(manual, []{}) 
+  //   | futures::Start() | futures::AndThen([]{
+  //     ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
+
+  //     return 5;
+  //   });
+
+  //   auto [f1, p] = futures::Contract<int>();
+
+  //   futures::First(std::move(f), std::move(f1)) | futures::Detach();
+
+  //   ASSERT_EQ(manual.Drain(), 2);
+
+  //   ASSERT_TRUE(manual.IsEmpty());
+
+  //   std::move(p).SetValue(42);
+
+  //   ASSERT_TRUE(manual.NonEmpty());
+
+  //   ASSERT_EQ(manual.Drain(), 1);
+
+  //   manual.Stop();
+  // }
 }
 
 #endif

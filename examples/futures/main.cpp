@@ -26,7 +26,7 @@
 #include <weave/futures/run/detach.hpp>
 #include <weave/futures/run/await.hpp>
 
-#include <weave/futures/old_traits/is_lazy.hpp>
+#include <weave/futures/traits/is_lazy.hpp>
 
 #include <weave/timers/processors/standalone.hpp>
 

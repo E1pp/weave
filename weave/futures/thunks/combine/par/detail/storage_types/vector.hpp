@@ -15,17 +15,22 @@ namespace weave::futures::thunks::detail {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <Thunk Future>
-class Vector final: public support::NonCopyableBase, public CancellableBase<Future> {
+class Vector final : public support::NonCopyableBase,
+                     public CancellableBase<Future> {
  public:
-  explicit Vector(std::vector<Future> vec) : cached_size_(vec.size()), futures_(std::move(vec)){
+  explicit Vector(std::vector<Future> vec)
+      : cached_size_(vec.size()),
+        futures_(std::move(vec)) {
   }
-  
+
   // Movable
-  Vector(Vector&& that) noexcept: cached_size_(that.Size()), futures_(std::move(that.futures_)){
+  Vector(Vector&& that) noexcept
+      : cached_size_(that.Size()),
+        futures_(std::move(that.futures_)) {
   }
   Vector& operator=(Vector&&) = delete;
 
-  std::vector<Future>& Peek(){
+  std::vector<Future>& Peek() {
     return futures_;
   }
 
@@ -45,7 +50,8 @@ class ProducerForVector final : public support::PinnedBase {
   using InputType = typename Future::ValueType;
 
  public:
-  explicit ProducerForVector(Future future): eval_(std::move(future).Force(*this)) {
+  explicit ProducerForVector(Future future)
+      : eval_(std::move(future).Force(*this)) {
   }
 
   void Start(Block* block, size_t index) {
@@ -64,7 +70,7 @@ class ProducerForVector final : public support::PinnedBase {
     block_->Cancel();
   }
 
-  cancel::Token CancelToken(){
+  cancel::Token CancelToken() {
     return block_->CancelToken();
   }
 
@@ -77,14 +83,15 @@ class ProducerForVector final : public support::PinnedBase {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class PinnedStorage final: public support::PinnedBase {
+class PinnedStorage final : public support::PinnedBase {
  private:
   union PinnedSlot {
-    PinnedSlot() : dummy_{}{
+    PinnedSlot()
+        : dummy_{} {
     }
 
     ~PinnedSlot(){
-      // You must manually delete obj_!!!
+        // You must manually delete obj_!!!
     };
 
     Unit dummy_;
@@ -94,15 +101,16 @@ class PinnedStorage final: public support::PinnedBase {
  public:
   template <typename U>
   requires std::is_constructible_v<T, U>
-  explicit PinnedStorage(std::vector<U> vec) : impl_(vec.size()){
+  explicit PinnedStorage(std::vector<U> vec)
+      : impl_(vec.size()) {
     const size_t size = vec.size();
 
-    for(size_t i = 0; i < size; i++){
+    for (size_t i = 0; i < size; i++) {
       new (&(impl_[i].obj_)) T(std::move(vec[i]));
     }
   }
 
-  T& operator[](size_t ind){
+  T& operator[](size_t ind) {
     return impl_[ind].obj_;
   }
 
@@ -110,10 +118,10 @@ class PinnedStorage final: public support::PinnedBase {
     return impl_.size();
   }
 
-  ~PinnedSlot(){
+  ~PinnedSlot() {
     const size_t size = impl_.size();
 
-    for(size_t i = 0; i < size; i++){
+    for (size_t i = 0; i < size; i++) {
       std::destroy_at(&(impl_[i].obj_));
     }
   }
@@ -125,9 +133,10 @@ class PinnedStorage final: public support::PinnedBase {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, Thunk Future>
-class TaggedVector final: public support::PinnedBase {
+class TaggedVector final : public support::PinnedBase {
  public:
-  explicit TaggedVector(Vector<Future> vec) : tagged_producers_(std::move(vec.Peek())) {
+  explicit TaggedVector(Vector<Future> vec)
+      : tagged_producers_(std::move(vec.Peek())) {
   }
 
   void BootUpFutures(T* block) {

@@ -39,7 +39,7 @@ struct JustCancellableBase<T> {
 };
 
 // Not Cancellable
-struct Empty{};
+struct Empty {};
 
 // Cancellable
 struct Full {

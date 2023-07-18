@@ -22,11 +22,13 @@ class [[nodiscard]] Never final : support::NonCopyableBase {
   template <Consumer<Unit> Cons>
   class EvaluationFor final : public support::PinnedBase,
                               public cancel::SignalReceiver {
-   public:
+    friend class Never;
+
     EvaluationFor(Never, Cons& cons)
         : cons_(cons) {
     }
 
+   public:
     void Start() {
       cons_.CancelToken().Attach(this);
     }
@@ -52,7 +54,7 @@ class [[nodiscard]] Never final : support::NonCopyableBase {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
-  void Cancellable(){
+  void Cancellable() {
     // No-Op
   }
 };

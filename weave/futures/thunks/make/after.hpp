@@ -21,20 +21,27 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
   }
 
   // Movable
-  After(After&& that) noexcept: delay_(std::move(that.delay_)) {
+  After(After&& that) noexcept
+      : delay_(std::move(that.delay_)) {
   }
   After& operator=(After&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>
-  class EvaluationFor final: public support::PinnedBase, public cancel::SignalReceiver, public timers::ITimer {
-   public:
-    EvaluationFor(After fut, Cons& cons) : cons_(cons), delay_(std::move(fut.delay_)){
+  class EvaluationFor final : public support::PinnedBase,
+                              public cancel::SignalReceiver,
+                              public timers::ITimer {
+    friend class After;
+
+    EvaluationFor(After fut, Cons& cons)
+        : cons_(cons),
+          delay_(std::move(fut.delay_)) {
     }
 
+   public:
     ~EvaluationFor() override final = default;
 
-    void Start(){
+    void Start() {
       cons_.CancelToken().Attach(this);
 
       delay_.processor_->AddTimer(this);
@@ -44,7 +51,7 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
     // ITimer
     timers::Millis GetDelay() override final {
       return delay_.time_;
-    }  
+    }
 
     void Run() noexcept override final {
       if (cons_.CancelToken().CancelRequested()) {
@@ -72,11 +79,11 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
 
  public:
   template <Consumer<ValueType> Cons>
-  Evaluation<After, Cons> auto Force(Cons& cons){
+  Evaluation<After, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
-  void Cancellable(){
+  void Cancellable() {
     // No-Op
   }
 

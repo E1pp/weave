@@ -14,7 +14,7 @@ struct IExecutor {
   virtual void Submit(Task* task,
                       SchedulerHint hint = SchedulerHint::UpToYou) = 0;
 
-  virtual bool IRunFibers(){
+  virtual bool IRunFibers() {
     return false;
   }
 };

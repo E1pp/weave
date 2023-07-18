@@ -13,13 +13,15 @@ namespace weave::futures {
 template <SomeFuture FirstFuture, typename... Futures>
 Future<thunks::SelectedValue<FirstFuture, Futures...>> auto Select(
     FirstFuture f1, Futures... fs) {
-  
   using Storage = thunks::detail::Tuple<FirstFuture, Futures...>;
   using ValueType = thunks::SelectedValue<FirstFuture, Futures...>;
 
-  using SelectFuture = thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::SelectControlBlock, Storage, thunks::detail::TaggedTuple, FirstFuture, Futures...>;
+  using SelectFuture =
+      thunks::Join<true, /*OnHeap=*/true, ValueType, thunks::SelectControlBlock,
+                   Storage, thunks::detail::TaggedTuple, FirstFuture,
+                   Futures...>;
 
-  return SelectFuture(0, std::move(f1), std::move(fs)...); 
+  return SelectFuture(0, std::move(f1), std::move(fs)...);
 }
 
 template <SomeFuture FirstFuture>
@@ -36,13 +38,15 @@ namespace no_alloc {
 template <traits::Cancellable FirstFuture, traits::Cancellable... Futures>
 Future<thunks::SelectedValue<FirstFuture, Futures...>> auto Select(
     FirstFuture f1, Futures... fs) {
-  
   using Storage = thunks::detail::Tuple<FirstFuture, Futures...>;
   using ValueType = thunks::SelectedValue<FirstFuture, Futures...>;
 
-  using SelectFuture = thunks::Join<true, /*OnHeap=*/false, ValueType, thunks::SelectControlBlock, Storage, thunks::detail::TaggedTuple, FirstFuture, Futures...>;
+  using SelectFuture =
+      thunks::Join<true, /*OnHeap=*/false, ValueType,
+                   thunks::SelectControlBlock, Storage,
+                   thunks::detail::TaggedTuple, FirstFuture, Futures...>;
 
-  return SelectFuture(0, std::move(f1), std::move(fs)...); 
+  return SelectFuture(0, std::move(f1), std::move(fs)...);
 }
 
 template <SomeFuture FirstFuture>
