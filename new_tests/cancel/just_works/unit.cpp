@@ -371,7 +371,7 @@ TEST_SUITE(Sequential){
 
   //   std::move(ff2) | futures::Discard();
 
-  //   auto res = std::move(f1) | futures::ThreadAwait();
+  //   auto res = std::move(f1) | futures::Await();
 
   //   ASSERT_TRUE(res);
 
@@ -520,7 +520,7 @@ TEST_SUITE(Parallel){
   //   auto res = futures::First(std::move(f1), std::move(f2) | futures::Map([](int){
   //     WHEELS_PANIC("f2 : Test failed!");
   //     return 84;
-  //   })) | futures::ThreadAwait();
+  //   })) | futures::Await();
 
   //   ASSERT_TRUE(res);
     
@@ -704,7 +704,7 @@ TEST_SUITE(Fibers){
       WHEELS_PANIC("Unreachable!");
     });
 
-    futures::First(std::move(f), futures::Just()) | futures::ThreadAwait();
+    futures::First(std::move(f), futures::Just()) | futures::Await();
 
     manual.Drain();
 
@@ -736,7 +736,7 @@ TEST_SUITE(Fibers){
 
     auto g = futures::Just() | futures::Start();
 
-    futures::First(std::move(f), std::move(g)) | futures::ThreadAwait();
+    futures::First(std::move(f), std::move(g)) | futures::Await();
 
     manual.Drain();
 
@@ -933,26 +933,37 @@ TEST_SUITE(Fibers){
   }
 
   SIMPLE_TEST(DdosEager3){
-    executors::fibers::ManualExecutor manual;
+    executors::ThreadPool pool{4};
+    pool.Start();
 
     const size_t num_attacks = 15;
 
-    auto f = futures::Submit(manual, [&]{
-    }) | futures::Start() | futures::AndThen([]{
+    futures::Submit(pool, [&]{
+    }) | futures::Start() | futures::AndThen([&]{
       for(size_t i = 0; i < num_attacks; ++i){
-        futures::Just() | futures::Start() | futures::AndThen([]{
-        }) | futures::Await();
+        futures::Submit(pool, []{
+        }) | futures::Start() | futures::Await();
       }
 
+    }) | futures::Start() | futures::Await();
+
+    pool.Stop();
+  }
+
+  SIMPLE_TEST(ThreadAwait){
+    executors::fibers::ManualExecutor manual;
+
+    auto f = futures::Submit(manual, [&]{
+      futures::Submit(manual, []{
+        ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
+      }) | futures::Await();
     }) | futures::Start();
 
-    ASSERT_EQ(manual.RunAtMost(1), 1);
+    manual.RunNext();
 
-    std::move(f) | futures::Detach();
+    std::move(f).RequestCancel();
 
-    ASSERT_TRUE(manual.NonEmpty());
-
-    ASSERT_EQ(manual.Drain(), num_attacks + 1);
+    manual.Drain();
 
     manual.Stop();
   }

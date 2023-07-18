@@ -71,7 +71,7 @@ Concurrency for C++
       - `Box` – erases concrete `Future` (`Thunk`) type
       - `Start` (or `Force`) – converts to `EagerFuture`, starts operation
       - `Fork<N>` – splits future value into N copies
-      - `OnComplete` / `OnCancel` / `Anyway` – add side effect based on what happened to the underlying future
+      - `OnComplete` / `OnCancel` / `Anyway` – add side effect
       - `WithTimeout` – attaches timeout
     - Parallel composition (`par`)
       - `All`/`Both`
@@ -79,7 +79,7 @@ Concurrency for C++
       - `Select` (`std::variant` alternative to `First`)
       - `Quorum` (blocking)
   - Terminators (`run`)
-    - `Await`/`ThreadAwait` – synchronously unwraps `Result` from future
+    - `Await` – synchronously unwraps `Result` from future
     - `Detach` – moves future on the stack and starts it without cancelling it
     - `Discard` – moves future on the stack, starts it and cancels it
   - Operators (`syntax`)
