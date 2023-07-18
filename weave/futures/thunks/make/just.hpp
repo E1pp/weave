@@ -43,6 +43,10 @@ class [[nodiscard]] Just final : public support::NonCopyableBase {
   Evaluation<Just, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
+
+  void Cancellable(){
+    // No-Op
+  }
 };
 
 }  // namespace weave::futures::thunks

@@ -51,6 +51,10 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
+  void Cancellable(){
+    // No-Op
+  }
+
  private:
   Error error_;
 };

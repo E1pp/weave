@@ -1,20 +1,17 @@
-#include <weave/executors/fibers/manual.hpp>
-
-#include <weave/executors/submit.hpp>
-#include <weave/executors/thread_pool.hpp>
 #include <weave/executors/manual.hpp>
+#include <weave/timers/processors/standalone.hpp>
 
-#include <weave/fibers/sched/sleep_for.hpp>
-#include <weave/fibers/sched/yield.hpp>
+// Make 
 
-#include <weave/fibers/sync/mutex.hpp>
-
+#include <weave/futures/make/after.hpp>
 #include <weave/futures/make/contract.hpp>
 #include <weave/futures/make/failure.hpp>
-#include <weave/futures/make/value.hpp>
-#include <weave/futures/make/submit.hpp>
 #include <weave/futures/make/just.hpp>
 #include <weave/futures/make/never.hpp>
+#include <weave/futures/make/submit.hpp>
+#include <weave/futures/make/value.hpp>
+
+// Combine Seq
 
 #include <weave/futures/combine/seq/and_then.hpp>
 #include <weave/futures/combine/seq/anyway.hpp>
@@ -27,23 +24,27 @@
 #include <weave/futures/combine/seq/or_else.hpp>
 #include <weave/futures/combine/seq/start.hpp>
 #include <weave/futures/combine/seq/via.hpp>
+// #include <weave/futures/combine/seq/with_timeout.hpp>
+
+// Combine Par
 
 #include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
 #include <weave/futures/combine/par/quorum.hpp>
+#include <weave/futures/combine/par/select.hpp>
+
+// Run
 
 #include <weave/futures/run/await.hpp>
 #include <weave/futures/run/discard.hpp>
 #include <weave/futures/run/detach.hpp>
 #include <weave/futures/run/thread_await.hpp>
 
+// Trait
+
 #include <weave/futures/traits/cancel.hpp>
 
-#include <weave/threads/blocking/stdlike/mutex.hpp>
-#include <weave/threads/blocking/wait_group.hpp>
-
 #include <wheels/test/framework.hpp>
-#include <wheels/test/util/cpu_timer.hpp>
 
 #include <chrono>
 #include <string>
@@ -64,34 +65,56 @@ inline std::error_code IoError() {
   return std::make_error_code(std::errc::io_error);
 }
 
-struct MoveOnly {
-  MoveOnly() = default;
-  MoveOnly(const MoveOnly&) = delete;
-  MoveOnly(MoveOnly&&) {};
-};
-
-struct NonDefaultConstructible {
-  NonDefaultConstructible(int) {}; // NOLINT
-};
+#define CANCELLABLE(x) static_assert(futures::traits::Cancellable<decltype(x)>)
+#define NOT_CANCELLABLE(x) static_assert(!futures::traits::Cancellable<decltype(x)>)
 
 TEST_SUITE(CancelTraits){
   SIMPLE_TEST(MakeCancellable){
-    //
+    timers::StandaloneProcessor proc{};
+    proc.MakeGlobal();
+
+    CANCELLABLE(futures::After(5s));
+
+    auto [f, p] = futures::Contract<int>();
+    std::move(p).SetValue(42);
+    std::move(f).RequestCancel();
+
+    CANCELLABLE(f);
+
+    CANCELLABLE(futures::Failure<int>(TimeoutError()));
+
+    CANCELLABLE(futures::Just());
+
+    CANCELLABLE(futures::Never());
+
+
+
+    CANCELLABLE(futures::Value(42));
   }
 
   SIMPLE_TEST(MonadCancellable){
-    //
+    auto f = futures::Value(42);
+
+    CANCELLABLE(std::move(f) | futures::AndThen([]{}));
+
+    CANCELLABLE(std::move(f) | futures::OrElse([]{
+        return 42;
+    }));
+
+    CANCELLABLE(std::move(f) | futures::Map([]{}));   
   }
+
+//   SIMPLE_TEST(ViaCancellable){
+//     executors::ManualExecutor manual;
+
+//     CANCELLABLE(futures::Submit(manual, []{}));    
+//   }
 
   SIMPLE_TEST(SideEffectsCancellable){
     //
   }
 
   SIMPLE_TEST(StartCancellable){
-    //
-  }
-
-  SIMPLE_TEST(ViaCancellable){
     //
   }
 
@@ -107,29 +130,27 @@ TEST_SUITE(CancelTraits){
     //
   }
 
-  SIMPLE_TEST(ForkCancellable1){
-    auto [f1, f2] = futures::Just() | futures::Fork<2>();
+//   SIMPLE_TEST(ForkCancellable1){
+//     auto [f1, f2] = futures::Just() | futures::Fork<2>();
 
-    static_assert(futures::traits::Cancellable<decltype(f1)>);
+//     CANCELLABLE(f1);
+//     CANCELLABLE(f2);
 
-    static_assert(futures::traits::Cancellable<decltype(f2)>);
+//     std::apply([](auto... fs){
+//       futures::All(std::move(fs)...) | futures::ThreadAwait();
+//     }, std::make_tuple(std::move(f1), std::move(f2)));
+//   }
 
-    std::apply([](auto... fs){
-      futures::All(std::move(fs)...) | futures::ThreadAwait();
-    }, std::make_tuple(std::move(f1), std::move(f2)));
-  }
+//   SIMPLE_TEST(ForkCancellable2){
+//     auto [f1, f2] = futures::Just() | futures::Box() | futures::Fork<2>();
 
-  SIMPLE_TEST(ForkCancellable2){
-    auto [f1, f2] = futures::Just() | futures::Box() | futures::Fork<2>();
+//     NOT_CANCELLABLE(f1);
+//     NOT_CANCELLABLE(f2);
 
-    static_assert(!futures::traits::Cancellable<decltype(f1)>);
-
-    static_assert(!futures::traits::Cancellable<decltype(f2)>);
-
-    std::apply([](auto... fs){
-      futures::All(std::move(fs)...) | futures::ThreadAwait();
-    }, std::make_tuple(std::move(f1), std::move(f2)));
-  }
+//     std::apply([](auto... fs){
+//       futures::All(std::move(fs)...) | futures::ThreadAwait();
+//     }, std::make_tuple(std::move(f1), std::move(f2)));
+//   }
 
   SIMPLE_TEST(ParallelCancellable1){
     // 

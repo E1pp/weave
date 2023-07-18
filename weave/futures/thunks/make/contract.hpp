@@ -80,6 +80,10 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase {
     // No-Op
   }
 
+  void Cancellable(){
+    // No-Op
+  }
+
   ~ContractFuture() {
     WHEELS_VERIFY(state_ == nullptr, "Unfulfilled Eager future!");
   }

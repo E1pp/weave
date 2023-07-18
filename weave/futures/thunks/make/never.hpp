@@ -51,6 +51,10 @@ class [[nodiscard]] Never final : support::NonCopyableBase {
   Evaluation<Never, Cons> auto Force(Cons& cons) {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
+
+  void Cancellable(){
+    // No-Op
+  }
 };
 
 }  // namespace weave::futures::thunks

@@ -76,6 +76,10 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
+  void Cancellable(){
+    // No-Op
+  }
+
  private:
   timers::Delay delay_;
 };

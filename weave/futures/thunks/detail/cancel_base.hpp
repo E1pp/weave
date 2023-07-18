@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weave/futures/old_traits/cancellable.hpp>
+#include <weave/futures/traits/cancel.hpp>
 
 namespace weave::futures::thunks::detail {
 

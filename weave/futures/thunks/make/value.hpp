@@ -52,6 +52,10 @@ class [[nodiscard]] Value final : public support::NonCopyableBase {
     return EvaluationFor<Cons>(std::move(*this), consumer);
   }
 
+  void Cancellable(){
+    // No-Op
+  }
+
  private:
   T value_;
 };
