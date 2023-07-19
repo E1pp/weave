@@ -73,7 +73,8 @@ class TaggedBuffer {
   bool TryPop(Node* node) {
     WHEELS_VERIFY(node->position_ != -1, "Not pushed yet!");
 
-    return buffer_[node->position_].ptr_.exchange(fullptr, std::memory_order::relaxed) != fullptr;
+    return buffer_[node->position_].ptr_.exchange(
+               fullptr, std::memory_order::relaxed) != fullptr;
   }
 
   // One-shot

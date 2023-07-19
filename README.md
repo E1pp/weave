@@ -1,26 +1,12 @@
 # Weave
 Concurrency for C++
 
-# Branch Status:
-
- - [TaggedBuffer] Rework – Not done
-
- - [cancel]
-    - [sources]:
-      - [StrandSource] – Done
-      - [JoinSource] – Not Done
-      - [ForkSource] – Done
-
- - [futures] – Done
-
-  - [executors/submit] – Done
-
 ## Features
 
 - Scalable work-stealing scheduler – `executors::tp::fast::ThreadPool`
 - Transparent stackful fibers via `executors::fibers::ThreadPool` with automatic pooling
-- Functional futures
-- Futures are lazy ⟹ allocation and synchronization amount is minimized (usually to zero)
+- Functional futures with almost everything deduced in compile-time
+- Futures are lazy ⟹ allocation and synchronization is minimized (usually to zero)
 - Transparent cooperative cancellation, wait-free for sequential composition and lock-free for parallel composition
 - Structured concurrency via parallel combinators ('All', 'First', etc)
 - Deterministic stress-tests with fault-injection via [`Twist`](https://gitlab.com/Lipovsky/twist) framework
@@ -50,7 +36,7 @@ Concurrency for C++
     - `Value`
   - Combinators (`combine`)
     - Sequential composition (`seq`)
-      - `Map` / `AndThen` / `OrElse` – monadic mappers for monadic value type `T`
+      - `Map` / `AndThen` / `OrElse` – monadic mappers for `Result<T>`
       - `Flatten` – flattens nested futures (for asynchronous mappers)
       - `FlatMap` = `Map` + `Flatten`
       - `Via` – sets executor and/or hint for following mappers
@@ -64,6 +50,7 @@ Concurrency for C++
       - `First`
       - `Select` (`std::variant` alternative to `First`)
       - `Quorum` (blocking)
+      - `no_alloc` versions which saves up allocations at the cost of less intuitive semantics
   - Terminators (`run`)
     - `Await` – synchronously unwraps `Result` from future
     - `Detach` – moves future on the stack and starts it without cancelling it
@@ -93,7 +80,17 @@ Concurrency for C++
 - [Cancellation](examples/cancel/main.cpp)
 - [Timers](examples/timers/main.cpp)
 
-Unit [tests](tests) contain most of the common-sense uses of this library and push semantics of its components to the limits. You should consider reading them in order to fully understand how to use the weave library.
+## Docs
+
+### Getting Started
+
+This library has a lot of Unit [tests](tests) which will probably explain how everything works much better than I ever would, so you should really consider reading them. Below are the most basic things you should know about `weave`:
+
+
+### Advanced features
+
+
+
 
 ## References
 

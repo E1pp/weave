@@ -97,8 +97,8 @@ class FirstControlBlock<false, Cons, detail::TaggedVector, Future> final
 
     if (bool is_the_last = Base::ProducerDone()) {
       // we are the last one
-      if(!res_){
-        EmplaceResult(std::move(result));      
+      if (!res_) {
+        EmplaceResult(std::move(result));
       }
 
       Base::CompleteConsumer(std::move(*res_));

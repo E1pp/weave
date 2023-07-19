@@ -32,11 +32,13 @@ class TimersQueue {
     }
 
     bool operator<(const TimerNode& that) const {
-      if (timer_->CancelToken().CancelRequested() && !that.timer_->CancelToken().CancelRequested()) {
+      if (timer_->CancelToken().CancelRequested() &&
+          !that.timer_->CancelToken().CancelRequested()) {
         return false;
       }
 
-      if (!timer_->CancelToken().CancelRequested() && that.timer_->CancelToken().CancelRequested()) {
+      if (!timer_->CancelToken().CancelRequested() &&
+          that.timer_->CancelToken().CancelRequested()) {
         return true;
       }
 
@@ -96,7 +98,8 @@ class TimersQueue {
     while (!timers_.empty()) {
       auto& next = timers_.front();
 
-      if (!(next.timer_->CancelToken().CancelRequested()) && next.deadline_ > now) {
+      if (!(next.timer_->CancelToken().CancelRequested()) &&
+          next.deadline_ > now) {
         is_empty = true;
         break;
       }

@@ -46,7 +46,7 @@ void MakeVisible(timers::IProcessor* proc) {
   global_proc.store(proc, std::memory_order::release);
 }
 
-void ResetGlobalProcessor(){
+void ResetGlobalProcessor() {
   global_proc.store(nullptr, std::memory_order::relaxed);
 }
 

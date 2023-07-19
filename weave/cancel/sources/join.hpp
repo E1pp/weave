@@ -14,7 +14,6 @@ class JoinSource
     : public SignalSender,
       public SignalReceiver,
       public threads::lockfree::RefCounter<JoinSource<OnHeap>, OnHeap> {
-
   using State = support::Word;
 
   static constexpr uint32_t kInit = 0;
@@ -23,7 +22,8 @@ class JoinSource
  public:
   using Base = threads::lockfree::RefCounter<JoinSource<OnHeap>, OnHeap>;
 
-  explicit JoinSource() noexcept: state_(State::Value(kInit)) {
+  explicit JoinSource() noexcept
+      : state_(State::Value(kInit)) {
   }
 
   // Non-copyable
@@ -47,21 +47,23 @@ class JoinSource
 
   void Attach(SignalReceiver* receiver) override {
     State curr = state_.load(std::memory_order::acquire);
-    
+
     do {
-      if(IsCancelled(curr)){
+      if (IsCancelled(curr)) {
         receiver->Forward(Signal::Cancel());
         return;
       }
 
-      if(curr.IsPointer()){
+      if (curr.IsPointer()) {
         // Has another receiver in queue
         receiver->next_ = curr.AsPointerTo<SignalReceiver>();
       } else {
         receiver->next_ = nullptr;
       }
 
-    } while(!state_.compare_exchange_weak(curr, State::Pointer(receiver), std::memory_order::release, std::memory_order::acquire));
+    } while (!state_.compare_exchange_weak(curr, State::Pointer(receiver),
+                                           std::memory_order::release,
+                                           std::memory_order::acquire));
   }
 
   void Detach(SignalReceiver*) override {
@@ -69,13 +71,14 @@ class JoinSource
   }
 
   void RequestCancel() {
-    State prev = state_.exchange(State::Value(kCancelled), std::memory_order::acq_rel);
+    State prev =
+        state_.exchange(State::Value(kCancelled), std::memory_order::acq_rel);
 
-    if(prev.IsPointer()){
+    if (prev.IsPointer()) {
       SignalReceiver* receiver_head = prev.AsPointerTo<SignalReceiver>();
 
       [](SignalReceiver* receiver, Signal signal) {
-        while(receiver != nullptr){
+        while (receiver != nullptr) {
           auto* next = static_cast<SignalReceiver*>(receiver->Next());
 
           receiver->Forward(signal);

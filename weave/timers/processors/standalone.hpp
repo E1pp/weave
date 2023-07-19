@@ -52,7 +52,8 @@ class StandaloneProcessor : public IProcessor {
       // must be in hb with idle_.store thus seq_cst on store-load here
 
       if (until_next_deadline) {
-        twist::ed::futex::WaitTimed(wakeups_, old,1ms /*, std::memory_order::relaxed*/);
+        twist::ed::futex::WaitTimed(wakeups_, old,
+                                    1ms /*, std::memory_order::relaxed*/);
       } else {
         twist::ed::futex::Wait(wakeups_, old, std::memory_order::relaxed);
       }

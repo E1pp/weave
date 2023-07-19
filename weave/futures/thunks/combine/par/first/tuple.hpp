@@ -116,7 +116,7 @@ class FirstControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
 
     if (bool is_the_last = Base::ProducerDone()) {
       // we are the last one
-      if(!res_){
+      if (!res_) {
         EmplaceResult(std::move(result));
       }
 

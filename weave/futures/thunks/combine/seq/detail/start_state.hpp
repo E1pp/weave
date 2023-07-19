@@ -19,7 +19,7 @@ class StartState final : public SharedState<typename Future::ValueType> {
 
   virtual ~StartState() override final = default;
 
-  void Start(){
+  void Start() {
     eval_.Start();
   }
 
