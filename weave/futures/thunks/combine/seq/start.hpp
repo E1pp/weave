@@ -45,7 +45,11 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase,
       std::exchange(state_, nullptr)->Consume(this);
     }
 
-    ~EvaluationFor() override final = default;
+    ~EvaluationFor() override final {
+      if(state_ != nullptr){
+        std::exchange(state_, nullptr)->Forward(cancel::Signal::Cancel());
+      }
+    }
 
    private:
     void Consume(Output<ValueType> o) noexcept override final {
@@ -77,6 +81,12 @@ class [[nodiscard]] StartFuture final : public support::NonCopyableBase,
 
   void ImEager() {
     // No-Op
+  }
+
+  ~StartFuture(){
+    if(state_ != nullptr){
+      Release()->Forward(cancel::Signal::Cancel());
+    }
   }
 
  private:

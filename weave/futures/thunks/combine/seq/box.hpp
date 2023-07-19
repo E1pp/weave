@@ -89,21 +89,21 @@ class [[nodiscard]] Boxed final {
     friend class Boxed;
 
     EvaluationFor(Boxed fut, Cons& cons)
-        : sender_(std::exchange(fut.erased_, nullptr)),
+        : erased_(std::exchange(fut.erased_, nullptr)),
           cons_(cons) {
     }
 
    public:
     void Start() {
-      sender_->RequestOutput(this);
+      erased_->RequestOutput(this);
     }
 
     ~EvaluationFor() override final {
-      if (sender_ == nullptr) {
+      if (erased_ == nullptr) {
         return;
       }
 
-      delete sender_;
+      delete erased_;
     }
 
    private:
@@ -120,7 +120,7 @@ class [[nodiscard]] Boxed final {
     }
 
    private:
-    detail::IErasedFuture<T>* sender_;
+    detail::IErasedFuture<T>* erased_;
     Cons& cons_;
   };
 

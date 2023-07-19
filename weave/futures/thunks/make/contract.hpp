@@ -43,7 +43,11 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase {
       std::exchange(state_, nullptr)->Consume(this);
     }
 
-    ~EvaluationFor() override final = default;
+    ~EvaluationFor() override final {
+      if(state_ != nullptr){
+        std::exchange(state_, nullptr)->Forward(cancel::Signal::Cancel());
+      }
+    }
 
    private:
     // AbstractConsumer<ValueType>
@@ -80,6 +84,12 @@ class [[nodiscard]] ContractFuture final : public support::NonCopyableBase {
 
   void Cancellable() {
     // No-Op
+  }
+
+  ~ContractFuture(){
+    if(state_ != nullptr){
+      Release()->Forward(cancel::Signal::Cancel());
+    }
   }
 
  private:

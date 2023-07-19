@@ -16,6 +16,10 @@ class [[nodiscard]] Promise {
  public:
   using SharedState = thunks::detail::SharedState<T>;
 
+  static inline Error PromiseDead(){
+    return std::make_error_code(std::errc::operation_canceled);
+  }
+
   explicit Promise(SharedState* state)
       : state_(state) {
   }
@@ -39,6 +43,17 @@ class [[nodiscard]] Promise {
 
   void SetError(Error e) && {
     Release()->Produce(result::Err(std::move(e)));
+  }
+
+  ~Promise(){
+    if(state_ != nullptr){
+      if(state_->CancelRequested()){
+        // We were cancelled!
+        Release()->ProducerCancel(Context{});
+      } else {
+        Release()->Produce(result::Err(PromiseDead()));
+      }
+    }
   }
 
  private:
