@@ -3,6 +3,8 @@
 
 #include <weave/support/constructor_bases.hpp>
 
+#include <twist/ed/stdlike/atomic.hpp>
+
 #include <twist/ed/local/val.hpp>
 
 namespace weave::satellite {

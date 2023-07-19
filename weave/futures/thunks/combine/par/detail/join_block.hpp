@@ -41,8 +41,7 @@ class JoinBlock : public cancel::sources::JoinSource<OnHeap> {
   template <typename InterStorage>
   requires std::is_constructible_v<Storage, InterStorage>
   explicit JoinBlock(Cons& cons, InterStorage storage)
-      : CancelBase(storage.Size()),
-        cons_(cons),
+      : cons_(cons),
         storage_(std::move(storage)) {
   }
 

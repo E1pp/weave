@@ -122,6 +122,10 @@ class AllControlBlock<false, Cons, detail::TaggedVector, Future> final
           vector.push_back(std::move(*(storage_[i])));
         }
 
+        // Release reference as quickly as possible
+        Base::Forward(cancel::Signal::Cancel());
+
+
         Base::CompleteConsumer(result::Ok(std::move(vector)));
       }
     }

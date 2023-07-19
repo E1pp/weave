@@ -141,7 +141,7 @@ void WithTimeoutExample(){
   auto timed_out = std::move(slowpoke) | futures::WithTimeout(100ms);
   
   // no allocations are made in this example
-  auto result = std::move(timed_out) | futures::Await();
+  [[maybe_unused]]auto result = std::move(timed_out) | futures::Await();
 
   assert(!result.has_value());
   

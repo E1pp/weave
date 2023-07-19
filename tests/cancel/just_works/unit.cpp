@@ -924,32 +924,80 @@ TEST_SUITE(Fibers){
     pool.Stop();
   }
 
-  // SIMPLE_TEST(DDosFirst){
-  //   executors::fibers::ManualExecutor manual;
+  SIMPLE_TEST(DDosFirst1){
+    executors::fibers::ManualExecutor manual;
 
-  //   auto f = futures::Submit(manual, []{}) 
-  //   | futures::Start() | futures::AndThen([]{
-  //     ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
+    auto f = futures::Submit(manual, []{}) 
+    | futures::Start() | futures::AndThen([]{
+      ASSERT_THROW(futures::Never() | futures::Await(), cancel::CancelledException);
 
-  //     return 5;
-  //   });
+      return 5;
+    });
 
-  //   auto [f1, p] = futures::Contract<int>();
+    auto [f1, p] = futures::Contract<int>();
 
-  //   futures::First(std::move(f), std::move(f1)) | futures::Detach();
+    futures::First(std::move(f), std::move(f1)) | futures::Detach();
 
-  //   ASSERT_EQ(manual.Drain(), 2);
+    ASSERT_EQ(manual.Drain(), 2);
 
-  //   ASSERT_TRUE(manual.IsEmpty());
+    ASSERT_TRUE(manual.IsEmpty());
 
-  //   std::move(p).SetValue(42);
+    std::move(p).SetValue(42);
 
-  //   ASSERT_TRUE(manual.NonEmpty());
+    ASSERT_TRUE(manual.NonEmpty());
 
-  //   ASSERT_EQ(manual.Drain(), 1);
+    ASSERT_EQ(manual.Drain(), 1);
 
-  //   manual.Stop();
-  // }
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(DDosFirst2){
+    executors::fibers::ManualExecutor manual;
+
+    auto f = futures::Submit(manual, [&]{
+    }) | futures::Start() | futures::AndThen([]{
+      futures::Just() | futures::Start() | futures::Await();
+      return 42;
+    });
+
+    auto [f1, p] = futures::Contract<int>();
+
+    futures::First(std::move(f), std::move(f1)) | futures::Detach();
+
+    ASSERT_EQ(manual.RunAtMost(2), 2);
+
+    ASSERT_EQ(manual.TaskCount(), 1);
+
+    ASSERT_EQ(manual.Drain(), 1);
+
+    std::move(p).SetValue(42);
+
+    manual.Stop();
+  }
+
+  SIMPLE_TEST(DDosFirst3){
+    executors::ThreadPool pool{4};
+    pool.Start();
+
+    const size_t num_attacks = 15;
+
+    auto f = futures::Submit(pool, []{
+    });
+
+    auto g = futures::Submit(pool, [&]{
+    }) | futures::Start() | futures::AndThen([&]{
+      for(size_t i = 0; i < num_attacks; ++i){
+        futures::Submit(pool, []{}) | futures::Start() | futures::Await();
+      }
+
+    });
+
+    futures::First(std::move(g), std::move(f)) | futures::Await();
+
+    pool.WaitIdle();
+
+    pool.Stop();
+  }
 }
 
 #endif

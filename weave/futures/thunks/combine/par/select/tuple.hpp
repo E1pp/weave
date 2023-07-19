@@ -160,6 +160,8 @@ class SelectControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
     Result<ValueType> matched_type{result::Err(std::move(err.error()))};
 
     res_.emplace(std::move(matched_type));
+
+    Base::Forward(cancel::Signal::Cancel());
   }
 
  private:

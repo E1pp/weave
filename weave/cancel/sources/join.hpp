@@ -1,9 +1,11 @@
 #pragma once
 
+#include <atomic>
 #include <weave/cancel/token.hpp>
 
 #include <weave/threads/lockfree/ref_count.hpp>
-#include <weave/threads/lockfree/tagged_buffer.hpp>
+
+#include <weave/support/word.hpp>
 
 namespace weave::cancel::sources {
 
@@ -12,11 +14,16 @@ class JoinSource
     : public SignalSender,
       public SignalReceiver,
       public threads::lockfree::RefCounter<JoinSource<OnHeap>, OnHeap> {
+
+  using State = support::Word;
+
+  static constexpr uint32_t kInit = 0;
+  static constexpr uint32_t kCancelled = 1;
+
  public:
   using Base = threads::lockfree::RefCounter<JoinSource<OnHeap>, OnHeap>;
 
-  explicit JoinSource(size_t capacity) noexcept
-      : buffer_(capacity) {
+  explicit JoinSource() noexcept: state_(State::Value(kInit)) {
   }
 
   // Non-copyable
@@ -31,7 +38,7 @@ class JoinSource
 
   // SignalSender
   bool CancelRequested() override {
-    return buffer_.IsSealed();
+    return IsCancelled(state_.load(std::memory_order::acquire));
   }
 
   bool Cancellable() override {
@@ -39,23 +46,44 @@ class JoinSource
   }
 
   void Attach(SignalReceiver* receiver) override {
-    if (!buffer_.TryPush(receiver)) {
-      receiver->Forward(Signal::Cancel());
-    }
+    State curr = state_.load(std::memory_order::acquire);
+    
+    do {
+      if(IsCancelled(curr)){
+        receiver->Forward(Signal::Cancel());
+        return;
+      }
+
+      if(curr.IsPointer()){
+        // Has another receiver in queue
+        receiver->next_ = curr.AsPointerTo<SignalReceiver>();
+      } else {
+        receiver->next_ = nullptr;
+      }
+
+    } while(!state_.compare_exchange_weak(curr, State::Pointer(receiver), std::memory_order::release, std::memory_order::acquire));
   }
 
-  void Detach(SignalReceiver* receiver) override {
-    if(buffer_.TryPop(receiver)){
-      receiver->Forward(Signal::Release());
-    }
+  void Detach(SignalReceiver*) override {
+    // Not Supported :*(
   }
 
   void RequestCancel() {
-    auto processor = +[](SignalReceiver* receiver) {
-      receiver->Forward(Signal::Cancel());
-    };
+    State prev = state_.exchange(State::Value(kCancelled), std::memory_order::acq_rel);
 
-    buffer_.SealBuffer(processor);
+    if(prev.IsPointer()){
+      SignalReceiver* receiver_head = prev.AsPointerTo<SignalReceiver>();
+
+      [](SignalReceiver* receiver, Signal signal) {
+        while(receiver != nullptr){
+          auto* next = static_cast<SignalReceiver*>(receiver->Next());
+
+          receiver->Forward(signal);
+
+          receiver = next;
+        }
+      }(receiver_head, Signal::Cancel());
+    }
   }
 
   // SignalReceiver
@@ -71,7 +99,17 @@ class JoinSource
   }
 
  private:
-  threads::lockfree::TaggedBuffer<SignalReceiver> buffer_;
+  // Helps with interpetation
+  static bool IsCancelled(State state) {
+    return state.IsValue() && state.AsValue() == kCancelled;
+  }
+
+  static bool IsInit(State state) {
+    return state.IsValue() && state.AsValue() == kInit;
+  }
+
+ private:
+  twist::ed::stdlike::atomic<State> state_;
 };
 
 }  // namespace weave::cancel::sources

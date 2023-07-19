@@ -2,7 +2,7 @@
 
 #include <weave/result/types/error.hpp>
 
-#include <weave/threads/lockfree/tagged_buffer.hpp>
+#include <wheels/intrusive/list.hpp>
 
 namespace weave::cancel {
 
@@ -58,7 +58,7 @@ First approach saves some dynamic dispatching so it is preffered
 
 //////////////////////////////////////////////////////////////
 
-struct SignalReceiver : public threads::lockfree::TaggedNode<SignalReceiver> {
+struct SignalReceiver : public wheels::IntrusiveListNode<SignalReceiver> {
   // Called by self or from above the chain
   virtual void Forward(Signal) = 0;
 

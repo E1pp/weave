@@ -192,6 +192,91 @@ void StressTestParallel() {
 
 //////////////////////////////////////////////////////////////////////
 
+void StressTestDDosParallel() {
+  executors::ThreadPool pool{4};
+  pool.Start();
+
+  size_t iter = 0;
+
+  while (twist::test::KeepRunning()) {
+    ++iter;
+
+    size_t pipelines = 1 + iter % 3;
+    size_t num_attacks = 1 + iter % 7;
+
+    std::atomic<size_t> counter1{0};
+    std::atomic<size_t> counter2{0};
+    std::atomic<size_t> counter3{0};
+
+    for (size_t j = 0; j < pipelines; ++j) {
+      auto f1 = futures::Submit(pool, [&, j]{
+        if(j % 2 == 0){
+          for(size_t k = 0; k < num_attacks / 2; ++k){
+            try {
+              futures::Submit(pool, []{}) | futures::Start() | futures::Await();
+            } catch(cancel::CancelledException){}
+          }
+        }
+
+        counter1++;
+      }) | futures::Start() | futures::AndThen([&, j]{
+        if(j % 2 == 1){
+          for(size_t k = 0; k < num_attacks / 2; ++k){
+            try {
+              futures::Submit(pool, []{}) | futures::Start() | futures::Await();
+            } catch(cancel::CancelledException){}
+          }
+        }
+
+        counter3++;
+      }) | futures::Start();
+
+      auto f2 = futures::Submit(pool, [&, j]{
+        if(j % 2 == 1){
+          for(size_t k = 0; k < num_attacks / 2; ++k){
+            try {
+              futures::Submit(pool, []{}) | futures::Start() | futures::Await();
+            } catch(cancel::CancelledException){}
+          }
+        }
+
+        counter2++;
+      }) | futures::Start() | futures::AndThen([&, j]{
+        if(j % 2 == 0){
+          for(size_t k = 0; k < num_attacks / 2; ++k){
+            try {
+              futures::Submit(pool, []{}) | futures::Start() | futures::Await();
+            } catch(cancel::CancelledException){}
+          }
+        }
+
+        counter3++;
+      }) | futures::Start();
+
+      std::optional<futures::BoxedFuture<Unit>> f{};
+
+      if(iter % 7 == 0){
+        f.emplace(futures::First(std::move(f1), std::move(f2)) | futures::Start());
+      } else {
+        f.emplace(futures::All(std::move(f1), std::move(f2)) | futures::AndThen([]{}) | futures::Start());
+      }
+
+      futures::Submit(pool, [&, f = std::move(*f) | futures::Start()]() mutable {
+        
+        std::move(f).RequestCancel();
+      }) | futures::Detach();
+    }
+
+    pool.WaitIdle();
+
+    ASSERT_TRUE(counter1.load() + counter2.load() >= counter3.load());
+  }
+
+  pool.Stop();
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void StressTestFork() {
   executors::ThreadPool pool{4};
   pool.Start();
@@ -251,7 +336,7 @@ void StressTestFork() {
           case 3:
             futures::All(std::move(f1), std::move(f2)) | futures::Await();
         }
-      }) | futures::Discard();
+      }) | futures::Detach();
     }
 
     pool.WaitIdle();
@@ -328,6 +413,10 @@ TEST_SUITE(Cancel) {
 
   TWIST_TEST(StressParallel, 5s){
     StressTestParallel();
+  }
+
+  TWIST_TEST(DDosParallel, 5s){
+    StressTestDDosParallel();
   }
 
   TWIST_TEST(StressFork, 5s){

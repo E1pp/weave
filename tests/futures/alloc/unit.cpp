@@ -166,62 +166,62 @@ TEST_SUITE(AllocFreeFutures) {
   }
 
   // Broken because of TaggedBuffer!
-  // SIMPLE_TEST(First){
-  //   ThreadPool pool{4};
-  //   pool.Start();
-  //   WarmUp(pool, 4);
+  SIMPLE_TEST(First){
+    ThreadPool pool{4};
+    pool.Start();
+    WarmUp(pool, 4);
 
-  //   {
-  //     AllocationGuard do_not_alloc;
+    {
+      AllocationGuard do_not_alloc;
 
-  //     auto f1 = futures::Just()
-  //              | futures::Via(pool)
-  //              | futures::AndThen([](Unit) {
-  //                  return result::Ok(1);
-  //                })
-  //              | futures::Map([](int v) {
-  //                  return v + 1;
-  //                })
-  //              | futures::OrElse([](Error) {
-  //                  return result::Ok(13);
-  //                })
-  //              | futures::FlatMap([&pool](int v) {
-  //                  return futures::Submit(pool, [v] {
-  //                    return result::Ok(v + 1);
-  //                  });
-  //                })
-  //              | futures::Map([](int v) {
-  //                  return v + 1;
-  //                });
+      auto f1 = futures::Just()
+               | futures::Via(pool)
+               | futures::AndThen([](Unit) {
+                   return result::Ok(1);
+                 })
+               | futures::Map([](int v) {
+                   return v + 1;
+                 })
+               | futures::OrElse([](Error) {
+                   return result::Ok(13);
+                 })
+               | futures::FlatMap([&pool](int v) {
+                   return futures::Submit(pool, [v] {
+                     return result::Ok(v + 1);
+                   });
+                 })
+               | futures::Map([](int v) {
+                   return v + 1;
+                 });
 
-  //     auto f2 = futures::Just()
-  //              | futures::Via(pool)
-  //              | futures::AndThen([](Unit) {
-  //                  return result::Ok(1);
-  //                })
-  //              | futures::Map([](int v) {
-  //                  return v + 1;
-  //                })
-  //              | futures::OrElse([](Error) {
-  //                  return result::Ok(13);
-  //                })
-  //              | futures::FlatMap([&pool](int v) {
-  //                  return futures::Submit(pool, [v] {
-  //                    return result::Ok(v + 1);
-  //                  });
-  //                })
-  //              | futures::Map([](int v) {
-  //                  return v + 1;
-  //                });
+      auto f2 = futures::Just()
+               | futures::Via(pool)
+               | futures::AndThen([](Unit) {
+                   return result::Ok(1);
+                 })
+               | futures::Map([](int v) {
+                   return v + 1;
+                 })
+               | futures::OrElse([](Error) {
+                   return result::Ok(13);
+                 })
+               | futures::FlatMap([&pool](int v) {
+                   return futures::Submit(pool, [v] {
+                     return result::Ok(v + 1);
+                   });
+                 })
+               | futures::Map([](int v) {
+                   return v + 1;
+                 });
 
-  //     auto r = futures::no_alloc::First(std::move(f1), std::move(f2)) | futures::ThreadAwait();
+      auto r = futures::no_alloc::First(std::move(f1), std::move(f2)) | futures::ThreadAwait();
 
-  //     ASSERT_TRUE(r);
-  //     ASSERT_EQ(*r, 4);
-  //   }
+      ASSERT_TRUE(r);
+      ASSERT_EQ(*r, 4);
+    }
 
-  //   pool.Stop();    
-  // }
+    pool.Stop();    
+  }
 }
 
 #endif

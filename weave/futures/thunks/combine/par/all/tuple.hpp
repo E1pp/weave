@@ -128,6 +128,9 @@ class AllControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
             },
             std::move(storage_));
 
+        // Release reference as quickly as possible
+        Base::Forward(cancel::Signal::Cancel());
+
         Base::CompleteConsumer(result::Ok(std::move(tuple)));
       }
     }
