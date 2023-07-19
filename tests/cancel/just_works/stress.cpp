@@ -402,6 +402,88 @@ void StressTestSched() {
 
 //////////////////////////////////////////////////////////////////////
 
+void StressTestDrop() {
+  executors::ThreadPool pool{4};
+  pool.Start();
+
+  size_t iter = 0;
+
+  while (twist::test::KeepRunning()) {
+    size_t i = iter++;
+
+    size_t pipelines = 1 + iter % 3;
+
+    for(size_t j = 0; j < pipelines; ++j){
+      auto forkable = futures::Submit(pool, [&]{
+      }) | futures::Start() | futures::AndThen([&]{
+      }) | futures::Start();
+
+      auto left = futures::Submit(pool, [&, i]() -> Status {
+        if(i % 5 == 3){
+          return result::Err(TimeoutError());
+        } else {
+          return result::Ok();
+        }
+      });
+
+      auto right = futures::Submit(pool, [&, i]() -> Status {
+        if(i % 5 == 0){
+          return result::Err(TimeoutError());
+        } else {
+          return result::Ok();
+        }
+      }); 
+
+      auto [f1,f2] = std::move(forkable) | futures::Fork<2>();
+
+      auto first1 = futures::First(std::move(f1), std::move(left));
+
+      auto first2 = futures::First(std::move(f2), std::move(right)) | futures::Start();
+
+      futures::Submit(pool, [&, i, f1 = std::move(first1), f2 = std::move(first2)]() mutable {
+        if(i % 47 == 23){
+          futures::Submit(pool, [&, f1 = std::move(f1), f2 = std::move(f2)]() mutable {
+            std::move(f1) | futures::Await();
+            std::move(f2) | futures::Await();
+          }) | futures::Discard();
+        } else {
+          futures::Submit(pool, [&, i, f1 = std::move(f1), f2 = std::move(f2)]() mutable {
+            switch(i % 4){
+              case 0:
+                std::move(f1) | futures::Discard();
+                std::move(f2) | futures::Await();
+                break;
+
+              case 1:
+                std::move(f2).RequestCancel();
+                std::move(f1) | futures::Await();
+                break;
+              
+              case 2: {
+                auto f = futures::First(std::move(f1), std::move(f2)) | futures::Start();
+                std::move(f).RequestCancel();
+                break;
+              }
+
+              case 3:
+                futures::All(std::move(f1), std::move(f2)) | futures::Await();
+            }
+          }) | futures::Detach();
+        }
+      }) | futures::Detach();
+    }
+
+    pool.WaitIdle();
+
+  }
+
+  fmt::println("Iterations: {}", iter);
+
+  pool.Stop();
+}
+
+//////////////////////////////////////////////////////////////////////
+
 TEST_SUITE(Cancel) {
   TWIST_TEST(StressPipeline, 5s) {
     StressTestPipeline();
@@ -425,6 +507,10 @@ TEST_SUITE(Cancel) {
 
   TWIST_TEST(StressSched, 5s){
     StressTestSched();
+  }
+
+  TWIST_TEST(StressDrop, 5s){
+    StressTestDrop();
   }
 }
 

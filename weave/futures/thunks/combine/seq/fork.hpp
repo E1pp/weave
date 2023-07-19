@@ -60,6 +60,12 @@ class [[nodiscard]] Tine final : public support::NonCopyableBase,
       Release()->template Start<Index>(this);
     }
 
+    ~EvaluationFor(){
+      if(forker_ != nullptr){
+        Release()->template DropTine<Index>();
+      }
+    }
+
    private:
     // AbstractConsumer
     void Consume(Output<ValueType> o) noexcept override final {
@@ -90,6 +96,12 @@ class [[nodiscard]] Tine final : public support::NonCopyableBase,
     return EvaluationFor<Cons>(std::move(*this), cons);
   }
 
+  ~Tine(){
+    if(forker_ != nullptr){
+      Release()->template DropTine<Index>();
+    }
+  }
+
  private:
   ForkerType* Release() {
     return std::exchange(forker_, nullptr);
@@ -118,10 +130,10 @@ class [[nodiscard]] Forker final
   };
 
  public:
-  // Add Refs for every consumer and producer
+  // Add Refs for every consumer
   explicit Forker(Future f)
       : eval_(std::move(f).Force(*this)) {
-    Base::AddRef(NumTines + 1);
+    Base::AddRef(NumTines);
   }
 
   auto MakeTines() {
@@ -184,12 +196,20 @@ class [[nodiscard]] Forker final
     });
 
     for (size_t i = 0; i < NumTines; i++) {
-      states_[i].consumer_->Cancel(ctx);
+      if(auto* consumer = states_[i].consumer_){
+        consumer->Cancel(ctx);
+      }
     }
   }
 
   cancel::Token CancelToken() {
     return cancel::Token::Fabricate(this);
+  }
+
+  template <size_t Index>
+  void DropTine(){
+    states_[Index].consumer_ = nullptr;
+    Base::template AsLeaf<Index>()->Forward(cancel::Signal::Cancel());
   }
 
  private:
@@ -215,7 +235,11 @@ class [[nodiscard]] Forker final
   }
 
   void TryStart() {
+    // We can only add ref for consumer here since TryStart
+    //  might never be called if all forker tines are dropped
+    // adding consumer ref any earlier would cause a memory leak!
     if (!started_.exchange(true, std::memory_order::relaxed)) {
+      Base::AddRef(1);
       eval_.Start();
     }
   }

@@ -50,7 +50,13 @@ struct [[nodiscard]] Join final
 
    public:
     void Start() {
-      block_->Start();
+      std::exchange(block_, nullptr)->Start();
+    }
+
+    ~EvaluationFor(){
+      if(block_ != nullptr){
+        delete block_;
+      }
     }
 
    private:

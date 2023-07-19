@@ -99,11 +99,9 @@ class [[nodiscard]] Boxed final {
     }
 
     ~EvaluationFor() override final {
-      if (erased_ == nullptr) {
-        return;
+      if (erased_ != nullptr) {
+        delete erased_;
       }
-
-      delete erased_;
     }
 
    private:
@@ -131,11 +129,9 @@ class [[nodiscard]] Boxed final {
   }
 
   ~Boxed() {
-    if (erased_ == nullptr) {
-      return;
+    if (erased_ != nullptr) {
+      delete erased_;
     }
-
-    delete erased_;
   }
 
  private:
