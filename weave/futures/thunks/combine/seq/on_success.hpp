@@ -32,7 +32,7 @@ class [[nodiscard]] OnSuccess final : public support::NonCopyableBase,
       : future_(std::move(that.future_)),
         fun_(std::move(that.fun_)) {
   }
-  OnSuccess& operator=(OnSuccess&&) = default;
+  OnSuccess& operator=(OnSuccess&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

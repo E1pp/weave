@@ -16,7 +16,7 @@ class [[nodiscard]] Just final : public support::NonCopyableBase {
 
   // Movable
   Just(Just&&) noexcept {};
-  Just& operator=(Just&&) = default;
+  Just& operator=(Just&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

@@ -32,7 +32,7 @@ class [[nodiscard]] OnCancel final : public support::NonCopyableBase,
       : future_(std::move(that.future_)),
         fun_(std::move(that.fun_)) {
   }
-  OnCancel& operator=(OnCancel&&) = default;
+  OnCancel& operator=(OnCancel&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

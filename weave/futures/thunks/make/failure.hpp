@@ -21,7 +21,7 @@ class [[nodiscard]] Failure final : public support::NonCopyableBase {
   Failure(Failure&& that) noexcept
       : error_(std::move(that.error_)) {
   }
-  Failure& operator=(Failure&&) = default;
+  Failure& operator=(Failure&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

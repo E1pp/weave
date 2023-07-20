@@ -234,6 +234,7 @@ class Channel {
   // Bounded channel, `capacity` > 0
   explicit Channel(size_t capacity)
       : impl_(std::make_shared<Impl>(capacity)) {
+    static_assert(!std::same_as<T, void>);
   }
 
   // Suspending

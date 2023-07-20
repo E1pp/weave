@@ -22,7 +22,7 @@ class [[nodiscard]] Value final : public support::NonCopyableBase {
   Value(Value&& rhs) noexcept
       : value_(std::move(rhs.value_)) {
   }
-  Value& operator=(Value&&) = default;
+  Value& operator=(Value&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

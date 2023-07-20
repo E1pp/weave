@@ -30,7 +30,7 @@ class [[nodiscard]] Via final : public support::NonCopyableBase,
       : future_(std::move(that.future_)),
         next_context_(std::move(that.next_context_)) {
   }
-  Via& operator=(Via&& that) = default;
+  Via& operator=(Via&& that) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

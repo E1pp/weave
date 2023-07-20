@@ -34,7 +34,7 @@ class [[nodiscard]] Anyway final : public support::NonCopyableBase,
       : future_(std::move(that.future_)),
         fun_(std::move(that.fun_)) {
   }
-  Anyway& operator=(Anyway&&) = default;
+  Anyway& operator=(Anyway&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

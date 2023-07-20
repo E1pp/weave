@@ -16,7 +16,7 @@ class [[nodiscard]] Never final : support::NonCopyableBase {
 
   // Movable
   Never(Never&&) noexcept {};
-  Never& operator=(Never&&) = default;
+  Never& operator=(Never&&) = delete;
 
  private:
   template <Consumer<Unit> Cons>

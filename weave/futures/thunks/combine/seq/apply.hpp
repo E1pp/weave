@@ -51,7 +51,7 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase,
       : future_(std::move(that.future_)),
         mapper_(std::move(that.mapper_)) {
   }
-  Apply& operator=(Apply&&) = default;
+  Apply& operator=(Apply&&) = delete;
 
  private:
   template <Consumer<ValueType> Cons>

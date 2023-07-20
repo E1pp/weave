@@ -516,7 +516,7 @@ class ChannelImpl {
 //////////////////////////////////////////////////////////////////////
 
 // Non-buffered Multi-Producer / Multi-Consumer Lockfree Channel
-// https://tour.golang.org/concurrency/3
+// https://link.springer.com/chapter/10.1007/978-3-030-29400-7_23
 
 // Does not support void type
 // Use weave::Unit from weave/result/types/unit.hpp
@@ -528,6 +528,7 @@ class Channel {
  public:
   explicit Channel()
       : impl_(std::make_shared<Impl>()) {
+    static_assert(!std::same_as<T, void>);
   }
 
   // Suspending
