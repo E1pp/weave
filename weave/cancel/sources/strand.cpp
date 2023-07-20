@@ -36,14 +36,25 @@ void StrandSource::ClearReceiver(SignalReceiver* expected) {
     WHEELS_VERIFY(expected == receiver, "Expected a different receiver!");
   }
 
+  #if (NDEBUG)
+  #define MEMORY_ORDER_ON_SUCCESS std::memory_order::release
+  #else
+  #define MEMORY_ORDER_ON_SUCCESS std::memory_order::acq_rel
+  #endif
+
   bool ok = state_.compare_exchange_strong(curr, State::Value(kInit),
-                                           std::memory_order::acq_rel,
+                                           MEMORY_ORDER_ON_SUCCESS,
                                            std::memory_order::relaxed);
+
+
 
   if (ok) {
     receiver->Forward(Signal::Release());
     return;
-  } else if (expected != kAnyOne) {
+  } 
+  
+  #if !(NDEBUG)
+  if (expected != kAnyOne) {
     WHEELS_VERIFY(!curr.IsPointer(), "Broken state: different receiver!");
 
     if (IsInit(curr) || IsCancelled(curr)) {
@@ -52,6 +63,7 @@ void StrandSource::ClearReceiver(SignalReceiver* expected) {
 
     WHEELS_PANIC("Unreachable");
   }
+  #endif
 }
 
 //////////////////////////////////////////////////////////////
