@@ -19,7 +19,7 @@ concept ProducerFor = Thunk<F> && requires (F f, C& cons){
 };
 
 // Technically ProducerFor is tautalogical here
-// since Force checks Consumer<F::ValueType> anywa
+// since Force checks Consumer<F::ValueType> anyway
 template <typename C, ProducerFor<C> F>  
 using EvaluationType =
     decltype(std::declval<std::add_rvalue_reference_t<F>>().Force(
