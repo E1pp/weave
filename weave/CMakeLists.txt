@@ -46,3 +46,7 @@ endif()
 if(WEAVE_REALTIME_METRICS)
     target_compile_definitions(weave PUBLIC __WEAVE_REALTIME__=1)
 endif()
+
+if(WEAVE_AGRESSIVE_AUTOCOMPLETE)
+    target_compile_definitions(weave PUBLIC __WEAVE_AUTOCOMPLETE__=1)
+endif()

@@ -173,7 +173,7 @@ void StressTestParallel() {
       if(iter % 7 == 0){
         f.emplace(futures::First(std::move(f1), std::move(f2)) | futures::Start());
       } else {
-        f.emplace(futures::All(std::move(f1), std::move(f2)) | futures::AndThen([]{}) | futures::Start());
+        f.emplace(futures::All(std::move(f1), std::move(f2)) | futures::AndThen([](auto){}) | futures::Start());
       }
 
       futures::Submit(pool, [&, f = std::move(*f) | futures::Start()]() mutable {
@@ -258,7 +258,7 @@ void StressTestDDosParallel() {
       if(iter % 7 == 0){
         f.emplace(futures::First(std::move(f1), std::move(f2)) | futures::Start());
       } else {
-        f.emplace(futures::All(std::move(f1), std::move(f2)) | futures::AndThen([]{}) | futures::Start());
+        f.emplace(futures::All(std::move(f1), std::move(f2)) | futures::AndThen([](auto){}) | futures::Start());
       }
 
       futures::Submit(pool, [&, f = std::move(*f) | futures::Start()]() mutable {

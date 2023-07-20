@@ -10,9 +10,9 @@ namespace weave::result {
 // (void -> InvokeResult) => (InputType -> InvokeResult)
 // Latter is done by discarding the argument
 template <typename InputType, typename Invokable>
-class CompleteInput {
+class InputAnyPromotion {
  public:
-  explicit CompleteInput(Invokable&& f)
+  explicit InputAnyPromotion(Invokable&& f)
       : f_(std::move(f)) {
   }
 
@@ -46,7 +46,7 @@ class InputVoidPromotion {
 template <typename Invokable>
 class InputVoidPromotion<Unit, Invokable> {
  private:
-  using ImplType = CompleteInput<Unit, Invokable>;
+  using ImplType = InputAnyPromotion<Unit, Invokable>;
 
  public:
   explicit InputVoidPromotion(Invokable&& f)
@@ -60,5 +60,13 @@ class InputVoidPromotion<Unit, Invokable> {
  private:
   ImplType impl_;
 };
+
+#if defined(__WEAVE_AUTOCOMPLETE__)
+template<typename InputType, typename Invokable>
+using CompleteInput = InputAnyPromotion<InputType, Invokable>;
+#else
+template<typename InputType, typename Invokable>
+using CompleteInput = InputVoidPromotion<InputType, Invokable>;
+#endif
 
 }  // namespace weave::result

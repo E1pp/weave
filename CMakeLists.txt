@@ -16,6 +16,7 @@ option(WEAVE_DEVELOPER "Weave development mode" OFF)
 option(WEAVE_MIMALLOC "Use mimalloc memory allocator" OFF)
 option(WEAVE_METRICS "ThreadPool will collect metrics" OFF)
 option(WEAVE_REALTIME_METRICS "ThreadPool will collect metrics obtainable in real-time" OFF)
+option(WEAVE_AGRESSIVE_AUTOCOMPLETE "Futures will automatically complete functions signatures where possible" ON)
 
 add_subdirectory(third_party)
 
