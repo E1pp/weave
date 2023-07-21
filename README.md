@@ -10,7 +10,7 @@ Concurrency for C++
 - Futures are lazy ⟹ allocation and synchronization is minimized (usually to zero)
 - Transparent cooperative cancellation, wait-free for sequential composition and lock-free for parallel composition
 - Structured concurrency via parallel combinators ('All', 'First', etc)
-- Deterministic stress-tests with fault-injection via [`Twist`](https://gitlab.com/Lipovsky/twist) framework
+- Deterministic stress-tests with fault-injection via [`twist`](https://gitlab.com/Lipovsky/twist) framework
 
 ## Contents
 
