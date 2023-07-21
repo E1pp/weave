@@ -347,6 +347,20 @@ auto f = futures::Value(42) | futures::Via(pool) | futures::AndThen([](int v){
 auto r = std::move(f) | futures::Await();
 fmt::println("Value is {}", *r); // 43
 ```
+##### `Start`
+If you want to begin evaluation of the future before you know the consumer, you can use `futures::Start`:
+```cpp
+auto eager = futures::Submit(pool, []{
+	fmt::println("Running on pool!");
+	return result::Ok(42);
+}) | futures::Start(); // <- Task is submitted to the pool already
+
+auto lazy = std::move(eager) | futures::AndThen([](int){
+	return result::Ok("Another result"); 
+	// <- This will not be evaluated right away
+	// future becomes lazy again
+}); 
+```
 
 ##### `Fork`
 If you want to take future's result to several combinators, you can use `futures::Fork<N>`:
@@ -595,11 +609,19 @@ pool.Start();
 pool.Stop();
 satellite::ResetGlobalProcessor();
 ```
+If you want to know a bit more about how WithTimeout works, check out Cancellation section in Advanced features
 
 ### Advanced features
 
-
-
+Plan : 
+1) Auto-boxing
+2) Function signature compelition
+3) Using vector in parallel combinators
+4) futures::Contract
+5) Cancellation: short circuiting (you've just seen it in WithTimeout)
+6) Cancellation: no_alloc parallel combinators
+7) [[no_discard]] and Cancellation
+8) Cancellation: design flaws
 
 ## References
 
