@@ -24,7 +24,7 @@ namespace weave::futures::thunks {
 
 template <typename T, typename InputFuture>
 concept Mapper = SomeFuture<InputFuture> &&
-    requires(T mapper, Output<typename InputFuture::ValueType>& out) {
+    requires(T mapper, Result<typename InputFuture::ValueType>& out) {
   typename T::InvokeResult;
 
   { mapper.Predicate(out) } -> std::same_as<bool>;
@@ -77,12 +77,12 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase,
         return;
       }
 
-      if (map_.Predicate(input)) {
+      if (map_.Predicate(input.result)) {
         input_.emplace((std::move(input)));
         (*input_).context.executor_->Submit(this, (*input_).context.hint_);
 
       } else {
-        Result<ValueType> forwarded_result = map_.Forward(std::move(input));
+        Result<ValueType> forwarded_result = map_.Forward(std::move(input.result));
         Complete<ValueType>(consumer_,
                             {std::move(forwarded_result), input.context});
       }
@@ -105,8 +105,7 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase,
         Complete<ValueType>(consumer_,
                             {std::move(output), std::move(input_->context)});
       } catch (cancel::CancelledException) {
-        consumer_.Cancel(Context{satellite::GetExecutor(),
-                                 executors::SchedulerHint::UpToYou});
+        consumer_.Cancel(std::move(input_->context));
       }
     }
 
@@ -123,7 +122,7 @@ class [[nodiscard]] Apply final : public support::NonCopyableBase,
       {
         Mapper moved = std::move(map_);
 
-        return moved.Map(std::move(*input_));
+        return moved.Map(std::move(input_->result));
       }
     }
 

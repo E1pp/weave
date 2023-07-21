@@ -20,16 +20,16 @@ struct OrElseMapper {
       : fun_(std::move(fun)) {
   }
 
-  bool Predicate(Output<Input>& input) {
-    return !static_cast<bool>(input.result);
+  bool Predicate(Result<Input>& input) {
+    return !static_cast<bool>(input);
   }
 
-  InvokeResult Map(Output<Input> input) {
-    return fun_(std::move(input.result.error()));
+  InvokeResult Map(Result<Input> input) {
+    return fun_(std::move(input.error()));
   }
 
-  InvokeResult Forward(Output<Input> input) {
-    return std::move(input.result);
+  InvokeResult Forward(Result<Input> input) {
+    return std::move(input);
   }
 
  private:

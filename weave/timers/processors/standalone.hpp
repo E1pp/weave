@@ -2,7 +2,7 @@
 
 #include <weave/timers/processor.hpp>
 
-#include <weave/timers/processors/thread_pool_queue.hpp>
+#include <weave/timers/processors/detail/thread_pool_queue.hpp>
 
 #include <twist/ed/stdlike/thread.hpp>
 
@@ -31,6 +31,11 @@ class StandaloneProcessor : public IProcessor {
     TryWakeWorker();
   }
 
+  void NotifyProcessor() override {
+    queue_.ScanForCancelled();
+    TryWakeWorker();
+  }
+
   ~StandaloneProcessor() override {
     Stop();
   }
@@ -52,8 +57,9 @@ class StandaloneProcessor : public IProcessor {
       // must be in hb with idle_.store thus seq_cst on store-load here
 
       if (until_next_deadline) {
+        Millis roundup = std::max(1ms, *until_next_deadline);
         twist::ed::futex::WaitTimed(wakeups_, old,
-                                    1ms /*, std::memory_order::relaxed*/);
+                                    roundup /*, std::memory_order::relaxed*/);
       } else {
         twist::ed::futex::Wait(wakeups_, old, std::memory_order::relaxed);
       }
@@ -65,18 +71,16 @@ class StandaloneProcessor : public IProcessor {
   }
 
   // nullopt if queue was depleted
-  bool PollQueue() {
-    auto [timer_list, is_empty] = queue_.GrabReadyTimers();
+  std::optional<Millis> PollQueue() {
+    auto [timer_list, ms_until_inactive] = queue_.GrabReadyTimers();
 
     while (timer_list != nullptr) {
       auto* next = static_cast<executors::Task*>(timer_list->next_);
-
       timer_list->Run();
-
       timer_list = next;
     }
 
-    return is_empty;
+    return ms_until_inactive;
   }
 
   void TryWakeWorker() {
@@ -117,7 +121,7 @@ class StandaloneProcessor : public IProcessor {
   twist::ed::stdlike::atomic<uint32_t> wakeups_{0};
   twist::ed::stdlike::atomic<bool> idle_{false};
 
-  weave::timers::TimersQueue queue_{};
+  weave::timers::detail::TimersQueue queue_{};
 
   // NB : Worker created last to have every
   // other constructor in hb with it

@@ -143,6 +143,7 @@ add_custom_target(weave_unit_tests ALL
                   weave_fibers_manual_unit_tests
                   weave_fibers_tp_unit_tests
                   weave_cancel_unit_tests
+                  weave_cancel_memory_tests
                   weave_cancel_alloc_tests
                   weave_timers_standalone_unit_tests
                   weave_timers_futures_unit_tests

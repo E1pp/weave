@@ -10,6 +10,7 @@
 #include <weave/futures/combine/par/all.hpp>
 #include <weave/futures/combine/par/first.hpp>
 
+#include <weave/futures/combine/seq/anyway.hpp>
 #include <weave/futures/combine/seq/and_then.hpp>
 #include <weave/futures/combine/seq/start.hpp>
 #include <weave/futures/combine/seq/fork.hpp>
@@ -29,6 +30,7 @@
 
 #include <atomic>
 #include <chrono>
+#include "weave/threads/blocking/wait_group.hpp"
 
 using namespace weave; // NOLINT
 using namespace std::chrono_literals;
@@ -370,29 +372,42 @@ void StressTestSched() {
 
     std::atomic<size_t> counter1{0};
     std::atomic<size_t> counter2{0};
+    
+    threads::blocking::WaitGroup wg{};
+
+    wg.Add(2 * pipelines);
 
     for (size_t j = 0; j < pipelines; ++j) {
       auto f = futures::Submit(pool,[&, yields] {
-                                 for(size_t i = 0; i < yields; ++i){
+                                for(size_t i = 0; i < yields; ++i){
                                   fibers::Yield();
-                                 }
+                                }
 
-                                 ++counter1;
-                               })
-                   | futures::AndThen([&, timeouts] { 
-                    for(size_t i = 0; i < timeouts; ++i){
-                      fibers::SleepFor(2ms);
-                    }
-                    
-                    ++counter2;} )
-                   | futures::Start();
+                                ++counter1;
+                              })
+                   | futures::AndThen([&] { 
+                      for(size_t i = 0; i < timeouts; ++i){
+                        fibers::SleepFor(2ms);
+                      }
+                      
+                      ++counter2;
+                    }) | futures::Start()
+                   | futures::Anyway([&]{
+                      wg.Done();   
+                    });
 
-      futures::Submit(pool, [f = std::move(f)]() mutable {
-        std::move(f).RequestCancel();
+      futures::Submit(pool, [&, f = std::move(f), iter]() mutable {
+        if(iter % 2 == 0){
+          std::move(f) | futures::Discard();
+        } else {
+          std::move(f) | futures::Await();
+        }
+
+        wg.Done();
       }) | futures::Detach();
     }
 
-    pool.WaitIdle();
+    wg.Wait();
 
     ASSERT_TRUE(counter1.load() >= counter2.load());
   }

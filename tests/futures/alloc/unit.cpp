@@ -5,6 +5,7 @@
 #include <weave/futures/make/failure.hpp>
 #include <weave/futures/make/submit.hpp>
 #include <weave/futures/make/just.hpp>
+#include <weave/futures/make/never.hpp>
 
 #include <weave/futures/combine/seq/map.hpp>
 #include <weave/futures/combine/seq/and_then.hpp>
@@ -12,16 +13,19 @@
 #include <weave/futures/combine/seq/flatten.hpp>
 #include <weave/futures/combine/seq/flat_map.hpp>
 #include <weave/futures/combine/seq/via.hpp>
+#include <weave/futures/combine/seq/with_timeout.hpp>
 
 #include <weave/futures/combine/par/first.hpp>
 
 #include <weave/futures/run/detach.hpp>
-#include <weave/futures/run/thread_await.hpp>
+#include <weave/futures/run/await.hpp>
 
 #include <weave/satellite/satellite.hpp>
 
 #include <weave/result/make/ok.hpp>
 #include <weave/result/make/err.hpp>
+
+#include <weave/timers/processors/standalone.hpp>
 
 #include <wheels/test/framework.hpp>
 
@@ -221,6 +225,30 @@ TEST_SUITE(AllocFreeFutures) {
     }
 
     pool.Stop();    
+  }
+
+  SIMPLE_TEST(WithTimeout){
+    timers::StandaloneProcessor proc{};
+    proc.MakeGlobal();
+
+    threads::blocking::WaitGroup wg{};
+
+    wg.Add(1);
+
+    // Warmup of threadlocals 
+    {
+      futures::Never() | futures::WithTimeout(1ms) | futures::OrElse([&]{
+        wg.Done();
+      }) | futures::Detach();
+
+      wg.Wait();
+    }
+
+    {
+      AllocationGuard do_not_alloc{};
+
+      futures::Never() | futures::WithTimeout(1ms) | futures::Await();
+    }
   }
 }
 

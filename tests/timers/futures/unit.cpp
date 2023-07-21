@@ -124,6 +124,61 @@ TEST_SUITE(Futures){
     wg.Wait();    
   }
 
+  SIMPLE_TEST(DontDisruptTheOrder){
+    timers::StandaloneProcessor proc{};
+
+    threads::blocking::WaitGroup wg;
+    wg.Add(3);
+
+    std::atomic<int> count{0};
+
+    proc.MakeGlobal();
+
+    auto start = std::chrono::steady_clock::now();  
+
+    auto f = futures::After(5s) | futures::OnCancel([&]{
+      ASSERT_EQ(count, 0);
+      count++;
+
+      auto finish = std::chrono::steady_clock::now();
+
+      fmt::println("Timer 1:\nElapsed : {}, expected {}", (finish-start).count(), (1s).count());
+      ASSERT_LE(finish - start, 1s + 100ms);
+
+      wg.Done();       
+    }) | futures::Start();
+
+    futures::After(2s) | futures::OnSuccess([&]{
+      ASSERT_EQ(count, 1);
+      count++;
+
+      auto finish = std::chrono::steady_clock::now();
+
+      fmt::println("Timer 2:\nElapsed : {}, expected {}", (finish-start).count(), (2s).count());
+      ASSERT_LE(finish - start, 2s + 100ms);
+
+      wg.Done();
+    }) | futures::Detach();
+
+    futures::After(3s) | futures::OnSuccess([&]{
+      ASSERT_EQ(count, 2);
+      count++;
+
+      auto finish = std::chrono::steady_clock::now();
+
+      fmt::println("Timer 3:\nElapsed : {}, expected {}", (finish-start).count(), (3s).count());
+      ASSERT_LE(finish - start, 3s + 100ms);
+
+      wg.Done();
+    }) | futures::Detach(); 
+
+    std::this_thread::sleep_for(1s);
+
+    std::move(f).RequestCancel();
+
+    wg.Wait();    
+  }
+
   SIMPLE_TEST(TimeoutNever){
     timers::StandaloneProcessor proc{};
 

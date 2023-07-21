@@ -25,16 +25,16 @@ struct AndThenMapper {
       : fun_(std::move(fun)) {
   }
 
-  bool Predicate(Output<Input>& input) {
-    return static_cast<bool>(input.result);
+  bool Predicate(Result<Input>& input) {
+    return static_cast<bool>(input);
   }
 
-  InvokeResult Map(Output<Input> input) {
-    return fun_(std::move(*input.result));
+  InvokeResult Map(Result<Input> input) {
+    return fun_(std::move(*input));
   }
 
-  InvokeResult Forward(Output<Input> input) {
-    return result::Err(std::move(input.result.error()));
+  InvokeResult Forward(Result<Input> input) {
+    return result::Err(std::move(input.error()));
   }
 
  private:

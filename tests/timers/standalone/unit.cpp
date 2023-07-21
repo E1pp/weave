@@ -11,7 +11,7 @@
 #include <thread>
 
 // Sanitizers slow down too much
-#if !defined(TWIST_FIBERS) && !(__has_feature(address_sanitizer) || __has_feature(thread_sanitizer) || defined(__SANITIZE_ADDRESS__))
+#if !defined(TWIST_FIBERS)
 
 using namespace weave; // NOLINT
 
@@ -201,7 +201,7 @@ TEST_SUITE(Standalone){
 
     wg.Wait();
 
-    ASSERT_LE(cpu_timer.Spent(), 100ms);
+    ASSERT_LE(cpu_timer.Spent(), 25ms);
   }
 }
 

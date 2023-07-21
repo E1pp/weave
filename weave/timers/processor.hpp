@@ -14,6 +14,8 @@ struct IProcessor {
 
   virtual void AddTimer(ITimer*) = 0;
 
+  virtual void NotifyProcessor() = 0;
+
   Delay DelayFromThis(Millis ms) {
     return Delay{ms, *this};
   }

@@ -349,6 +349,7 @@ void SleepForExample(){
 
   auto f = futures::Submit(pool, [&]{
     wg1.Done();
+
     wheels::Defer cleanup([&]{
       flag = true;
       wg2.Done();
@@ -376,7 +377,7 @@ void SleepForExample(){
 
   auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(finish - start);
 
-  fmt::println("Elapsed : {} second(s)", elapsed.count());
+  fmt::println("Elapsed : {} second(s)", elapsed.count()); // 1 seconds vs 5 seconds
 
   pool.Stop();
 }
