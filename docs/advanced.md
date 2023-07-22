@@ -193,13 +193,12 @@ auto f = futures::Submit(pool, {}) | futures::Anyway([]{
 
 std::move(f).RequestCancel();
 ```
-
 ## 10. A quick detour: traits.
 `weave` supports the following traits: `Eager`, `Lazy`, `Cancellable`, all of which apply to futures. There is also `JustCancellable` which drops requirement of being a future. 
 
 Every future apart from `BoxedFuture<T>` is `Cancellable`. `StartFuture` and `ContractFuture` are `Eager`. You can use these traits to create template specializations. 
 
-If you want to use type erasure of `BoxedFuture` but have `Cancellable` trait, use `CBoxedFuture` and `CBox` instead.
+If you want to use type erasure of `BoxedFuture` and `Cancellable` trait, use `CBoxedFuture` and `CBox`.
 
 ## 11. Cancellation: `no_alloc` overloads
 Every parallel combinator has a `no_alloc` version in the same include file. These methods have the same signature but require every future to be `Cancellable`. You can use them just like this:
@@ -277,3 +276,40 @@ Thread pools 2 and 3 collect a bunch of useful data via `Logger`. If you want to
 In order to collect metrics from thread pool use `GetLogger` or `Metrics` methods. The last is good to collect post-execution data while the first one can be used to check metrics in real-time. Real-time uses simple atomics so the data you might see will be consistent only eventually.
 
 You can use `Logger` for you own needs. Look at [tests](tests/logger) for examples.
+## `Strand`
+`executors::Strand` is a decorator over another executor which ensures mutual exclusion and also serializes tasks.
+```cpp
+ using namespace exe::executors;
+  
+ // Pool which runs tasks
+ tp::compute::ThreadPool workers{4};
+ // Decorate workers with Strand
+ Strand strand{workers};
+  
+ ThreadPool clients{5};
+  
+ size_t cs = 0;
+  
+ // Start clients which will spawn tasks for strand
+  
+ for (size_t i = 0; i < 1024; ++i) {
+	 Submit(clients, [&] {
+		 // Asynchronous submits from clients
+		 Submit(strand, [&] {
+			 // Asynchronous critical sections
+			 ++cs;
+		 });
+	 });
+ }
+  
+ // Wait for clients
+ clients.WaitIdle();
+ // Wait for critical sections
+ workers.WaitIdle();
+  
+ fmt::println("# critical sections: {}", cs); // 1024
+  
+ clients.Stop();
+ workers.Stop();
+```
+Please note that `Strand` serializes execution meaning, that it overrides scheduling algorithms to some extent. This implies that `Strand` can occupy thread for quite a while which means that it shouldn't be used with `tp::fast::ThreadPool` or `fibers::ThreadPool` as this would produce enormous overhead due to balancing being stalled.
