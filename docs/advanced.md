@@ -263,3 +263,17 @@ Now, instead of `Start` there could be the `First` future itself as it also subs
 
 **TL;DR**
 If you use parallel combinators, don't spam too much memory allocations inside of futures you send to these combinators as this memory will be released only eventually.
+
+## Different ThreadPool's
+`weave` has three kinds of ThreadPool:
+1. `tp::compute::ThreadPool` -- simpliest thread pool with no load balancing / sharding involved. Best fit for CPU-bound tasks.
+2. `tp::fast::ThreadPool` -- work-stealing thread pool with fully implemented balancing algorithms. Best fir for IO-bound tasks.
+3. `executors::fibers::ThreadPool` -- same as `tp::fast::ThreadPool` but runs everything in carrier fibers which are automatically pooled.
+
+## Logger
+Thread pools 2 and 3 collect a bunch of useful data via `Logger`. If you want to print thread pool metrics you can use compile flag `WEAVE_METRICS`.
+`weave`'s logger supports real-time lookup at metrics if you have flag `WEAVE_REALTIME_METRICS` set to "ON". 
+
+In order to collect metrics from thread pool use `GetLogger` or `Metrics` methods. The last is good to collect post-execution data while the first one can be used to check metrics in real-time. Real-time uses simple atomics so the data you might see will be consistent only eventually.
+
+You can use `Logger` for you own needs. Look at [tests](tests/logger) for examples.
