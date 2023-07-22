@@ -2,12 +2,17 @@
 
 #include <weave/futures/model/evaluation.hpp>
 
+#include <weave/futures/traits/cancel.hpp>
+
 #include <weave/support/constructor_bases.hpp>
 
 namespace weave::futures::thunks {
 
 template <typename T>
 class Boxed;
+
+template <typename T>
+class CBoxed;
 
 namespace detail {
 
@@ -56,8 +61,11 @@ class TemplateSender final : public IErasedFuture<typename Future::ValueType>,
 };
 
 template <typename F, typename T>
-concept NotBoxed = !std::is_same_v<F, Boxed<T>> && UnrestrictedThunk<F> &&
+concept NotBoxed = !std::is_same_v<F, Boxed<T>> && !std::is_same_v<F, CBoxed<T>> && UnrestrictedThunk<F> &&
                    std::is_same_v<typename F::ValueType, T>;
+
+template <typename F, typename T>
+concept CBoxedAllowed = NotBoxed<F, T> && traits::JustCancellable<F>;
 
 }  // namespace detail
 
@@ -75,6 +83,8 @@ class [[nodiscard]] Boxed final {
   Boxed(Future fut) {  // NOLINT
     erased_ = new detail::TemplateSender<Future>(std::move(fut));
   }
+
+  Boxed(CBoxed<T>); // NOLINT
 
   // Movable
   Boxed(Boxed&& that) noexcept
@@ -137,5 +147,45 @@ class [[nodiscard]] Boxed final {
  private:
   detail::IErasedFuture<T>* erased_{nullptr};
 };
+
+template <typename T>
+class [[nodiscard]] CBoxed final {
+ public:
+  template <typename U>
+  friend class Boxed;
+
+  using ValueType = T;
+
+  // Non-copyable
+  CBoxed(const CBoxed&) = delete;
+  CBoxed& operator=(const CBoxed&) = delete;
+
+  // Auto-boxing
+  template <detail::CBoxedAllowed<T> Future>
+  CBoxed(Future fut) : impl_(std::move(fut)) {  // NOLINT  
+  }
+
+  // Movable
+  CBoxed(CBoxed&& that) noexcept
+      : impl_(std::move(that.impl_)) {
+  }
+  CBoxed& operator=(CBoxed&&) = delete;
+
+  template <Consumer<ValueType> Cons>
+  Evaluation<Boxed<T>, Cons> auto Force(Cons& cons){
+    return std::move(impl_).Force(cons);
+  }
+
+  void Cancellable() {
+    // No-Op
+  }
+
+private:
+  Boxed<T> impl_;
+};
+
+template<typename T>
+Boxed<T>::Boxed(CBoxed<T> that) : Boxed(std::move(that.impl_)){
+}
 
 }  // namespace weave::futures::thunks

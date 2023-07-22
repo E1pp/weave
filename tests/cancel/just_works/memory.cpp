@@ -137,6 +137,20 @@ TEST_SUITE(MemoryManagement){
     DropFutureTest(std::move(f));
   }
 
+  SIMPLE_TEST(DropCBoxed){
+    auto f = futures::Value(42) | futures::AndThen([]{
+    }) | futures::CBox();
+
+    DropFutureTest(std::move(f));    
+  }
+
+  SIMPLE_TEST(DropBoxedCBoxed){
+    auto f = futures::Value(42) | futures::AndThen([]{
+    }) | futures::CBox() | futures::Box();
+
+    DropFutureTest(std::move(f));      
+  }
+
   SIMPLE_TEST(DropBoxedContact){
     {    
       auto [f, p] = futures::Contract<int>();

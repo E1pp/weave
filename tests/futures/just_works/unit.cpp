@@ -583,6 +583,61 @@ TEST_SUITE(Futures) {
     }
   }
 
+  SIMPLE_TEST(CBoxValue) {
+    futures::CBoxedFuture<int> f = futures::Value(1) | futures::CBox();
+
+    auto r = std::move(f) | futures::ThreadAwait();
+
+    ASSERT_TRUE(r);
+    ASSERT_EQ(*r, 1);
+  }
+
+  SIMPLE_TEST(CBoxPipeline) {
+    executors::ManualExecutor manual;
+
+    bool done = false;
+
+    futures::CBoxedFuture<Unit> f = futures::Just()
+                                   | futures::Via(manual)
+                                   | futures::Map([](Unit) { return Unit{}; })
+                                   | futures::AndThen([](Unit) { return result::Ok(); })
+                                   | futures::Map([&](Unit) {
+                                       done = true;
+                                       return Unit{};
+                                     })
+                                   | futures::CBox();
+
+    std::move(f) | futures::Detach();
+
+    manual.Drain();
+
+    ASSERT_TRUE(done);
+  }
+
+  SIMPLE_TEST(AutoCBoxing) {
+    {
+      static const std::string kHello = "Hello";
+      futures::CBoxedFuture<std::string> f = futures::Value(kHello);
+
+      std::move(f) | futures::Detach();
+    }
+
+    {
+      futures::CBoxedFuture<int> f = futures::Value(2) | futures::Map([](int v) { return v + 1; });
+
+      auto r = std::move(f) | futures::ThreadAwait();
+
+      ASSERT_TRUE(r);
+      ASSERT_EQ(*r, 3);
+    }
+  }
+
+  SIMPLE_TEST(BoxFromCBox){
+    futures::BoxedFuture<int> f = futures::Value(42) | futures::CBox();
+
+    std::move(f) | futures::ThreadAwait();
+  }
+
   SIMPLE_TEST(FirstOk1) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();

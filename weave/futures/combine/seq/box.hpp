@@ -17,12 +17,24 @@ struct [[nodiscard]] Box {
   }
 };
 
+struct [[nodiscard]] CBox {
+  template <SomeFuture InputFuture>
+  CBoxedFuture<traits::ValueOf<InputFuture>> Pipe(InputFuture f) {
+    return CBoxedFuture<traits::ValueOf<InputFuture>>(std::move(f));
+  }
+};
+
 }  // namespace pipe
 
 // Future<T> -> BoxedFuture<T>
 
 inline auto Box() {
   return pipe::Box{};
+}
+
+// Cancellable box
+inline auto CBox() {
+  return pipe::CBox{};
 }
 
 }  // namespace weave::futures

@@ -153,6 +153,32 @@ TEST_SUITE(CancelTraits){
     NOT_CANCELLABLE(futures::Value(42) | futures::Box() | futures::Start() | futures::Start());  
   }
 
+  SIMPLE_TEST(CBoxCancellable){
+    CANCELLABLE(futures::Value(42) | futures::CBox());
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::AndThen([]{}));
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::OrElse([]{
+      return 42;
+    }));
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::Map([]{}));
+
+    executors::ManualExecutor manual;
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::Via(manual));
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::OnCancel([]{}));
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::OnSuccess([]{}));
+
+    CANCELLABLE(futures::Just() | futures::CBox() | futures::Anyway([]{}));
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::Start());
+
+    CANCELLABLE(futures::Value(42) | futures::CBox() | futures::Start() | futures::Start());    
+  }
+
   SIMPLE_TEST(ForkCancellable1){
     auto [f1, f2] = futures::Just() | futures::Fork<2>();
 

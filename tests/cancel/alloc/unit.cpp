@@ -717,6 +717,16 @@ TEST_SUITE(Futures) {
 
     ASSERT_TRUE(ok);
   }
+
+  SIMPLE_TEST(CBoxedCompatible){
+    auto [f1, p1] = futures::Contract<int>();
+
+    auto f = futures::Value(42) | futures::CBox();
+
+    futures::no_alloc::First(std::move(f), std::move(f1) | futures::CBox()) | futures::Detach();
+
+    std::move(p1).SetValue(38);
+  }
 }
 
 TEST_SUITE(Cancel){

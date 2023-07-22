@@ -191,6 +191,28 @@ TEST_SUITE(Sequential){
     std::move(p).Set(result::Ok());
   }
 
+  SIMPLE_TEST(CancelCBoxedLazy){
+    futures::CBoxedFuture<Unit> f = futures::Just() | futures::AndThen([](Unit){
+      WHEELS_PANIC("Test failed!");
+    });
+
+    std::move(f) | futures::AndThen([](Unit){
+      WHEELS_PANIC("Test failed!");
+    }) | futures::Discard();
+  }
+
+  SIMPLE_TEST(CancelCBoxedEager){
+    auto [f, p] = futures::Contract<Unit>();
+
+    futures::CBoxedFuture<Unit> boxed = std::move(f);
+
+    std::move(boxed) | futures::AndThen([](Unit){
+      WHEELS_PANIC("boxed : Test failed!");
+    }) | futures::Discard();
+
+    std::move(p).Set(result::Ok());
+  }
+
   SIMPLE_TEST(DiscardNever){
     futures::Never() | futures::Discard();
   }
