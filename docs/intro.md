@@ -1,6 +1,6 @@
 # Getting Started
 
-This library has a lot of Unit [tests](tests) which will probably explain how everything works much better than I ever would, so you should really consider reading them. Below are the most important things you should know about `weave`. After that there is a section about advanced features `weave` has.
+This library has a lot of Unit [tests](tests) which will probably explain how everything works much better than I ever would, so you should really consider reading them. Below are the most important things you should know about `weave`.
 
 ## 1. First  look at `executors`
 Executor is an abstraction which launches user's code. We have a function `executors::Submit` which can be used to send lambdas to any executor. 
