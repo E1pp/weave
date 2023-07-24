@@ -16,7 +16,7 @@ auto f = futures::Value(42) | futures::AndThen([](int){
 	return 42; // Ok. Competes to result::Ok(42);
 });
 ```
-You don't have to write return at all:
+You don't have to write return statement at all:
 ```cpp
 auto f = futures::Value(42) | futures::AndThen([](int){
 }); // Completes with return result::Ok();
@@ -166,10 +166,10 @@ auto parent = futures::Submit(pool, [&]{
 		}
 	}) | futures::Start();
 	
-	std::move(child ) | futures::Await(); // Successfully cancels from cancellation of parent 
+	std::move(child) | futures::Await(); // Successfully cancels from the cancellation of parent 
 }) | futures::Start();
 
-std::move(parent ).RequestCancel();
+std::move(parent).RequestCancel();
 ```
 
 ## 9. Add a side effect
@@ -312,4 +312,4 @@ You can use `Logger` for you own needs. Look at [tests](tests/logger) for exampl
  clients.Stop();
  workers.Stop();
 ```
-Please note that `Strand` serializes execution meaning, that it overrides scheduling algorithms to some extent. This implies that `Strand` can occupy thread for quite a while which means that it shouldn't be used with `tp::fast::ThreadPool` or `fibers::ThreadPool` as this would produce enormous overhead due to balancing being stalled.
+Please note that `Strand` serializes execution, meaning that it overrides scheduling algorithms to some extent. This implies that `Strand` can occupy thread for quite a while and shouldn't be used with `tp::fast::ThreadPool` or `fibers::ThreadPool` as this would produce enormous overhead due to balancing being stalled.
