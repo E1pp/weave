@@ -22,7 +22,7 @@ pool.Stop(); // ~= thread::join
 ```
 
 ### `ManualExecutor`
-`ManualExecutor` can be used to run tasks manually which can prove helpful with deterministic testing
+`ManualExecutor` can be used to run tasks manually which can prove helpful in deterministic testing
 ```cpp
 executors::ManualExecutor manual;
  
@@ -40,7 +40,7 @@ manual.Drain(); // prints "Step 2" and returns 1
 ```
  
 ## 2. "Forget about `executors::Submit`" or First look at `futures`
-Futures are object which represent represent a value, which might not be ready at the moment, and the underlying computation which would return this value. Futures in `weave` are lazy, meaning that they will postpone any kind of evaluations until they known how exactly their value will be used. This model allows us avoid numerous dynamic allocations and vtable lookups since we always know (almost) every consumer at compile-time. Now, let's look how we can come up with a better API for submitting lambdas.
+Futures are objects which represent a value which might not be ready at the moment, and the underlying computation which would return this value. Futures in `weave` are lazy, meaning that they will postpone any kind of evaluations until they know how exactly their value will be used. This model allows us to avoid numerous dynamic allocations and vtable lookups since we always know (almost) every consumer at compile-time. Now, let's look how we can come up with a better API for submitting lambdas.
 
 ### `Submit`
 Using `executors::Submit` is very simple but inefficient. It uses type erasure which can be avoided. Submitted task can be represented as future, also known as `futures::Submit`:
@@ -95,7 +95,7 @@ pool.Stop();
 ```
 In this example there are zero memory allocations and exactly two vtable lookups: who is the `IExecutor` and who is the `Task` (Technically, there are few more lookups related to the internal structure of a thread pool but should we use a simplier executor, the number would be exactly two).  
 
-Now you might be wondering what types are `f` and `result` which we are going to discuss now.
+Now you might be wondering what types `f` and `result` are, which we are going to discuss now.
 
 ### `Result<T>` and `Future<T>`
 The example above can be rewritten using type `Result<T>` and concept `Future<T>` like this
@@ -113,9 +113,9 @@ Result<int> result = std::move(f) | futures::Await();
 
 pool.Stop();
 ```
-`Result<T>` represents and object which be either the value itself or an error -- just in case the evaluation aborts for some reason. The underlying type is `tl::expected<T, std::error_code>` allowing you to use `expected` library API on these objects. `weave` provides convenient functions `result::Ok` and `result::Err` for return types in futures. 
+`Result<T>` represents an object which is either the value itself or an error -- just in case the evaluation aborts for some reason. The underlying type is `tl::expected<T, std::error_code>` which allows you to use `expected` library API on these objects. `weave` provides convenient functions `result::Ok` and `result::Err` for return types in futures. 
 
-We use concept `Future<T>` instead of concrete type because we store a lot of information in future's using some template metaprogramming magic. Now, this can be very incovenient if you are writing an interface which accepts the future or you simply want to store a bunch of them in an STL-container. In this case you can use
+We use concept `Future<T>` instead of concrete type because we store a lot of information in future's type using some template metaprogramming magic. Now, this can be very incovenient if you are writing an interface which accepts the future or you simply want to store a bunch of them in an STL-container. In this case you can use
 
 ### `Box`
 `Box` allows you to erase future's type. Suppose you have two futures:
@@ -493,7 +493,7 @@ switch (value.index()) {
 You can use `futures::Await` to suspend fiber until the future is ready. You can use it in fibers context just like in a normal one without blocking the thread.
 
 ## 6. Timers
-In order to use timers you need a timer processor. At the moment, `weave` has only one processor, `StandaloneProcessor`. Let's look at the combinator `WithTimeout` which is self-explanatory, to see, how to use processors:
+In order to use timers you need a timer processor. At the moment, `weave` has only one processor, `StandaloneProcessor`. Let's look at the combinator `WithTimeout`, which is self-explanatory, to see how to use processors:
 ```cpp
 timers::StandaloneProcessor proc{};
 
@@ -503,7 +503,7 @@ auto res = futures::Submit(pool, []{
 	return result::Ok(42); // Will never run
 }) | futures::WithTimout(proc.DelayFromThis(1s)) | futures::Await();
 
-// Will be release after 1 second and will return a TimeoutError 
+// Will be released after 1 second and will return a TimeoutError 
 
 assert(!res);
 
@@ -521,7 +521,7 @@ auto res = futures::Submit(pool, []{
 	return result::Ok(42); // Will never run
 }) | futures::WithTimout(1s) | futures::Await();
 
-// Will be release after 1 second and will return a TimeoutError 
+// Will be released after 1 second and will return a TimeoutError 
 
 assert(!res);
 
