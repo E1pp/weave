@@ -8,7 +8,7 @@ futures::BoxedFuture<int> f = futures::Submit(pool, []{
 });
 ```
 
-## 2. Function signature compelition
+## 2. Function signature completion
 
 You don't have to write `result::Ok` wrapper anywhere:
 ```cpp
@@ -28,7 +28,7 @@ auto f = futures::Value(42) | futures::AndThen([]{
 });
  // Completes to [](int){/*user code*/}
 ```
-Input type compelition can be found too agressive as it allows you to forget to use `[[nodiscard]]` objects. You can set compile flag `WEAVE_AGRESSIVE_AUTOCOMPLETE` to `OFF` in order to make it only work if expected InputType is `Unit` (`void` to `Unit` promotion).
+Input type completion can be found too agressive as it allows you to forget to use `[[nodiscard]]` objects. You can set compile flag `WEAVE_AGRESSIVE_AUTOCOMPLETE` to `OFF` in order to make it only work if expected InputType is `Unit` (`void` to `Unit` promotion).
 
 Every object in namespace `futures` which takes invokable as an argument, autocompletes it using the rules above.
 
@@ -92,7 +92,7 @@ futures::Submit(pool, []{
 ```
 Again, you need a timer processor in a global scope to write it like in the listing so don't forget to make one and use `MakeGlobal` or `DelayFromThis`.
 
-Another thing to watch out for: while fiber is suspended, ThreadPool doesn't see it so if there is noone else in the pool, `WaitIdle` will return control even though fiber is still asleep. The following code is "How not to use After":
+Another thing to watch out for: while fiber is suspended, thread pool doesn't see it so if there is noone else in the pool, `WaitIdle` will return control even though fiber is still asleep. The following code is "How not to use After":
 ```cpp
 // There is a timer processor somewhere before here which exists all the time
 {
@@ -223,7 +223,7 @@ std::move(p).SetValue(37); // Prints "Wait for me!" and then "First done"
 If you futures are cancellable and you don't do (and you shouldn't do) anything heavy in the cancellation path, differences between normal and `no_alloc` semantic will be irrelevant to you. If that is so, you should use `no_alloc` exclusively as it is more optimal, and also helps to partially alleviate one problem with the current cancellation model.
 
 ## 12. `[[nodiscard]]` and Cancellation
-Every future is marked `[[nodiscard]]` and you mustn't discard them. Technically, function signature compelition allow you to cheat this rule, but there is also a problem with cancellation:
+Every future is marked `[[nodiscard]]` and you mustn't discard them. Technically, function signature completion allow you to cheat this rule, but there is also a problem with cancellation:
 ```cpp
 auto f = futures::Submit(pool, []{}) | futures::Start(); // memory is allocated by Start
 
@@ -233,7 +233,7 @@ auto g = futures::Submit(pool, []{}) | futures::AndThen([f = std::move(f)]{
 
 std::move(g).RequestCancel();
 ```
-Another example would be first `Submit` in `g` returning an error, causing `AndThen` to not run its lambda. In either cases `f` will technically be discarded and you might be wondering if this is a memory leak scenario. I'm happy to inform you that discarding any kind of future and promise are accounted for and you don't have to worry about it. However, if you have your own `[[nodiscard]]` objects which you move into lambda's fields, you might want to worry, since they can, in fact, be discarded.
+Another example would be first `Submit` in `g` returning an error, causing `AndThen` to not run its lambda. In either cases `f` will technically be discarded and you might be wondering if this is a memory leak scenario. I'm happy to inform you that discarding any kind of future and promise is accounted for and you don't have to worry about it. However, if you have your own `[[nodiscard]]` objects which you move into lambda's fields, you might want to worry, since they can, in fact, be discarded.
 
 ## 13. Cancellation: design flaw.
 Now, let's talk a little bit about implementation. Every consumer has a method `Cancel` which allows producer to report that it was cancelled to the consumer. Consumer also has a method `CancelToken` which returns a special object `cancel::Token` which is basically a handle to the interface of `SignalSender` -- abstraction, which can send a cancellation signal or a release signal. First one implies that cancellation was requested, second one -- there will be no cancellation request ever. There is also a `SignalReceiver` abstraction which subscribes to a transmission so that whenever `SignalSender` sends a signal to the subscribed `SignalReceiver`, it run `SignalReceiver`'s callback, namely `Forward` to properly propagate the cancellation.
@@ -263,7 +263,7 @@ Now, instead of `Start` there could be the `First` future itself as it also subs
 If you use parallel combinators, don't spam too much memory allocations inside of futures you send to these combinators as this memory will be released only eventually.
 
 ## Different ThreadPool's
-`weave` has three kinds of ThreadPool:
+`weave` has three kinds of thread pools:
 1. `tp::compute::ThreadPool` -- simpliest thread pool with no load balancing / sharding involved. Best fit for CPU-bound tasks.
 2. `tp::fast::ThreadPool` -- work-stealing thread pool with fully implemented balancing algorithms. Best fir for IO-bound tasks.
 3. `executors::fibers::ThreadPool` -- same as `tp::fast::ThreadPool` but runs everything in carrier fibers which are automatically pooled.
