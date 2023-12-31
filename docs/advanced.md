@@ -8,18 +8,18 @@ futures::BoxedFuture<int> f = futures::Submit(pool, []{
 });
 ```
 
-## 2. Function signature compelition
+## 2. Function signature completion
 
 You don't have to write `result::Ok` wrapper anywhere:
 ```cpp
 auto f = futures::Value(42) | futures::AndThen([](int){
-	return 42; // Ok. Competes to result::Ok(42);
+	return 42; // Ok. Completes to result::Ok(42);
 });
 ```
-You don't have to write return at all:
+You don't have to write return statement at all:
 ```cpp
 auto f = futures::Value(42) | futures::AndThen([](int){
-}); // Completes with return result::Ok();
+}); // Completes to return result::Ok();
 ```
 You don't have to write `(InputType)` part as well
 ```cpp
@@ -28,7 +28,7 @@ auto f = futures::Value(42) | futures::AndThen([]{
 });
  // Completes to [](int){/*user code*/}
 ```
-Input type complition can be found too agressive as it allows you to forget to use `[[nodiscard]]` objects. You can set compile flag `WEAVE_AGRESSIVE_AUTOCOMPLETE` to `OFF` in order to make it only work if expected InputType if `Unit` (`void` to `Unit` promotion).
+Input type completion can be found too agressive as it allows you to forget to use `[[nodiscard]]` objects. You can set compile flag `WEAVE_AGRESSIVE_AUTOCOMPLETE` to `OFF` in order to make it only work if expected InputType is `Unit` (`void` to `Unit` promotion).
 
 Every object in namespace `futures` which takes invokable as an argument, autocompletes it using the rules above.
 
@@ -64,7 +64,7 @@ std::move(p).SetValue(42);
 auto r = std::move(f) | futures::Await();
 fmt::println("Result is {}", *r);
 ```
-Sometimes it is easier to test certains things with `Contract` but you should probably avoid using it as there are safer wait to do whatever you might want to do. You can shoot yourself in the foot using `Contract` quite easily:
+Sometimes it is easier to test certains things with `Contract` but you should probably avoid using it as there are safer ways to do whatever you might want to do. You can shoot yourself in the foot using `Contract` quite easily:
 ```cpp
 auto [f, p] = futures::Contract<int>();
 
@@ -90,9 +90,9 @@ futures::Submit(pool, []{
 	}) | futures::Await();
 }) | futures::Detach();
 ```
-Again, you need a time processor in a global scope to write it like in the listing so don't forget to make one and use `MakeGlobal` or `DelayFromThis`.
+Again, you need a timer processor in a global scope to write it like in the listing so don't forget to make one and use `MakeGlobal` or `DelayFromThis`.
 
-Another thing to watch out for: while fiber is suspended, ThreadPool doesn't see it so if there is noone else in the pool, `WaitIdle` will return control even though fiber is still asleep. The following code is "How not to use After":
+Another thing to watch out for: while fiber is suspended, thread pool doesn't see it so if there is noone else in the pool, `WaitIdle` will return control even though fiber is still asleep. The following code is "How not to use After":
 ```cpp
 // There is a timer processor somewhere before here which exists all the time
 {
@@ -153,7 +153,6 @@ What supports cancellation:
 ```cpp
 auto f = futures::Submit(pool, []{}) | futures::AndThen([]{}) | futures::Start();
 std::move(f).RequestCancel(); // If we are fast enough, zero tasks will be submitted
-// to the pool
 ```
 ## 8. Cancellation: Inheritance
 You can cancel the future inside another future:
@@ -166,10 +165,10 @@ auto parent = futures::Submit(pool, [&]{
 		}
 	}) | futures::Start();
 	
-	std::move(child ) | futures::Await(); // Successfully cancels from cancellation of parent 
+	std::move(child) | futures::Await(); // Successfully cancels from the cancellation of parent 
 }) | futures::Start();
 
-std::move(parent ).RequestCancel();
+std::move(parent).RequestCancel();
 ```
 
 ## 9. Add a side effect
@@ -193,13 +192,12 @@ auto f = futures::Submit(pool, {}) | futures::Anyway([]{
 
 std::move(f).RequestCancel();
 ```
-
 ## 10. A quick detour: traits.
 `weave` supports the following traits: `Eager`, `Lazy`, `Cancellable`, all of which apply to futures. There is also `JustCancellable` which drops requirement of being a future. 
 
 Every future apart from `BoxedFuture<T>` is `Cancellable`. `StartFuture` and `ContractFuture` are `Eager`. You can use these traits to create template specializations. 
 
-If you want to use type erasure of `BoxedFuture` but have `Cancellable` trait, use `CBoxedFuture` and `CBox` instead.
+If you want to use type erasure of `BoxedFuture` and `Cancellable` trait, use `CBoxedFuture` and `CBox`.
 
 ## 11. Cancellation: `no_alloc` overloads
 Every parallel combinator has a `no_alloc` version in the same include file. These methods have the same signature but require every future to be `Cancellable`. You can use them just like this:
@@ -219,13 +217,13 @@ futures::no_alloc::First(futures::Value(42), std::move(f)) | futures::AndThen([]
 	fmt::println("First done!");
 }) | futures::Detach();
 
-// Nothing will be printed untill we fulfill the other future
+// Nothing will be printed until we fulfill the other future
 std::move(p).SetValue(37); // Prints "Wait for me!" and then "First done"
 ```
 If you futures are cancellable and you don't do (and you shouldn't do) anything heavy in the cancellation path, differences between normal and `no_alloc` semantic will be irrelevant to you. If that is so, you should use `no_alloc` exclusively as it is more optimal, and also helps to partially alleviate one problem with the current cancellation model.
 
 ## 12. `[[nodiscard]]` and Cancellation
-Every future is marked `[[nodiscard]]` and you mustn't discard them. Technically, function signature compelition allow you to cheat this rule, but there is also a problem with cancellation:
+Every future is marked `[[nodiscard]]` and you mustn't discard them. Technically, function signature completion allow you to cheat this rule, but there is also a problem with cancellation:
 ```cpp
 auto f = futures::Submit(pool, []{}) | futures::Start(); // memory is allocated by Start
 
@@ -235,12 +233,12 @@ auto g = futures::Submit(pool, []{}) | futures::AndThen([f = std::move(f)]{
 
 std::move(g).RequestCancel();
 ```
-Another example would be first `Submit` in `g` returning an error, causing `AndThen` to not run its lambda. In either cases `f` will technically be discarded and you might be wondering if this is a memory leak scenario. I'm happy to inform you that discarding any kind of future and promise are accounted for and you don't have to worry about it. However, if you have your own `[[nodiscard]]` objects which you move into lambda's fields, you might want to worry, since they can, in fact, be discarded.
+Another example would be first `Submit` in `g` returning an error, causing `AndThen` to not run its lambda. In either cases `f` will technically be discarded and you might be wondering if this is a memory leak scenario. I'm happy to inform you that discarding any kind of future and promise is accounted for and you don't have to worry about it. However, if you have your own `[[nodiscard]]` objects which you move into lambda's fields, you might want to worry, since they can, in fact, be discarded.
 
 ## 13. Cancellation: design flaw.
-Now, let's talk a little bit about implementation. Every consumer has a method `Cancel` which allows producer to report that it was cancelled to the consumer. Consumer also has a method `CancelToken` which returns a special object `cancel::Token` which is basically a handle to the interface of `SignalSender` -- abstraction, which can send a cancellation signal or a release signal. First one implies that cancellation was requested, second one -- there will be no cancellation request ever. There is also a `SignalReceiver` abstraction which subscribe to cancellation so that whenever `SignalSender` sends a signal to the subscribed `SignalReceiver`, it run `SignalReceiver`'s callback, namely `Forward` to properly propagate the cancellation.
+Now, let's talk a little bit about implementation. Every consumer has a method `Cancel` which allows producer to report that it was cancelled to the consumer. Consumer also has a method `CancelToken` which returns a special object `cancel::Token` which is basically a handle to the interface of `SignalSender` -- abstraction, which can send a cancellation signal or a release signal. First one implies that cancellation was requested, second one -- there will be no cancellation request ever. There is also a `SignalReceiver` abstraction which subscribes to a transmission so that whenever `SignalSender` sends a signal to the subscribed `SignalReceiver`, it run `SignalReceiver`'s callback, namely `Forward` to properly propagate the cancellation.
 
-Now, this model has one major implication: in order for lifetimes to be syncronized, `SignalSender` must hold a strong reference to the `SignalReceiver` -- otherwise, receiver might deallocate it's resources right before sender decides to use `Forward`. This means, that subscribing to `SignalSender` increases strong references count and `Forward` reduces it. In order to optimally deallocate resources, you will want to be able to unsubscribe from cancellation when you are done -- forcefully retract the strong reference you have given. 
+Now, this model has one major implication: in order for lifetimes to be syncronized, `SignalSender` must hold a strong reference to the `SignalReceiver` -- otherwise, receiver might deallocate it's resources right before sender decides to use `Forward`. This means, that subscribing to `SignalSender` increases strong references count and `Forward` reduces it. In order to optimally deallocate resources, you will want to be able to unsubscribe from transmission as soon as you are done -- forcefully retract the strong reference you have given. 
 
 So where is the problem? Parallel combinators use the same implementation of `SignalSender` called `JoinSource` which places it's `SignalReceiver` into a lock-free queue. You cannot remove yourself from this queue, meaning, you cannot retract your reference until that `SignalSender` releases it on its own. Let's look at the code:
 ```cpp
@@ -263,3 +261,54 @@ Now, instead of `Start` there could be the `First` future itself as it also subs
 
 **TL;DR**
 If you use parallel combinators, don't spam too much memory allocations inside of futures you send to these combinators as this memory will be released only eventually.
+
+## Different ThreadPool's
+`weave` has three kinds of thread pools:
+1. `tp::compute::ThreadPool` -- simpliest thread pool with no load balancing / sharding involved. Best fit for CPU-bound tasks.
+2. `tp::fast::ThreadPool` -- work-stealing thread pool with fully implemented balancing algorithms. Best fir for IO-bound tasks.
+3. `executors::fibers::ThreadPool` -- same as `tp::fast::ThreadPool` but runs everything in carrier fibers which are automatically pooled.
+
+## Logger
+Thread pools 2 and 3 collect a bunch of useful data via `Logger`. If you want to print thread pool metrics you can use compile flag `WEAVE_METRICS`.
+`weave`'s logger supports real-time lookup at metrics if you have flag `WEAVE_REALTIME_METRICS` set to "ON". 
+
+In order to collect metrics from thread pool use `GetLogger` or `Metrics` methods. The last is good to collect post-execution data while the first one can be used to check metrics in real-time. Real-time uses simple atomics so the data you might see will be consistent only eventually.
+
+You can use `Logger` for you own needs. Look at [tests](tests/logger) for examples.
+## `Strand`
+`executors::Strand` is a decorator over another executor which ensures mutual exclusion and also serializes tasks.
+```cpp
+ using namespace exe::executors;
+  
+ // Pool which runs tasks
+ tp::compute::ThreadPool workers{4};
+ // Decorate workers with Strand
+ Strand strand{workers};
+  
+ ThreadPool clients{5};
+  
+ size_t cs = 0;
+  
+ // Start clients which will spawn tasks for strand
+  
+ for (size_t i = 0; i < 1024; ++i) {
+	 Submit(clients, [&] {
+		 // Asynchronous submits from clients
+		 Submit(strand, [&] {
+			 // Asynchronous critical sections
+			 ++cs;
+		 });
+	 });
+ }
+  
+ // Wait for clients
+ clients.WaitIdle();
+ // Wait for critical sections
+ workers.WaitIdle();
+  
+ fmt::println("# critical sections: {}", cs); // 1024
+  
+ clients.Stop();
+ workers.Stop();
+```
+Please note that `Strand` serializes execution, meaning that it overrides scheduling algorithms to some extent. This implies that `Strand` can occupy thread for quite a while and shouldn't be used with `tp::fast::ThreadPool` or `fibers::ThreadPool` as this would produce enormous overhead due to balancing being stalled.

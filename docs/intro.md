@@ -1,6 +1,6 @@
 # Getting Started
 
-This library has a lot of Unit [tests](tests) which will probably explain how everything works much better than I ever would, so you should really consider reading them. Below are the most important things you should know about `weave`. After that there is a section about advanced features `weave` has.
+This library has a lot of Unit [tests](tests) which will probably explain how everything works much better than I ever would, so you should really consider reading them. Below are the most important things you should know about `weave`.
 
 ## 1. First  look at `executors`
 Executor is an abstraction which launches user's code. We have a function `executors::Submit` which can be used to send lambdas to any executor. 
@@ -22,7 +22,7 @@ pool.Stop(); // ~= thread::join
 ```
 
 ### `ManualExecutor`
-`ManualExecutor` can be used to run tasks manually which can prove helpful with deterministic testing
+`ManualExecutor` can be used to run tasks manually which can prove helpful in deterministic testing
 ```cpp
 executors::ManualExecutor manual;
  
@@ -39,19 +39,19 @@ manual.RunNext(); // prints "Step 1" and returns true
 manual.Drain(); // prints "Step 2" and returns 1
 ```
  
-## 2. "Forget about `executors::Submit` " or First look at `futures`
-Futures are object which represent represent a value, which might not be ready at the moment, and the underlying computation which would return this value. Futures in `weave` are lazy, meaning that they will postpone any kind of evaluations until they known how exactly their value will be used. This model allows us avoid numerous dynamic allocations and vtable lookups since we always know (almost) every consumer at compile-time. Now, let's look how we can come up with a better API for submitting lambdas.
+## 2. "Forget about `executors::Submit`" or First look at `futures`
+Futures are objects which represent a value which might not be ready at the moment, and the underlying computation which would return this value. Futures in `weave` are lazy, meaning that they will postpone any kind of evaluations until they know how exactly their value will be used. This model allows us to avoid numerous dynamic allocations and vtable lookups since we always know (almost) every consumer at compile-time. Now, let's look how we can come up with a better API for submitting lambdas.
 
 ### `Submit`
 Using `executors::Submit` is very simple but inefficient. It uses type erasure which can be avoided. Submitted task can be represented as future, also known as `futures::Submit`:
 ```cpp
 executors::ThreadPool pool{/*threads=*/4};
 
-pool.Start(); // We must start the pool
+pool.Start();
 
 auto f = futures::Submit(pool, []{
 	fmt::println("Running on a ThreadPool!");
-}); // Task is not yet submitted! No allocations are done
+}); // Task is not yet submitted! No allocations were done
 ...
 ```
 
@@ -62,11 +62,11 @@ We can let the task run on its own without getting the return value using `futur
 ```cpp
 executors::ThreadPool pool{/*threads=*/4};
 
-pool.Start(); // We must start the pool
+pool.Start();
 
 auto f = futures::Submit(pool, []{
 	fmt::println("Running on a ThreadPool!");
-}); // Task is not yet submitted! No allocations are done
+});
 
 std::move(f) | futures::Detach(); // Future is moved on heap and lambda is submitted
 
@@ -82,43 +82,43 @@ We can synchronously wait for task to be executed using `futures::Await`:
 ```cpp
 executors::ThreadPool pool{/*threads=*/4};
 
-pool.Start(); // We must start the pool
+pool.Start(); 
 
 auto f = futures::Submit(pool, []{
 	fmt::println("Running on a ThreadPool!");
 	return result::Ok(42); // ???
-}); // Task is not yet submitted! No allocations are done
+}); 
 
 auto result = std::move(f) | futures::Await();
 // lambda was already executed at this point
 pool.Stop();
 ```
-In this example there are zero memory allocations and exactly two vtable lookups: who is the `IExecutor` and who is the `Task`.  
+In this example there are zero memory allocations and exactly two vtable lookups: who is the `IExecutor` and who is the `Task` (Technically, there are few more lookups related to the internal structure of a thread pool but should we use a simplier executor, the number would be exactly two).  
 
-Now you might be wondering what types are `f` and `result` which we are going to discuss now.
+Now you might be wondering what types `f` and `result` are, which we are going to discuss now.
 
 ### `Result<T>` and `Future<T>`
 The example above can be rewritten using type `Result<T>` and concept `Future<T>` like this
 ```cpp
 executors::ThreadPool pool{/*threads=*/4};
 
-pool.Start(); // We must start the pool
+pool.Start(); 
 
 Future<int> auto f = futures::Submit(pool, []{
 	fmt::println("Running on a ThreadPool!");
 	return result::Ok(42);
-}); // Task is not yet submitted! No allocations are done
+}); 
 
 Result<int> result = std::move(f) | futures::Await();
-// lambda was already executed at this point
+
 pool.Stop();
 ```
-`Result<T>` represents and object which be either the value itself or an error -- just in case the evaluation aborts for some reason. The underlying type is `tl::expected<T, std::error_code>` allowing you to use `expected` library API on these objects. `weave` provides convenient functions `result::Ok` and `result::Err` for return types in futures. 
+`Result<T>` represents an object which is either the value itself or an error -- just in case the evaluation aborts for some reason. The underlying type is `tl::expected<T, std::error_code>` which allows you to use `expected` library API on these objects. `weave` provides convenient functions `result::Ok` and `result::Err` for return types in futures. 
 
-We use concept `Future<T>` instead of concrete type because we store a lot of information in future's using some template metaprogramming magic. Now, this can be very incovenient if you are writing an interface which accepts the future or you simply want to store a bunch of them in an STL-container. In this case you can use
+We use concept `Future<T>` instead of concrete type because we store a lot of information in future's type using some template metaprogramming magic. Now, this can be very incovenient if you are writing an interface which accepts the future or you simply want to store a bunch of them in an STL-container. In this case you can use
 
 ### `Box`
-`Box` allow you to erase futures type. Suppose you have two futures:
+`Box` allows you to erase future's type. Suppose you have two futures:
 ```cpp
 Future<int> auto first = futures::Submit(pool, []{
 	return result::Ok(42);
@@ -138,7 +138,7 @@ void AwaitAll(std::vector<F> futures){
 	}
 }
 ```
-Objects `first` and `second` have a different type, so they can't be pushed to a vector. Let's fix that with `futures::Box`:
+Objects `first` and `second` have a different type, so they can't be pushed into a vector. Let's fix that with `futures::Box`:
 ```cpp
 futures::BoxedFuture<int> first = futures::Submit(pool, []{
 	return result::Ok(42);
@@ -149,25 +149,25 @@ futures::BoxedFuture<int> second = futures::Submit(pool, []{
 	return result::Ok(37);
 }) | futures::Box();
 ```
-Now you can write now
+Now you can write
 ```cpp
 vector<futures::BoxedFuture<int>> vec{};
 vec.push_back(std::move(first));
 vec.push_back(std::move(second));
 AwaitAll(std::move(vec));
 ```
-Now we will look at some other futures:
+
 ### `Value`
-`futures::Value` represent a value, ready to be taken
+`futures::Value` represent a value, ready to be used
 ```cpp
 auto f = futures::Value(42);
 auto r = std::move(f) | futures::Await(); // finishes immediatelly
 fmt::println("Value {}", *r); // 42
 ```
-There is not `Value<void>` . Instead, we use `Unit = std::monostate`. 
+There is no `Value<void>` . Instead, we use `Unit = std::monostate`. 
 
 ### `Just`
-`futures::Just` is convenient representation of `Value<Unit>`.
+`futures::Just` is a convenient representation of `Value<Unit>`.
 
 ### `Failure`
 `futures::Failure` represents an error, ready to be received:
@@ -179,7 +179,7 @@ assert(!r); // Contains error
 ```
 
 ## 3. Second look at `futures`. Sequential combinators.
-Now we will look at combinators. You have already seen one -- `futures::Box`. As you have already notices, they are applied like this
+Now we will look at combinators. You have already seen one -- `futures::Box`. As you have already noticed, they are applied like this
 ```cpp
 std::move(futures) | CombinatorObject;
 ```
@@ -199,9 +199,9 @@ If the underlying future returns an error, `AndThen` doesn't execute the lambda 
 `futures::OrElse` allows you to recover from errors:
 ```cpp
 auto f = futures::Failure<int>(std::make_error_code(std::errc::timed_out));
-auto ff = std::move(f) | futures::OrElse([](Error){ // Error is alias for error_code
+auto ff = std::move(f) | futures::OrElse([](Error){ // Error is an alias for error_code
 	fmt::println("Recovering from an error");
-	return result::Ok(42); // recovery
+	return result::Ok(42);
 });
 
 auto r = std::move(ff) | futures::Await();
@@ -219,7 +219,7 @@ fmt::println("Value is {}", *r); // 43
 ```
 
 ### `Flatten`
-If your future returns another future, you can used `Flatten` to squash future's type and logic down to `Future<T>` from `Future<Future<T>>`:
+If your future returns another future, you can use `Flatten` to squash future's type and logic down to `Future<T>` from `Future<Future<T>>`:
 ```cpp
 Future<int> auto f = futures::Submit(pool, [&]{
 	return futures::Submit(pool, []{
@@ -232,7 +232,7 @@ fmt::println("Value is {}", *r); // 42
 ```
 
 ### `FlatMap`
-`futures::FlatMap` if basically `Map` + `Flatten`:
+`futures::FlatMap` is basically `Map` + `Flatten`:
 ```cpp
 auto f = futures::Value(42) | futures::FlatMap([&](int v){
 	return futures::Submit(pool, [&]{
@@ -244,7 +244,7 @@ fmt::println("Value is {}", *r); // 43
 ```
 
 ### Via
-By default, every execution is done inline or in the mentioned executor in case of `Submit`. Each following bit of user code (like lambda in `AndThen`) inherits the executor from a previous future:
+By default, every execution is done inline or in a mentioned executor in case of `Submit`. Each following bit of user code (like lambda in `AndThen`) inherits the executor from a previous future:
 ```cpp
 auto f = futures::Submit(pool, []{
 	return result::Ok(42); // executed in a pool
@@ -262,6 +262,8 @@ auto f = futures::Value(42) | futures::Via(pool) | futures::AndThen([](int v){
 auto r = std::move(f) | futures::Await();
 fmt::println("Value is {}", *r); // 43
 ```
+Using another `Via` updates the executor to a new one.
+
 ### `Start`
 If you want to begin evaluation of the future before you know the consumer, you can use `futures::Start`:
 ```cpp
@@ -276,6 +278,7 @@ auto lazy = std::move(eager) | futures::AndThen([](int){
 	// future becomes lazy again
 }); 
 ```
+`Start` uses a heap allocation.
 
 ### `Fork`
 If you want to take future's result to several combinators, you can use `futures::Fork<N>`:
@@ -302,7 +305,7 @@ If you want to wait for the first future, you can use `futures::First`:
 auto f1 = futures::Submit(pool, []() -> Result<int>{
 	return result::Err(std::make_error_code(std::errc::timed_out));
 });
-auto f1 = futures::Submit(pool, []{
+auto f2 = futures::Submit(pool, []{
 	return result::Ok(37);
 });
 
@@ -490,7 +493,7 @@ switch (value.index()) {
 You can use `futures::Await` to suspend fiber until the future is ready. You can use it in fibers context just like in a normal one without blocking the thread.
 
 ## 6. Timers
-In order to use timers you need a timers processor. At the moment, `weave` has only one processor, `StandaloneProcessor`. Let's look at future combinator `WithTimeout` which is self-explanatory, to see, how to use processors:
+In order to use timers you need a timer processor. At the moment, `weave` has only one processor, `StandaloneProcessor`. Let's look at the combinator `WithTimeout`, which is self-explanatory, to see how to use processors:
 ```cpp
 timers::StandaloneProcessor proc{};
 
@@ -500,7 +503,7 @@ auto res = futures::Submit(pool, []{
 	return result::Ok(42); // Will never run
 }) | futures::WithTimout(proc.DelayFromThis(1s)) | futures::Await();
 
-// Will be release after 1 second and will return a TimeoutError 
+// Will be released after 1 second and will return a TimeoutError 
 
 assert(!res);
 
@@ -518,7 +521,7 @@ auto res = futures::Submit(pool, []{
 	return result::Ok(42); // Will never run
 }) | futures::WithTimout(1s) | futures::Await();
 
-// Will be release after 1 second and will return a TimeoutError 
+// Will be released after 1 second and will return a TimeoutError 
 
 assert(!res);
 
@@ -531,8 +534,9 @@ satellite::ResetGlobalProcessor();
 Cancellation is discussed in detail in "Advanced features". Here are some things you should keep in mind:
 
 ### Some error codes are reserved:
-1.`WithTimeout` can return `std::errc::timed_out`. 
-2. Sometimes you can read `std::errc::operation_canceled` from `Contract` (which you shouldn't use by the way). What `Contract` is is discussed in "Advanced features".
+
+1.`WithTimeout` can return `std::errc::timed_out`
+2. Sometimes you can read `std::errc::operation_canceled` from `Contract` (which you shouldn't use by the way). "What `Contract` is" is discussed in "Advanced features"
 
 ### Some functions may throw
 Exceptions are used as an unwinding mechanism for cancellation. This means that you **have** to use RAII wherever it is relevant. Below are the functions which can throw:
