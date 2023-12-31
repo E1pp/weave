@@ -1034,7 +1034,7 @@ TEST_SUITE(Futures) {
     std::move(first) | futures::ThreadAwait();   
   }
 
-  SIMPLE_TEST(MimicFirstOk1) {
+  SIMPLE_TEST(SelectOk1) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();
 
@@ -1046,11 +1046,11 @@ TEST_SUITE(Futures) {
         | futures::Map([&ok](auto variant) {
             switch(variant.index()){
               case 0 : {
-                ASSERT_EQ(std::get<0>(variant), 2);
+                ASSERT_TRUE(false);
                 break;
               }
               case 1 : {
-                ASSERT_EQ(std::get<1>(variant), 2);
+                ASSERT_EQ(*std::get<1>(variant), 2);
                 break;
               }
             }
@@ -1067,7 +1067,7 @@ TEST_SUITE(Futures) {
     std::move(p1).SetValue(1);
   }
 
-  SIMPLE_TEST(MimicFirstOk2) {
+  SIMPLE_TEST(SelectFailure1) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();
 
@@ -1079,11 +1079,12 @@ TEST_SUITE(Futures) {
         | futures::Map([&ok](auto variant) {
             switch(variant.index()){
               case 0 : {
-                ASSERT_EQ(std::get<0>(variant), 29);
+                ASSERT_FALSE(std::get<0>(variant));
+                ASSERT_EQ(std::get<0>(variant).error(), TimeoutError());
                 break;
               }
               case 1 : {
-                ASSERT_EQ(std::get<1>(variant), 29);
+                ASSERT_TRUE(false);
                 break;
               }
             }
@@ -1099,39 +1100,7 @@ TEST_SUITE(Futures) {
     ASSERT_TRUE(ok);
   }
 
-  SIMPLE_TEST(MimicFirstOk3) {
-    auto [f1, p1] = futures::Contract<int>();
-    auto [f2, p2] = futures::Contract<int>();
-
-    auto first = futures::Select(std::move(f1), std::move(f2));
-
-    bool ok = false;
-
-    std::move(first)
-        | futures::Map([&ok](auto variant) {
-            switch(variant.index()){
-              case 0 : {
-                ASSERT_EQ(std::get<0>(variant), 31);
-                break;
-              }
-              case 1 : {
-                ASSERT_EQ(std::get<1>(variant), 31);
-                break;
-              }
-            }
-
-            ok = true;
-            return Unit{};
-          })
-        | futures::Detach();
-
-    std::move(p2).SetError(IoError());
-    std::move(p1).SetValue(31);
-
-    ASSERT_TRUE(ok);
-  }
-
-  SIMPLE_TEST(MimicFirstFailure) {
+  SIMPLE_TEST(SelectFailure2) {
     auto [f1, p1] = futures::Contract<int>();
     auto [f2, p2] = futures::Contract<int>();
 
@@ -1140,15 +1109,26 @@ TEST_SUITE(Futures) {
     bool fail = false;
 
     std::move(first)
-        | futures::OrElse([&](Error e) -> Result<std::variant<int, int>> {
-            ASSERT_EQ(e, TimeoutError());
+        | futures::Map([&fail](auto variant) {
+            switch(variant.index()){
+              case 0 : {
+                ASSERT_TRUE(false);
+                break;
+              }
+              case 1 : {
+                ASSERT_FALSE(std::get<1>(variant));
+                ASSERT_EQ(std::get<1>(variant).error(), TimeoutError());
+                break;
+              }
+            }
+
             fail = true;
-            return result::Err(e);
+            return Unit{};
           })
         | futures::Detach();
 
     std::move(p2).SetError(TimeoutError());
-    std::move(p1).SetError(TimeoutError());
+    std::move(p1).SetError(IoError());
 
     ASSERT_TRUE(fail);
   }

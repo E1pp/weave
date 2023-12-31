@@ -17,7 +17,7 @@
 namespace weave::futures::thunks {
 
 template <SomeFuture... Futures>
-using SelectedValue = std::variant<traits::ValueOf<Futures>...>;
+using SelectedValue = std::variant<Result<traits::ValueOf<Futures>>...>;
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -47,16 +47,12 @@ class SelectControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
       Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
     auto result = std::move(out.result);
 
-    if (result && Base::MarkFulfilled()) {
-      // We got the first result
+    if (Base::MarkFulfilled()) {
+      // We got the first result (either error or an actual value)
       ProduceResult<Index>(std::move(result));
     }
 
-    if (bool should_complete = Base::ProducerDone()) {
-      // We got the last error
-      ProduceError<Index>(std::move(result));
-    }
-
+    Base::ProducerDone();
     Base::ReleaseRef();
   }
 
@@ -73,17 +69,8 @@ class SelectControlBlock<OnHeap, Cons, detail::TaggedTuple, Futures...> final
   template <size_t Index>
   void ProduceResult(
       Result<detail::NthType<Index, traits::ValueOf<Futures>...>> res) {
-    ValueType variant{std::in_place_index<Index>, std::move(*res)};
-
+    ValueType variant{std::in_place_index<Index>, std::move(res)};
     Base::CompleteConsumer(result::Ok(std::move(variant)));
-  }
-
-  template <size_t Index>
-  void ProduceError(
-      Result<detail::NthType<Index, traits::ValueOf<Futures>...>> err) {
-    Result<ValueType> matched_type{result::Err(std::move(err.error()))};
-
-    Base::CompleteConsumer(std::move(matched_type));
   }
 };
 
@@ -116,16 +103,13 @@ class SelectControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
       Output<detail::NthType<Index, traits::ValueOf<Futures>...>> out) {
     auto result = std::move(out.result);
 
-    if (result && Base::MarkFulfilled()) {
-      // We got the first result
+    if (Base::MarkFulfilled()) {
+      // We got the first result (either error or an actual value)
       EmplaceResult<Index>(std::move(result));
     }
 
     if (bool is_the_last_one = Base::ProducerDone()) {
-      if (!res_) {
-        // Emplace the last error
-        EmplaceError<Index>(std::move(result));
-      }
+      WHEELS_VERIFY(res_, "Unfulfilled result!");
 
       Base::CompleteConsumer(std::move(*res_));
     }
@@ -134,7 +118,7 @@ class SelectControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
   void Cancel() {
     if (bool is_the_last_one = Base::ProducerDone()) {
       if (res_) {
-        // Someone got through
+        // We are cancelled by some other future fulfilling result
         Base::CompleteConsumer(std::move(*res_));
       } else {
         // Entire tree got cancelled
@@ -147,19 +131,8 @@ class SelectControlBlock<false, Cons, detail::TaggedTuple, Futures...> final
   template <size_t Index>
   void EmplaceResult(
       Result<detail::NthType<Index, traits::ValueOf<Futures>...>> res) {
-    ValueType variant{std::in_place_index<Index>, std::move(*res)};
-
+    ValueType variant{std::in_place_index<Index>, std::move(res)};
     res_.emplace(result::Ok(std::move(variant)));
-
-    Base::Forward(cancel::Signal::Cancel());
-  }
-
-  template <size_t Index>
-  void EmplaceError(
-      Result<detail::NthType<Index, traits::ValueOf<Futures>...>> err) {
-    Result<ValueType> matched_type{result::Err(std::move(err.error()))};
-
-    res_.emplace(std::move(matched_type));
 
     Base::Forward(cancel::Signal::Cancel());
   }

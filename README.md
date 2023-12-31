@@ -49,7 +49,7 @@ Concurrency for C++
     - Parallel composition (`par`)
       - `All`/`Both`
       - `First`
-      - `Select` (`std::variant` alternative to `First`)
+      - `Select` (`std::variant` alternative to `First` which records first finished future (even if there was an error))
       - `Quorum` (blocking)
       - `no_alloc` versions which saves up allocations at the cost of less intuitive semantics
   - Terminators (`run`)

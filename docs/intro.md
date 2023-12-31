@@ -321,7 +321,7 @@ fmt::println("res->{}", *res); // 37
 `futures::Quorum` contains the values of the first `threshold`  successful futures or the error of the first failed future after which it is impossible to contain `threshold` values.
 
 ### `Select`
-`futures::Select` is just like `futures::First` but contains `std::variant` instead of plain `T`.
+`futures::Select` is just like `futures::First` but contains `std::variant` instead of plain `T`, but what is more important, it records the first future which was finished even if its result contains an error.
 
 ## 5. First look at `fibers`
 `weave` has stackfull fibers which are just like golangs coroutines. They can be cooperatively suspended without occupying the thread and provide an extensive library of sync primitives. In order to use fibers' API and sync primitives lambda has to be executed in fiber's context.
