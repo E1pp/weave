@@ -15,8 +15,8 @@ class Event {
 
   void Set() {
     auto wake_key = twist::ed::futex::PrepareWake(ready_);
-    ready_.store(1, std::memory_order::release);
-    twist::ed::futex::WakeOne(wake_key);
+    ready_.store(State::Ready, std::memory_order::release);
+    twist::ed::futex::WakeAll(wake_key);
   }
 
  private:

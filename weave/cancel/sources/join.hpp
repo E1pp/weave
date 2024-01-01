@@ -44,7 +44,8 @@ class JoinSource
   bool Cancellable() override {
     return true;
   }
-
+// 0x7fffffffce78 -- Never
+// 0x7fffffffcec0 -- After
   void Attach(SignalReceiver* receiver) override {
     State curr = state_.load(std::memory_order::acquire);
 

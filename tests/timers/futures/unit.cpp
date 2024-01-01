@@ -145,7 +145,7 @@ TEST_SUITE(Futures){
       fmt::println("Timer 1:\nElapsed : {}, expected {}", (finish-start).count(), (1s).count());
       ASSERT_LE(finish - start, 1s + 100ms);
 
-      wg.Done();       
+      wg.Done(); 
     }) | futures::Start();
 
     futures::After(2s) | futures::OnSuccess([&]{
@@ -176,7 +176,7 @@ TEST_SUITE(Futures){
 
     std::move(f).RequestCancel();
 
-    wg.Wait();    
+    wg.Wait();
   }
 
   SIMPLE_TEST(TimeoutNever){

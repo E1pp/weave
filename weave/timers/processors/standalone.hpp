@@ -25,14 +25,15 @@ class StandaloneProcessor : public IProcessor {
   }
 
   // IProcessor
-  void AddTimer(ITimer* timer) override {
+  void AddTimer(TimerBase* timer) override {
     queue_.Push(timer);
 
     TryWakeWorker();
   }
 
   void NotifyProcessor() override {
-    queue_.ScanForCancelled();
+    queue_.PostCancelRequest();
+
     TryWakeWorker();
   }
 
@@ -72,12 +73,10 @@ class StandaloneProcessor : public IProcessor {
 
   // nullopt if queue was depleted
   std::optional<Millis> PollQueue() {
-    auto [timer_list, ms_until_inactive] = queue_.GrabReadyTimers();
+    auto [timers, ms_until_inactive] = queue_.GrabReadyTimers();
 
-    while (timer_list != nullptr) {
-      auto* next = static_cast<executors::Task*>(timer_list->next_);
-      timer_list->Run();
-      timer_list = next;
+    while (timers.NonEmpty()) {
+      timers.PopFront()->Run();
     }
 
     return ms_until_inactive;
@@ -98,14 +97,10 @@ class StandaloneProcessor : public IProcessor {
   // Only called during the destructor call
   // thus every push is in hb with us without spinlock
   void ClearQueue() {
-    auto* head = queue_.TakeAll();
+    auto timers = queue_.TakeAll();
 
-    while (head != nullptr) {
-      auto* next = static_cast<executors::Task*>(head->next_);
-
-      head->Run();
-
-      head = next;
+    while (timers.NonEmpty()) {
+      timers.PopFront()->Run();
     }
   }
 

@@ -20,7 +20,7 @@ using weave::threads::blocking::WaitGroup;
 
 TEST_SUITE(Standalone){
   template <typename F>
-  struct Tester : public timers::ITimer {
+  struct Tester : public timers::TimerBase {
     explicit Tester(timers::Millis ms, F&& f) : delay_(ms), fun_(std::move(f)) {
     }
 

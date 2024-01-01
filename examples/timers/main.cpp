@@ -5,6 +5,7 @@
 #include <fmt/core.h>
 
 #include <thread>
+#include "weave/timers/timer.hpp"
 
 using namespace weave; // NOLINT
 
@@ -18,7 +19,7 @@ using namespace std::chrono_literals;
 
 // Implementing a timer
 
-class SimpleTimer : public timers::ITimer {
+class SimpleTimer : public timers::TimerBase {
   // What is timers delay
   timers::Millis GetDelay() override {
     return 1s;
@@ -59,7 +60,7 @@ void ProcessorExample(){
 // To do that they need a reference to the process
 // Struct Delay serves this purpose
 
-struct SubmitOnCommand : timers::ITimer {
+struct SubmitOnCommand : timers::TimerBase {
  public:
   explicit SubmitOnCommand(timers::Delay del) : del_(del) {
   }

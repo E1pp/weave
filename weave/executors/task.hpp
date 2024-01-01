@@ -6,11 +6,13 @@
 
 namespace weave::executors {
 
-struct Task : wheels::IntrusiveListNode<Task> {
-  virtual ~Task() = default;
+struct ITask {
+  virtual ~ITask() = default;
 
   virtual void Run() noexcept = 0;
+};
 
+struct Task : public ITask, public wheels::IntrusiveListNode<Task> {
   uintptr_t flags = 0;
 };
 

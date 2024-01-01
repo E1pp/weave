@@ -12,7 +12,7 @@ namespace weave::timers {
 struct IProcessor {
   virtual ~IProcessor() = default;
 
-  virtual void AddTimer(ITimer*) = 0;
+  virtual void AddTimer(TimerBase*) = 0;
 
   virtual void NotifyProcessor() = 0;
 

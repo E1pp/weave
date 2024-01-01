@@ -29,7 +29,7 @@ class [[nodiscard]] After final : public support::NonCopyableBase {
  private:
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
-                              public timers::ITimer,
+                              public timers::TimerBase,
                               public cancel::SignalReceiver {
     friend class After;
 
