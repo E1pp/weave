@@ -118,7 +118,7 @@ class PinnedStorage final : public support::PinnedBase {
     return impl_.size();
   }
 
-  ~PinnedSlot() {
+  ~PinnedStorage() {
     const size_t size = impl_.size();
 
     for (size_t i = 0; i < size; i++) {

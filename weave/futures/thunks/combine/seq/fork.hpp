@@ -17,12 +17,12 @@
 
 namespace weave::futures::thunks {
 
-template <size_t NumTines, Thunk Future>
-class [[nodiscard]] Forker;
+template <size_t NumTines, class Future>
+class Forker;
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-template <size_t Index, size_t NumTines, Thunk Future>
+template <size_t Index, size_t NumTines, class Future>
 class [[nodiscard]] Tine final : public support::NonCopyableBase,
                                  public detail::CancellableBase<Future> {
  private:
@@ -45,7 +45,7 @@ class [[nodiscard]] Tine final : public support::NonCopyableBase,
   template <Consumer<ValueType> Cons>
   class EvaluationFor final : public support::PinnedBase,
                               public AbstractConsumer<ValueType> {
-    template <size_t Count, Thunk F>
+    template <size_t Count, class F>
     friend class Forker;
 
     friend class Tine;
@@ -113,12 +113,12 @@ class [[nodiscard]] Tine final : public support::NonCopyableBase,
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-template <size_t NumTines, Thunk Future>
-class [[nodiscard]] Forker final
+template <size_t NumTines, class Future>
+class Forker final
     : public support::PinnedBase,
       public cancel::sources::ForkSource<NumTines> {
  private:
-  template <size_t Index, size_t N, Thunk F>
+  template <size_t Index, size_t N, class F>
   friend class Tine;
 
   using V = typename Future::ValueType;

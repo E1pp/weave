@@ -3,6 +3,8 @@
 
 #include <twist/ed/stdlike/thread.hpp>
 
+#include <algorithm>
+
 namespace weave::executors::tp::fast {
 
 // here are the functions which are impl of work stealing

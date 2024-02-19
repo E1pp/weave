@@ -15,7 +15,7 @@ namespace weave::result {
  */
 
 inline auto Err(Error error) {
-  return tl::unexpected(error);
+  return std::unexpected(std::move(error));
 }
 
 }  // namespace weave::result

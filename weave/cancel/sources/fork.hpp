@@ -80,7 +80,7 @@ struct SignalReceiverLeaf : SignalReceiver {
 
   SignalReceiverLeaf() = default;
 
-  ~SignalReceiver() override = default;
+  ~SignalReceiverLeaf() override = default;
 
   void Forward(Signal signal) override {
     static_cast<Derived*>(this)->Forward(signal);

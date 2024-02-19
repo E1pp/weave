@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20)
 project(weave)
 
 include(cmake/Logging.cmake)
@@ -28,6 +28,8 @@ if(WEAVE_DEVELOPER)
 endif()
 
 add_subdirectory(weave)
+
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
 
 if(WEAVE_TESTS OR WEAVE_DEVELOPER)
     add_subdirectory(tests)
