@@ -2,6 +2,10 @@
 # Weave
 Concurrency for C++
 
+## References
+
+This library was created based on solutions for problems from the MIPT [concurrency course](https://gitlab.com/Lipovsky/concurrency-course). Original design -- [await](https://gitlab.com/Lipovsky/await).
+
 ## Features
 
 - Scalable work-stealing scheduler – `executors::tp::fast::ThreadPool`
@@ -86,10 +90,6 @@ Concurrency for C++
  - [Getting started](docs/intro.md)
  - [Advanced features](docs/advanced.md)
  - [Unit tests](tests)
-
-## References
-
-This library was created based on solutions for problems from the MIPT [concurrency course](https://gitlab.com/Lipovsky/concurrency-course).
 
 ## Requirements
 
