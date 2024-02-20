@@ -6,7 +6,7 @@ Concurrency for C++
 
 This library was created based on my solutions for problems from the MIPT [concurrency course](https://gitlab.com/Lipovsky/concurrency-course). Major part of tests comes from the same course.
 
-Original design (this readme in particular): [await](https://gitlab.com/Lipovsky/await) by [Roman Lipovsky](https://gitlab.com/Lipovsky).
+Original design (including this readme): [await](https://gitlab.com/Lipovsky/await) by [Roman Lipovsky](https://gitlab.com/Lipovsky).
 
 ## Features
 
